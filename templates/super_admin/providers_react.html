@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="react_root"></div>
+
+<!-- React Dependencies -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- React Application -->
+<script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const ProviderManager = () => {
+        const [providers, setProviders] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [showModal, setShowModal] = useState(false);
+        const [editingProvider, setEditingProvider] = useState(null);
+        const [formData, setFormData] = useState({
+            name: '',
+            cnpj: '',
+            number: '',
+            username: '',
+            password: ''
+        });
+        const [error, setError] = useState('');
+        const [success, setSuccess] = useState('');
+
+        const fetchProviders = async () => {
+            try {
+                const response = await fetch('/api/providers/');
+                const data = await response.json();
+                setProviders(data.providers);
+                setLoading(false);
+            } catch (err) {
+                console.error('Error fetching providers:', err);
+                setLoading(false);
+            }
+        };
+
+        useEffect(() => {
+            fetchProviders();
+        }, []);
+
+        const handleInputChange = (e) => {
+            setFormData({
+                ...formData,
+                [e.target.name]: e.target.value
+            });
+        };
+
+        const openCreateModal = () => {
+            setEditingProvider(null);
+            setFormData({ name: '', cnpj: '', number: '', username: '', password: '' });
+            setError('');
+            setSuccess('');
+            setShowModal(true);
+        };
+
+        const openEditModal = (provider) => {
+            setEditingProvider(provider);
+            setFormData({
+                name: provider.name || '',
+                cnpj: provider.cnpj || '',
+                number: provider.number || '',
+                username: provider.username || '',
+                password: ''
+            });
+            setError('');
+            setSuccess('');
+            setShowModal(true);
+        };
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            setError('');
+            setSuccess('');
+
+            try {
+                const url = editingProvider ? `/api/providers/${editingProvider.id}/` : '/api/providers/';
+                const method = editingProvider ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    setSuccess(editingProvider ? 'Provedor atualizado com sucesso!' : 'Provedor criado com sucesso!');
+                    setShowModal(false);
+                    setFormData({ name: '', cnpj: '', number: '', username: '', password: '' });
+                    setEditingProvider(null);
+                    fetchProviders();
+                } else {
+                    setError(data.error || (editingProvider ? 'Erro ao atualizar provedor' : 'Erro ao criar provedor'));
+                }
+            } catch (err) {
+                setError(editingProvider ? 'Erro de conexão ao atualizar provedor' : 'Erro de conexão ao criar provedor');
+            }
+        };
+
+        // Helper to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        return (
+            <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Gerenciar Provedores</h1>
+                        <p className="text-gray-500 dark:text-gray-400">Listagem e cadastro de provedores parceiros.</p>
+                    </div>
+                    <button 
+                        onClick={openCreateModal}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                        Novo Provedor
+                    </button>
+                </div>
+
+                {/* Feedback Messages */}
+                {success && (
+                    <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+                        {success}
+                    </div>
+                )}
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                        {error}
+                    </div>
+                )}
+
+                {/* Table */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase text-gray-500 dark:text-gray-400">
+                                <tr>
+                                    <th className="px-6 py-3 text-left">Provedor</th>
+                                    <th className="px-6 py-3 text-left">CNPJ</th>
+                                    <th className="px-6 py-3 text-left">Contato</th>
+                                    <th className="px-6 py-3 text-left">Login</th>
+                                    <th className="px-6 py-3 text-left">Status</th>
+                                    <th className="px-6 py-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {providers.map(provider => (
+                                    <tr key={provider.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center">
+                                                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm mr-3">
+                                                    {provider.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{provider.name}</div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {provider.cnpj || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {provider.number || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {provider.username}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {provider.is_active ? (
+                                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                                    Ativo
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                                    Bloqueado
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button
+                                                type="button"
+                                                onClick={() => openEditModal(provider)}
+                                                className="text-blue-600 dark:text-blue-400 hover:text-blue-900 mr-4"
+                                            >
+                                                Editar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {providers.length === 0 && !loading && (
+                                    <tr>
+                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                            Nenhum provedor cadastrado.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Modal */}
+                {showModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-black bg-opacity-50">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 m-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    {editingProvider ? 'Editar Provedor' : 'Novo Provedor'}
+                                </h3>
+                                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-500">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome do Provedor</label>
+                                    <input 
+                                        type="text" 
+                                        name="name" 
+                                        value={formData.name} 
+                                        onChange={handleInputChange}
+                                        required 
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CNPJ</label>
+                                    <input 
+                                        type="text" 
+                                        name="cnpj" 
+                                        value={formData.cnpj} 
+                                        onChange={handleInputChange}
+                                        required 
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Número (Contato)</label>
+                                    <input 
+                                        type="text" 
+                                        name="number" 
+                                        value={formData.number} 
+                                        onChange={handleInputChange}
+                                        required 
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2"
+                                    />
+                                </div>
+                                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                                    {!editingProvider && (
+                                        React.createElement(React.Fragment, null,
+                                            React.createElement('h4', { className: 'text-sm font-medium text-gray-900 dark:text-white mb-2' }, 'Acesso Admin'),
+                                            React.createElement('div', null,
+                                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 dark:text-gray-300' }, 'Usuário'),
+                                                React.createElement('input', {
+                                                    type: 'text',
+                                                    name: 'username',
+                                                    value: formData.username,
+                                                    onChange: handleInputChange,
+                                                    required: true,
+                                                    className: 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2'
+                                                })
+                                            ),
+                                            React.createElement('div', { className: 'mt-2' },
+                                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 dark:text-gray-300' }, 'Senha'),
+                                                React.createElement('input', {
+                                                    type: 'password',
+                                                    name: 'password',
+                                                    value: formData.password,
+                                                    onChange: handleInputChange,
+                                                    required: true,
+                                                    className: 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2'
+                                                })
+                                            )
+                                        )
+                                    )}
+                                </div>
+
+                                <div className="flex justify-end pt-4">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowModal(false)}
+                                        className="mr-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                        Salvar Provedor
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('react_root'));
+    root.render(<ProviderManager />);
+</script>
+{% endblock %}

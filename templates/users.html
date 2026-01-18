@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Usuários cadastrados</h2>
+            <p class="text-gray-500 dark:text-gray-400">Gerencie tokens registrados por seus apps.</p>
+        </div>
+        <div class="flex gap-2">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Exportar CSV
+            </button>
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Exportar XLSX
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+        <form method="GET" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Search -->
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Busca</label>
+                    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Nome, email, CPF ou ID externo" 
+                           class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder-gray-400">
+                </div>
+
+                <!-- Status -->
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Status</label>
+                    <select name="status" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
+                        <option value="">Todos</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Ativo</option>
+                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inativo</option>
+                    </select>
+                </div>
+
+                <!-- Platform -->
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Plataforma</label>
+                    <select name="platform" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
+                        <option value="">Todas</option>
+                        <option value="android" {% if request.GET.platform == 'android' %}selected{% endif %}>Android</option>
+                        <option value="ios" {% if request.GET.platform == 'ios' %}selected{% endif %}>iOS</option>
+                    </select>
+                </div>
+
+                <!-- Last Push Status -->
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Status do último Push</label>
+                    <select name="push_status" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
+                        <option value="">Todos</option>
+                        <option value="sent">Enviado</option>
+                        <option value="failed">Falha</option>
+                    </select>
+                </div>
+
+                <!-- Tags -->
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Tags (Separadas por vírgula)</label>
+                    <input type="text" name="tags" value="{{ request.GET.tags }}" placeholder="vip, beta" 
+                           class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder-gray-400">
+                </div>
+
+                <!-- CPF -->
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-500 uppercase">CPF Específico</label>
+                    <input type="text" name="cpf" value="{{ request.GET.cpf }}" placeholder="000.000.000-00" 
+                           class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder-gray-400">
+                </div>
+
+                <!-- Per Page -->
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Registros por página</label>
+                    <select name="per_page" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none">
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                    </select>
+                </div>
+                
+                <!-- Filter Button -->
+                 <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                        Aplicar filtros
+                    </button>
+                 </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="bg-gray-100 dark:bg-gray-800/50 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-3">
+            <input type="checkbox" id="selectAll" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700">
+            <label for="selectAll" class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase">Selecionar todos</label>
+            <span class="text-sm text-gray-500 dark:text-gray-500 ml-2">Nenhum dispositivo selecionado</span>
+        </div>
+        <div class="flex gap-2">
+            <button disabled class="text-gray-400 dark:text-gray-600 text-sm font-medium px-4 py-2 cursor-not-allowed">Reenviar selecionados</button>
+            <button disabled class="text-gray-400 dark:text-gray-600 text-sm font-medium px-4 py-2 cursor-not-allowed">Limpar seleção</button>
+        </div>
+    </div>
+
+    <!-- User List -->
+    <div class="space-y-4">
+        {% for user in users %}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:border-blue-500/50 transition-colors">
+            <!-- Header -->
+            <div class="p-6 border-b border-gray-100 dark:border-gray-700/50">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start gap-4">
+                        <div class="pt-1">
+                            <input type="checkbox" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700">
+                        </div>
+                        
+                        <!-- Avatar -->
+                        <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-sm">
+                            {{ user.name|default:"U"|make_list|first|upper }}
+                        </div>
+
+                        <div>
+                            <div class="flex items-center gap-3 mb-1">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                                    {{ user.name|default:"Sem nome" }}
+                                </h3>
+                                {% if user.active %}
+                                <span class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-xs font-bold uppercase">Ativo</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-xs font-bold uppercase">Inativo</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-gray-500 dark:text-gray-400 font-mono">CPF: {{ user.cpf }}</span>
+                                <button class="px-2 py-0.5 rounded-md bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 transition-colors">Filtrar</button>
+                                <span class="px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-xs">
+                                    {{ user.devices.count }} dispositivos
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                         <span class="text-xs text-gray-500 dark:text-gray-400">Sem tags</span>
+                         <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-blue-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                         </button>
+                    </div>
+                </div>
+
+                <!-- Devices Row -->
+                <div class="mt-4 flex flex-wrap gap-2">
+                    {% for device in user.devices.all %}
+                    <div class="flex items-center gap-2 text-xs text-gray-400 bg-gray-100 dark:bg-gray-900/50 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-500 font-bold">Sistema Operacional:</span> 
+                        <span class="text-gray-300 {% if device.platform == 'android' %}text-green-400{% else %}text-pink-400{% endif %} font-bold uppercase">{{ device.platform }}</span>
+                        
+                        <span class="w-px h-3 bg-gray-600 mx-1"></span>
+                        
+                        <span class="text-gray-500 font-bold">Modelo:</span> 
+                        <span class="text-white font-bold">{{ device.model }}</span>
+                        
+                        <span class="w-px h-3 bg-gray-600 mx-1"></span>
+                        
+                        <span class="text-gray-500 font-bold">{{ device.os_version }}</span>
+                        
+                        <span class="w-px h-3 bg-gray-600 mx-1"></span>
+                        
+                        <span class="text-gray-500">Criado: {{ device.last_active|date:"d/m/Y, H:i:s" }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 bg-gray-900/60">
+                <div class="p-5 border-t md:border-t-0 md:border-r border-gray-800 flex items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center text-xs font-bold">
+                            ID
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-semibold tracking-wide text-gray-400 uppercase">Cliente</p>
+                            <p class="text-sm text-white font-mono">#{{ user.customer_id|default:"-" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-5 border-t md:border-t-0 border-gray-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-[11px] font-semibold tracking-wide text-gray-400 uppercase">Último acesso</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold">
+                            Online
+                        </span>
+                    </div>
+                    <p class="text-sm text-white font-mono mb-4">
+                        {{ user.devices.first.last_active|default:"-"|date:"d/m/Y, H:i:s" }}
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-[11px] font-semibold tracking-wide text-gray-400 uppercase">Último push</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="px-2 py-0.5 bg-green-500/15 text-green-400 text-[10px] font-bold rounded-full uppercase tracking-wide">
+                                    Enviado
+                                </span>
+                                <span class="text-xs text-gray-400 font-mono">05/01/2026, 16:44:46</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+            Nenhum usuário encontrado com os filtros selecionados.
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if users.has_other_pages %}
+    <div class="flex justify-center mt-6">
+        <nav class="flex items-center gap-2">
+            {% if users.has_previous %}
+                <a href="?page={{ users.previous_page_number }}" class="px-3 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Anterior</a>
+            {% endif %}
+            
+            <span class="px-3 py-1 text-gray-600 dark:text-gray-300">
+                Página {{ users.number }} de {{ users.paginator.num_pages }}
+            </span>
+
+            {% if users.has_next %}
+                <a href="?page={{ users.next_page_number }}" class="px-3 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Próxima</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

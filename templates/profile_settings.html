@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <h2 class="text-xl font-bold text-white mb-1">Perfil do painel</h2>
+        <p class="text-sm text-gray-400">Configura logo e cor principal exibidas aos operadores.</p>
+    </div>
+
+    <!-- Configurações de Estilo -->
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Logo Section -->
+        <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+            <div class="mb-4">
+                <h3 class="text-base font-bold text-white">Logo</h3>
+                <p class="text-xs text-gray-400">Aparece no menu lateral e cabeçalho do painel.</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <label class="cursor-pointer bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 font-bold text-xs py-2 px-4 rounded transition-colors uppercase">
+                    Selecionar Imagem
+                    <input type="file" name="logo" class="hidden" accept="image/*" onchange="previewImage(this)">
+                </label>
+                <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 font-bold overflow-hidden">
+                    {% if provider.logo %}
+                        <img src="{{ provider.logo.url }}" id="logo-preview" class="w-full h-full object-cover">
+                    {% else %}
+                        <span id="logo-placeholder">N</span>
+                        <img id="logo-preview" class="hidden w-full h-full object-cover">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Colors Section -->
+        <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+            <div class="mb-6">
+                <h3 class="text-base font-bold text-white">Cores</h3>
+                <p class="text-xs text-gray-400">Defina o tom principal usado em botões e destaques do painel.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Color Controls -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Cor Primária</label>
+                        <div class="relative">
+                            <input type="color" name="primary_color" value="{{ provider.primary_color }}" class="w-full h-10 rounded cursor-pointer bg-transparent border-0 p-0" id="primaryColorInput">
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-1">Cor aplicada em botões, links e elementos de destaque.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-xs font-bold text-gray-500 uppercase">Intensidade do Vidro</span>
+                                <span class="text-xs text-gray-400" id="glassIntensityValue">{{ provider.glass_intensity }}%</span>
+                            </div>
+                            <input type="range" name="glass_intensity" min="0" max="100" value="{{ provider.glass_intensity }}" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('glassIntensityValue').innerText = this.value + '%'">
+                            <p class="text-[10px] text-gray-500 mt-1">Controla a opacidade dos cards e superfícies translúcidas.</p>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-xs font-bold text-gray-500 uppercase">Desfoque do Vidro</span>
+                                <span class="text-xs text-gray-400" id="glassBlurValue">{{ provider.glass_blur }}px</span>
+                            </div>
+                            <input type="range" name="glass_blur" min="0" max="50" value="{{ provider.glass_blur }}" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('glassBlurValue').innerText = this.value + 'px'">
+                            <p class="text-[10px] text-gray-500 mt-1">Ajusta o blur aplicado nas superfícies de vidro.</p>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-xs font-bold text-gray-500 uppercase">Sombra Ambiente</span>
+                                <span class="text-xs text-gray-400" id="ambientShadowValue">{{ provider.ambient_shadow }}%</span>
+                            </div>
+                            <input type="range" name="ambient_shadow" min="0" max="100" value="{{ provider.ambient_shadow }}" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('ambientShadowValue').innerText = this.value + '%'">
+                            <p class="text-[10px] text-gray-500 mt-1">Define o brilho das sombras e halos de cor nos painéis.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-4 pt-4">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors text-sm">
+                            Salvar estilo
+                        </button>
+                        <span class="text-[10px] text-gray-500">Os ajustes são aplicados imediatamente para operadores logados.</span>
+                    </div>
+                </div>
+
+                <!-- Preview Box -->
+                <div class="border border-gray-700 rounded-xl p-4 bg-gray-900/50 relative overflow-hidden">
+                    <span class="absolute top-2 left-2 text-[10px] text-gray-500 font-bold uppercase">Preview</span>
+                    <div class="mt-6 flex items-center justify-between p-4 glass-panel/80 backdrop-blur-sm rounded-lg border border-gray-700">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-[10px] text-gray-400 overflow-hidden">
+                                {% if provider.logo %}
+                                    <img src="{{ provider.logo.url }}" class="w-full h-full object-cover logo-preview-target">
+                                {% else %}
+                                    <span class="logo-placeholder-target">Logo</span>
+                                    <img class="hidden w-full h-full object-cover logo-preview-target">
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">{{ provider.name }}</div>
+                                <div class="text-[10px] text-gray-500">Console do provedor</div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <button type="button" class="block w-full bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded" style="background-color: {{ provider.primary_color }}">DESTAQUE</button>
+                            <button type="button" class="block w-full border border-blue-600 text-blue-400 text-[10px] font-bold py-1 px-3 rounded" style="border-color: {{ provider.primary_color }}; color: {{ provider.primary_color }}">Exemplo de ação</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        // Atualiza preview de cor em tempo real
+        document.getElementById('primaryColorInput').addEventListener('input', function(e) {
+            const color = e.target.value;
+            const buttons = document.querySelectorAll('.bg-blue-600, .text-blue-400, .border-blue-600');
+            // Nota: Isso é simplificado para o preview, o ideal seria atualizar especificamente os elementos do preview box
+        });
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    // Atualiza logo principal
+                    var preview = document.getElementById('logo-preview');
+                    var placeholder = document.getElementById('logo-placeholder');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    if(placeholder) placeholder.classList.add('hidden');
+
+                    // Atualiza logo do preview box
+                    var previewTargets = document.querySelectorAll('.logo-preview-target');
+                    var placeholderTargets = document.querySelectorAll('.logo-placeholder-target');
+                    
+                    previewTargets.forEach(el => {
+                        el.src = e.target.result;
+                        el.classList.remove('hidden');
+                    });
+                    placeholderTargets.forEach(el => el.classList.add('hidden'));
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+
+    <!-- Password Change -->
+    <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <div class="mb-6">
+            <h3 class="text-base font-bold text-white">Alterar senha</h3>
+            <p class="text-xs text-gray-400">Troque a senha utilizada para acessar o painel administrativo.</p>
+        </div>
+
+        <form class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Senha Atual</label>
+                <input type="password" placeholder="********" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Nova Senha</label>
+                <input type="password" placeholder="********" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm">
+                <p class="text-[10px] text-gray-500 mt-1">Mínimo de 8 caracteres.</p>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Confirmar Nova Senha</label>
+                <input type="password" placeholder="********" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm">
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

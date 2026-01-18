@@ -1,0 +1,94 @@
+version: "3.8"
+
+services:
+
+  # ===============================
+  # 🐘 POSTGRESQL (Banco de dados exclusivo para este App)
+  # ===============================
+  postgres:
+    image: postgres:14
+    container_name: app_provedor_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app_provedor_db}
+      POSTGRES_USER: ${POSTGRES_USER:-app_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-E0sJT3wAYFuahovmHkxgy}
+    volumes:
+      - app-provedor-db-data:/var/lib/postgresql/data
+    networks:
+      nioNet:
+        aliases:
+          - app_provedor_postgres
+          - postgres
+    ports:
+      - "5433:5432" # Porta 5433 para não conflitar com outros bancos
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app_user} -d ${POSTGRES_DB:-app_provedor_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  # ===============================
+  # 🌐 BACKEND DJANGO (Painel + APIs)
+  # ===============================
+  app-provedor-backend:
+    build: .
+    image: ghcr.io/juniorssilvaa/app-provedor-backend:latest
+    container_name: app_provedor_backend
+    depends_on:
+      - postgres
+    networks:
+      - nioNet
+    volumes:
+      - app-provedor-media:/app/media
+      - app-provedor-static:/app/staticfiles
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-prod-key}
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-E0sJT3wAYFuahovmHkxgy}@postgres:5432/${POSTGRES_DB:-app_provedor_db}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    command: gunicorn niochat.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    labels:
+      - "traefik.enable=true"
+      # Rota para o Painel Administrativo
+      - "traefik.http.routers.app-provedor-painel.rule=Host(`painel.niochat.com.br`)"
+      - "traefik.http.routers.app-provedor-painel.entrypoints=websecure"
+      - "traefik.http.routers.app-provedor-painel.tls.certresolver=letsencryptresolver"
+      - "traefik.http.services.app-provedor-painel.loadbalancer.server.port=8000"
+      # Rota para as APIs
+      - "traefik.http.routers.app-provedor-apis.rule=Host(`apis.niochat.com.br`)"
+      - "traefik.http.routers.app-provedor-apis.entrypoints=websecure"
+      - "traefik.http.routers.app-provedor-apis.tls.certresolver=letsencryptresolver"
+      - "traefik.http.services.app-provedor-apis.loadbalancer.server.port=8000"
+    restart: always
+
+  # ===============================
+  # 📱 WEBHOOK SERVER (FastAPI)
+  # ===============================
+  app-provedor-webhook:
+    build: .
+    image: ghcr.io/juniorssilvaa/app-provedor-webhook:latest
+    container_name: app_provedor_webhook
+    depends_on:
+      - app-provedor-backend
+    networks:
+      - nioNet
+    environment:
+      FIREBASE_CREDENTIALS: /app/firebase-credentials.json
+    command: uvicorn webhook_server:app --host 0.0.0.0 --port 8001
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app-provedor-webhooks.rule=Host(`webhooks.niochat.com.br`)"
+      - "traefik.http.routers.app-provedor-webhooks.entrypoints=websecure"
+      - "traefik.http.routers.app-provedor-webhooks.tls.certresolver=letsencryptresolver"
+      - "traefik.http.services.app-provedor-webhooks.loadbalancer.server.port=8001"
+    restart: always
+
+networks:
+  nioNet:
+    external: true
+
+volumes:
+  app-provedor-db-data:
+  app-provedor-media:
+  app-provedor-static:
