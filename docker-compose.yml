@@ -32,7 +32,6 @@ services:
   # 🌐 BACKEND DJANGO (Painel + APIs)
   # ===============================
   app-provedor-backend:
-    build: .
     image: ghcr.io/juniorssilvaa/app-provedor-backend:latest
     container_name: app_provedor_backend
     depends_on:
@@ -66,7 +65,6 @@ services:
   # 📱 WEBHOOK SERVER (FastAPI)
   # ===============================
   app-provedor-webhook:
-    build: .
     image: ghcr.io/juniorssilvaa/app-provedor-webhook:latest
     container_name: app_provedor_webhook
     depends_on:

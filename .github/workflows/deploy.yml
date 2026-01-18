@@ -1,0 +1,88 @@
+name: Deploy App Provedor to Production
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: juniorssilvaa/app-provedor
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push BACKEND
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
+
+      - name: Build & push WEBHOOK
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code (to get docker-compose.yml)
+        uses: actions/checkout@v4
+
+      - name: Deploy to Portainer
+        env:
+          PORTAINER_URL: https://portainer.niochat.com.br
+          PORTAINER_API_KEY: ${{ secrets.PORTAINER_API_KEY }}
+          BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
+          WEBHOOK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:latest
+        run: |
+          STACKS=$(curl -s -H "X-API-Key: $PORTAINER_API_KEY" "$PORTAINER_URL/api/stacks")
+          STACK_ID=$(echo "$STACKS" | jq -r '.[] | select(.Name=="app-provedor") | .Id')
+          
+          # Se a stack não existir, você pode precisar criar ou apenas logar o erro
+          if [ "$STACK_ID" == "null" ] || [ -z "$STACK_ID" ]; then
+            echo "❌ Stack 'app-provedor' não encontrada no Portainer!"
+            exit 1
+          fi
+
+          COMPOSE=$(cat docker-compose.yml \
+            | sed "s|ghcr.io/juniorssilvaa/app-provedor-backend:latest|$BACKEND_IMAGE|g" \
+            | sed "s|ghcr.io/juniorssilvaa/app-provedor-webhook:latest|$WEBHOOK_IMAGE|g")
+          
+          ESCAPED=$(echo "$COMPOSE" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+          
+          curl -s -X PUT \
+            -H "X-API-Key: $PORTAINER_API_KEY" \
+            -H "Content-Type: application/json" \
+            --data "{\"StackFileContent\":\"$ESCAPED\"}" \
+            "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=1&pullImage=true&forceRecreate=true"
+          
+          echo "✅ Deploy finalizado com sucesso na stack $STACK_ID"
