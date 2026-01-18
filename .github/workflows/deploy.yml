@@ -117,8 +117,8 @@ jobs:
           fi
 
           COMPOSE=$(cat docker-compose.yml \
-            | sed "s|ghcr.io/juniorssilvaa/app-provedor-backend:latest|$BACKEND_IMAGE|g" \
-            | sed "s|ghcr.io/juniorssilvaa/app-provedor-webhook:latest|$WEBHOOK_IMAGE|g")
+            | sed "s|ghcr.io/juniorssilvaa/app-provedor-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}|g" \
+            | sed "s|ghcr.io/juniorssilvaa/app-provedor-webhook:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}|g")
           
           ESCAPED=$(echo "$COMPOSE" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
           
