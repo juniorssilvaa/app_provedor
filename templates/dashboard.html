@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Top Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <!-- Total Users -->
+    <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Usuários Totais</h3>
+        <div class="flex flex-col">
+            <span class="text-4xl font-bold text-white mb-1">{{ total_users }}</span>
+            <span class="text-sm text-gray-400">Ativos: {{ active_users }}</span>
+        </div>
+    </div>
+
+    <!-- Registered Notifications -->
+    <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Notificações Registradas</h3>
+        <div class="flex flex-col">
+            <span class="text-4xl font-bold text-white mb-1">{{ total_notifications }}</span>
+            <span class="text-sm text-gray-400">Enviadas com sucesso: {{ success_count }}</span>
+        </div>
+    </div>
+
+    <!-- Delivery Rate -->
+    <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Taxa de Entrega</h3>
+        <div class="flex flex-col">
+            <span class="text-4xl font-bold text-green-400 mb-1">{{ delivery_rate }}%</span>
+            <span class="text-sm text-gray-400">Falhas: {{ failure_count }}</span>
+        </div>
+    </div>
+
+    <!-- Last Push -->
+    <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Último Envio</h3>
+        <div class="flex flex-col">
+            {% if last_notification %}
+            <span class="text-xl font-bold text-white mb-1">Ok</span>
+            <span class="text-xs text-gray-400 mb-2">{{ last_notification.sent_at|date:"d/m/Y, H:i:s" }}</span>
+            <span class="px-3 py-1 bg-gray-700 text-gray-300 text-xs font-bold rounded-full w-max uppercase">{{ last_notification.get_status_display }}</span>
+            {% else %}
+            <span class="text-xl font-bold text-gray-500 mb-1">Nenhum envio</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- Active Users Donut -->
+    <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-bold text-white">Usuários ativos</h3>
+            <span class="text-xs text-gray-400">{{ active_percentage }}% ativos</span>
+        </div>
+        <div class="relative h-48 flex justify-center items-center">
+            <canvas id="activeUsersChart"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span class="text-2xl font-bold text-white">{{ active_percentage }}%</span>
+                <span class="text-xs text-gray-400">ativos</span>
+            </div>
+        </div>
+        <div class="flex justify-center space-x-8 mt-4">
+            <div class="text-center">
+                <span class="block text-sm font-bold text-white">{{ active_users }}</span>
+                <span class="text-xs text-gray-400">Ativos</span>
+            </div>
+            <div class="text-center">
+                <span class="block text-sm font-bold text-white">{{ inactive_users }}</span>
+                <span class="text-xs text-gray-400">Inativos</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Bar Chart (Span 2 cols) -->
+    <div class="lg:col-span-2 glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <h3 class="text-base font-bold text-white mb-6">Notificações nos últimos 7 dias</h3>
+        <div class="relative h-48">
+            <canvas id="notificationsChart"></canvas>
+        </div>
+        <div class="flex items-center space-x-4 mt-4">
+            <span class="px-3 py-1 bg-gray-700 rounded-full text-xs text-gray-300">ENVIADAS</span>
+            <span class="text-xs text-gray-400">FALHAS: 0</span>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Devices & Stats -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- Active Devices Donut -->
+    <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-bold text-white">Dispositivos ativos</h3>
+            <span class="text-xs text-gray-400">{{ active_users }} usuários</span>
+        </div>
+        <div class="relative h-48 flex justify-center items-center">
+            <canvas id="devicesChart"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span class="text-2xl font-bold text-white">{{ active_users }}</span>
+                <span class="text-xs text-gray-400">usuários</span>
+            </div>
+        </div>
+        <div class="flex items-center mt-4 space-x-2">
+            <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+            <span class="text-sm text-gray-300">Android</span>
+            <span class="ml-auto text-sm text-gray-400">{{ android_devices }} • {{ android_percentage }}%</span>
+        </div>
+    </div>
+
+    <!-- Notification Status Progress -->
+    <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <h3 class="text-base font-bold text-white mb-6">Status das notificações</h3>
+        <div class="mb-4">
+            <div class="flex justify-between mb-2">
+                <span class="text-sm text-gray-300">SENT</span>
+                <span class="text-sm text-gray-400">{{ success_count }} • {{ delivery_rate }}%</span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-2.5">
+                <div class="bg-blue-500 h-2.5 rounded-full" style="width: {{ delivery_rate }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Models -->
+    <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <h3 class="text-base font-bold text-white mb-6">Modelos de aparelho mais usados</h3>
+        <div class="space-y-4">
+            {% for model in top_models %}
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-300">{{ model.model }}</span>
+                <span class="text-sm text-gray-400">{{ model.count }} usuários</span>
+            </div>
+            {% empty %}
+            <div class="text-sm text-gray-500">Nenhum dado disponível</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Bottom: Recent Notifications -->
+<div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg mb-6">
+    <div class="flex justify-between items-center mb-6">
+        <h3 class="text-base font-bold text-white">Últimas notificações</h3>
+        <a href="#" class="text-xs text-blue-400 hover:text-blue-300">Ver histórico completo</a>
+    </div>
+    <div class="space-y-4">
+        {% for notif in recent_notifications %}
+        <div class="bg-gray-700/50 rounded-lg p-4 flex justify-between items-center">
+            <div>
+                <h4 class="text-sm font-bold text-white mb-1">{{ notif.title }}</h4>
+                <p class="text-xs text-gray-400">{{ notif.body|truncatechars:50 }}</p>
+                <div class="mt-1 flex items-center text-xs text-gray-500">
+                    <span>{{ notif.sent_at|date:"d/m/Y, H:i:s" }}</span>
+                    <span class="mx-1">•</span>
+                    <span>{{ notif.recipients_count }} enviados</span>
+                </div>
+            </div>
+            <span class="px-3 py-1 bg-gray-600 rounded-full text-xs font-bold text-gray-300 uppercase">{{ notif.status }}</span>
+        </div>
+        {% empty %}
+        <div class="text-center py-4 text-gray-500">Nenhuma notificação enviada recentemente</div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Active Users Donut
+        new Chart(document.getElementById('activeUsersChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Ativos', 'Inativos'],
+                datasets: [{
+                    data: [{{ active_users }}, {{ inactive_users }}],
+                    backgroundColor: ['{{ request.user.provider.primary_color|default:"#3b82f6" }}', '#1f2937'],
+                    borderWidth: 0,
+                    cutout: '75%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Notifications Bar
+        new Chart(document.getElementById('notificationsChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ chart_labels_7d|safe }},
+                datasets: [{
+                    label: 'Enviadas',
+                    data: {{ chart_data_sent|safe }},
+                    backgroundColor: '{{ request.user.provider.primary_color|default:"#3b82f6" }}',
+                    borderRadius: 4,
+                    barThickness: 20
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { display: false },
+                    x: { 
+                        grid: { display: false },
+                        ticks: { color: '#9ca3af', font: { size: 10 } }
+                    }
+                }
+            }
+        });
+
+        // Devices Donut
+        new Chart(document.getElementById('devicesChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Android', 'iOS'],
+                datasets: [{
+                    data: [{{ android_devices }}, {{ ios_devices }}],
+                    backgroundColor: ['#6366f1', '#ec4899'],
+                    borderWidth: 0,
+                    cutout: '75%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Painel Super Admin</h1>
+            <p class="text-gray-500 dark:text-gray-400">Gerencie os provedores e acesse as métricas do sistema.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <a href="{% url 'swagger-ui' %}" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20.253H6.25a1.5 1.5 0 01-1.5-1.5V5.25a1.5 1.5 0 011.5-1.5H17.5a1.5 1.5 0 011.5 1.5v2.25"></path></svg>
+                Documentação
+            </a>
+            <a href="{% url 'provider_create' %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Novo Provedor
+            </a>
+        </div>
+    </div>
+
+    <!-- Métricas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Total de Provedores</h3>
+            <p class="text-3xl font-bold text-gray-800 dark:text-white mt-2">{{ total_providers }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Usuários do App</h3>
+            <p class="text-3xl font-bold text-gray-800 dark:text-white mt-2">{{ total_app_users }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Administradores</h3>
+            <p class="text-3xl font-bold text-gray-800 dark:text-white mt-2">{{ total_admins }}</p>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Status dos Provedores</h3>
+            <div class="h-64 flex items-center justify-center">
+                <canvas id="providersStatusChart"></canvas>
+            </div>
+        </div>
+        <div class="lg:col-span-3 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Usuários por Provedor</h3>
+            <div class="h-64 flex items-center justify-center">
+                <canvas id="usersByProviderChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Provedores -->
+    <div>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Provedores Cadastrados</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase text-gray-500 dark:text-gray-400">
+                        <tr>
+                            <th class="px-6 py-3 text-left">Provedor</th>
+                            <th class="px-6 py-3 text-left">Login</th>
+                            <th class="px-6 py-3 text-left">Data de Criação</th>
+                            <th class="px-6 py-3 text-center">Status</th>
+                            <th class="px-6 py-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for provider in providers %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold text-xs mr-3">
+                                        {{ provider.name|make_list|first|upper }}
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ provider.name }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ provider.user.username|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ provider.created_at|date:"d/m/Y H:i" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                {% if provider.is_active %}
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                    Ativo
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                    Inativo
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <a href="{% url 'provider_edit' provider.pk %}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">Editar</a>
+                                    <form action="{% url 'provider_toggle_status' provider.pk %}" method="POST" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                                            {% if provider.is_active %}Bloquear{% else %}Desbloquear{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                Nenhum provedor cadastrado.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+    // Gráfico de Pizza: Status dos Provedores
+    const providersStatusCtx = document.getElementById('providersStatusChart').getContext('2d');
+    new Chart(providersStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Ativos', 'Inativos'],
+            datasets: [{
+                data: [{{ active_providers }}, {{ inactive_providers }}],
+                backgroundColor: ['#22c55e', '#ef4444'],
+                borderColor: isDarkMode ? '#1f2937' : '#ffffff',
+                borderWidth: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: textColor,
+                        boxWidth: 12,
+                        padding: 20,
+                        font: {
+                            size: 14
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Barras: Usuários por Provedor
+    const usersByProviderCtx = document.getElementById('usersByProviderChart').getContext('2d');
+    new Chart(usersByProviderCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for p in providers %}'{{ p.name }}',{% endfor %}],
+            datasets: [{
+                label: 'Usuários',
+                data: [{% for p in providers %}{{ p.app_user_count }},{% endfor %}],
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 2,
+                borderRadius: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: textColor,
+                        stepSize: 1
+                    },
+                    grid: {
+                        color: gridColor
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

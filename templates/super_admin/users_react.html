@@ -1,0 +1,522 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="react_root" data-current-user-id="{{ request.user.id }}"></div>
+
+<!-- React Dependencies -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- React Application -->
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const rootElement = document.getElementById('react_root');
+    const CURRENT_USER_ID = rootElement ? parseInt(rootElement.dataset.currentUserId || '0', 10) : 0;
+
+    const UserManager = () => {
+        const [users, setUsers] = useState([]);
+        const [providers, setProviders] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [showModal, setShowModal] = useState(false);
+        const [editingUser, setEditingUser] = useState(null);
+        const [actionDropdown, setActionDropdown] = useState(null);
+        
+        // Form State
+        const [formData, setFormData] = useState({
+            first_name: '',
+            last_name: '',
+            username: '',
+            email: '',
+            password: '',
+            type: 'admin', // default
+            provider_id: ''
+        });
+
+        const [error, setError] = useState('');
+        const [success, setSuccess] = useState('');
+
+        const dropdownRef = useRef(null);
+
+        // Fetch Data
+        const fetchData = async () => {
+            try {
+                const [usersRes, providersRes] = await Promise.all([
+                    fetch('/api/users/'),
+                    fetch('/api/providers/')
+                ]);
+                
+                const usersData = await usersRes.json();
+                const providersData = await providersRes.json();
+                
+                setUsers(usersData.users || []);
+                setProviders(providersData.providers || []);
+                setLoading(false);
+            } catch (err) {
+                console.error('Error fetching data:', err);
+                setLoading(false);
+            }
+        };
+
+        useEffect(() => {
+            fetchData();
+            
+            // Close dropdown when clicking outside
+            function handleClickOutside(event) {
+                if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                    setActionDropdown(null);
+                }
+            }
+            document.addEventListener("mousedown", handleClickOutside);
+            return () => {
+                document.removeEventListener("mousedown", handleClickOutside);
+            };
+        }, []);
+
+        const handleInputChange = (e) => {
+            setFormData({
+                ...formData,
+                [e.target.name]: e.target.value
+            });
+        };
+
+        const openCreateModal = () => {
+            setEditingUser(null);
+            setFormData({
+                first_name: '',
+                last_name: '',
+                username: '',
+                email: '',
+                password: '',
+                type: 'admin',
+                provider_id: ''
+            });
+            setError('');
+            setSuccess('');
+            setShowModal(true);
+        };
+
+        const openEditModal = (user) => {
+            setEditingUser(user);
+            setFormData({
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
+                username: user.username || '',
+                email: user.email || '',
+                password: '',
+                type: user.type === 'Superadmin' ? 'superadmin' : 'admin',
+                provider_id: user.provider_id ? String(user.provider_id) : ''
+            });
+            setError('');
+            setSuccess('');
+            setShowModal(true);
+            setActionDropdown(null);
+        };
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            setError('');
+            setSuccess('');
+
+            try {
+                const url = editingUser ? `/api/users/${editingUser.id}/` : '/api/users/';
+                const method = editingUser ? 'PUT' : 'POST';
+
+                const payload = { ...formData };
+                if (editingUser) {
+                    delete payload.password;
+                }
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    setSuccess(editingUser ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!');
+                    setShowModal(false);
+                    setEditingUser(null);
+                    setFormData({
+                        first_name: '',
+                        last_name: '',
+                        username: '',
+                        email: '',
+                        password: '',
+                        type: 'admin',
+                        provider_id: ''
+                    });
+                    fetchData();
+                } else {
+                    setError(data.error || (editingUser ? 'Erro ao atualizar usuário' : 'Erro ao criar usuário'));
+                }
+            } catch (err) {
+                setError(editingUser ? 'Erro de conexão ao atualizar usuário' : 'Erro de conexão ao criar usuário');
+            }
+        };
+
+        const handleDelete = async (id) => {
+            if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
+
+            try {
+                const response = await fetch(`/api/users/${id}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                if (response.ok) {
+                    fetchData();
+                    setActionDropdown(null);
+                } else {
+                    alert('Erro ao excluir usuário');
+                }
+            } catch (err) {
+                alert('Erro de conexão');
+            }
+        };
+
+        const toggleStatus = async (id) => {
+            setError('');
+            setSuccess('');
+            try {
+                const response = await fetch(`/api/users/${id}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ action: 'toggle_status' })
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok) {
+                    fetchData();
+                    setActionDropdown(null);
+                    if (typeof data.is_active !== 'undefined') {
+                        setSuccess(data.is_active ? 'Usuário reativado com sucesso.' : 'Usuário inativado. Ele não conseguirá mais acessar o sistema.');
+                    } else {
+                        setSuccess('Status do usuário atualizado com sucesso.');
+                    }
+                } else {
+                    setError(data.error || 'Erro ao alterar status do usuário.');
+                }
+            } catch (err) {
+                setError('Erro de conexão ao alterar status do usuário.');
+                console.error(err);
+            }
+        };
+
+        // Helper to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        return (
+            <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Usuários do Sistema</h1>
+                        <p className="text-gray-500 dark:text-gray-400">Veja todos os usuários, provedores, status e último acesso</p>
+                    </div>
+                    <button 
+                        onClick={openCreateModal}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                        Criar Usuário
+                    </button>
+                </div>
+
+                {/* Feedback Messages */}
+                {success && (
+                    <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+                        {success}
+                    </div>
+                )}
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                        {error}
+                    </div>
+                )}
+
+                {/* Table */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-visible shadow-sm">
+                    <div className="overflow-x-auto overflow-y-visible">
+                        <table className="w-full">
+                            <thead className="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase text-gray-500 dark:text-gray-400">
+                                <tr>
+                                    <th className="px-6 py-3 text-left">Usuário</th>
+                                    <th className="px-6 py-3 text-left">Email</th>
+                                    <th className="px-6 py-3 text-left">Tipo</th>
+                                    <th className="px-6 py-3 text-left">Provedores</th>
+                                    <th className="px-6 py-3 text-left">Ativo</th>
+                                    <th className="px-6 py-3 text-left">Online</th>
+                                    <th className="px-6 py-3 text-left">Último acesso</th>
+                                    <th className="px-6 py-3 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {users.map(user => (
+                                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{user.username}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {user.email || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {user.type === 'Superadmin' ? 'superadmin' : 'admin'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {user.provider_name !== 'Sem provedor' ? (
+                                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded bg-blue-900 text-blue-200">
+                                                    📱 {user.provider_name}
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-400 text-sm">Sem provedor</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {user.is_active ? (
+                                                <span className="text-green-500 flex items-center gap-1 text-sm">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    Ativo
+                                                </span>
+                                            ) : (
+                                                <span className="text-red-500 flex items-center gap-1 text-sm">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    Inativo
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            <span className="text-gray-400 flex items-center gap-1">
+                                                <span className="w-2 h-2 rounded-full bg-gray-400"></span> Offline
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {user.last_login}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center relative">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActionDropdown(actionDropdown === user.id ? null : user.id);
+                                                }}
+                                                className="text-gray-400 hover:text-white focus:outline-none"
+                                            >
+                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                                            </button>
+
+                                            {/* Dropdown Menu */}
+                                            {actionDropdown === user.id && (
+                                                <div className="fixed inset-0 z-50 flex items-start justify-end p-6">
+                                                    <div
+                                                        ref={dropdownRef}
+                                                        className="w-64 max-h-72 overflow-y-auto bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5"
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openEditModal(user)}
+                                                            className="w-full block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left flex items-center gap-2"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                                            Editar
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="w-full block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left flex items-center gap-2"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                                            Redefinir Senha
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => toggleStatus(user.id)}
+                                                            disabled={user.id === CURRENT_USER_ID}
+                                                            className={`w-full px-4 py-2 text-sm text-left flex items-center gap-2 ${
+                                                                user.id === CURRENT_USER_ID
+                                                                ? 'text-gray-400 cursor-not-allowed opacity-50'
+                                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                                            }`}
+                                                            title={user.id === CURRENT_USER_ID ? "Você não pode inativar seu próprio usuário" : ""}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                                            {user.is_active ? 'Inativar' : 'Ativar'}
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDelete(user.id)}
+                                                            disabled={user.id === CURRENT_USER_ID}
+                                                            className={`w-full px-4 py-2 text-sm text-left flex items-center gap-2 ${
+                                                                user.id === CURRENT_USER_ID
+                                                                ? 'text-gray-400 cursor-not-allowed opacity-50'
+                                                                : 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                            }`}
+                                                            title={user.id === CURRENT_USER_ID ? "Você não pode excluir seu próprio usuário" : ""}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                            Excluir
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {users.length === 0 && !loading && (
+                                    <tr>
+                                        <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                            Nenhum usuário encontrado.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Modal */}
+                {showModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-black bg-opacity-50 backdrop-blur-sm">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6 m-4 border border-gray-700">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    {editingUser ? 'Editar Usuário' : 'Criar Novo Usuário'}
+                                </h3>
+                                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-300">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-300 mb-1">Nome</label>
+                                        <input 
+                                            type="text" 
+                                            name="first_name" 
+                                            value={formData.first_name} 
+                                            onChange={handleInputChange}
+                                            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-300 mb-1">Sobrenome</label>
+                                        <input 
+                                            type="text" 
+                                            name="last_name" 
+                                            value={formData.last_name} 
+                                            onChange={handleInputChange}
+                                            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-300 mb-1">Usuário</label>
+                                        <input 
+                                            type="text" 
+                                            name="username" 
+                                            value={formData.username} 
+                                            onChange={handleInputChange}
+                                            required
+                                            className="w-full bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+                                            placeholder="Ex: junior"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-300 mb-1">E-mail</label>
+                                        <input 
+                                            type="email" 
+                                            name="email" 
+                                            value={formData.email} 
+                                            onChange={handleInputChange}
+                                            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-300 mb-1">Senha</label>
+                                        <input 
+                                            type="password" 
+                                            name="password" 
+                                            value={formData.password} 
+                                            onChange={handleInputChange}
+                                            required
+                                            className="w-full bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-300 mb-1">Tipo</label>
+                                        <select 
+                                            name="type" 
+                                            value={formData.type} 
+                                            onChange={handleInputChange}
+                                            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                        >
+                                            <option value="admin">Administrador</option>
+                                            <option value="superadmin">Superadmin</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-1">Provedor</label>
+                                    <select 
+                                        name="provider_id" 
+                                        value={formData.provider_id} 
+                                        onChange={handleInputChange}
+                                        required
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                    >
+                                        <option value="">Selecione...</option>
+                                        {providers.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-gray-500 mt-1">* Obrigatório para criar novo usuário</p>
+                                </div>
+
+                                <button 
+                                    type="submit"
+                                    className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors"
+                                >
+                                    Criar Usuário
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('react_root'));
+    root.render(<UserManager />);
+</script>
+{% endblock %}

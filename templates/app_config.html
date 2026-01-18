@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="POST" action="{% url 'app_config' %}">
+    {% csrf_token %}
+    <div class="space-y-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-bold text-white mb-1">Configurações do app</h2>
+                <p class="text-sm text-gray-400">Ajuste atalhos, integrações e comportamento do aplicativo usado pelos clientes.</p>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors shadow-lg">
+                Salvar Alterações
+            </button>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass-panel rounded-xl p-4 border border-gray-700 shadow-lg relative overflow-hidden group">
+                <div class="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-blue-500 to-transparent opacity-50"></div>
+                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Atalhos Ativos</h3>
+                <div class="text-2xl font-bold text-white mb-1">{{ config.active_shortcuts|length }}</div>
+                <p class="text-[10px] text-gray-500">de {{ all_shortcuts|length }} opções</p>
+            </div>
+
+            <div class="glass-panel rounded-xl p-4 border border-gray-700 shadow-lg relative overflow-hidden group">
+                <div class="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-green-500 to-transparent opacity-50"></div>
+                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Ferramentas Ativas</h3>
+                <div class="text-2xl font-bold text-white mb-1">{{ config.active_tools|length }}</div>
+                <p class="text-[10px] text-gray-500">de {{ all_tools|length }} atalhos</p>
+            </div>
+
+            <div class="glass-panel rounded-xl p-4 border border-gray-700 shadow-lg relative overflow-hidden group">
+                <div class="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-purple-500 to-transparent opacity-50"></div>
+                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Canais Sociais</h3>
+                <div class="text-2xl font-bold text-white mb-1">{{ config.social_links|length }}</div>
+                <p class="text-[10px] text-gray-500">links habilitados</p>
+            </div>
+
+            <div class="glass-panel rounded-xl p-4 border border-gray-700 shadow-lg relative overflow-hidden group">
+                <div class="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-yellow-500 to-transparent opacity-50"></div>
+                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Aviso de Atualização</h3>
+                <div class="text-2xl font-bold text-white mb-1">{% if config.update_warning_active %}Ativo{% else %}Inativo{% endif %}</div>
+                <p class="text-[10px] text-gray-500">Controla o banner de atualização no app.</p>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center text-yellow-500 mr-4">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Atalhos e ferramentas</h3>
+                    <p class="text-xs text-gray-400">Escolha o que os clientes veem na home e no hub de ferramentas do app.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Quick Shortcuts -->
+                <div>
+                    <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-4">Atalhos rápidos <span class="text-[9px] font-normal normal-case ml-2">Itens destacados logo ao abrir o aplicativo.</span></h4>
+                    <div class="space-y-3">
+                        {% for shortcut in all_shortcuts %}
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-gray-600 bg-gray-900/50">
+                            <span class="text-xs font-bold text-white uppercase">{{ shortcut }} <span class="text-[9px] text-gray-400 font-normal ml-1">VISÍVEL PARA O CLIENTE</span></span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="shortcuts" value="{{ shortcut }}" class="sr-only peer" {% if shortcut in config.active_shortcuts %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Right Column: Tools -->
+                <div>
+                    <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-4">Ferramentas <span class="text-[9px] font-normal normal-case ml-2">Acesso rápido a recursos de suporte e diagnóstico.</span></h4>
+                    <div class="space-y-3">
+                        {% for tool in all_tools %}
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-green-800 bg-green-900/10">
+                            <span class="text-xs font-bold text-white uppercase">{{ tool }} <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="tools" value="{{ tool }}" class="sr-only peer" {% if tool in config.active_tools %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+             <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-white">Aviso de Atualização</h3>
+                    <p class="text-xs text-gray-400">Mostrar banner solicitando atualização do app.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="update_warning" class="sr-only peer" {% if config.update_warning_active %}checked{% endif %}>
+                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                </label>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
