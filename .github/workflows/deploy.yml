@@ -108,11 +108,11 @@ jobs:
           WEBHOOK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:latest
         run: |
           STACKS=$(curl -s -H "X-API-Key: $PORTAINER_API_KEY" "$PORTAINER_URL/api/stacks")
-          STACK_ID=$(echo "$STACKS" | jq -r '.[] | select(.Name=="app-provedor") | .Id')
+          STACK_ID=$(echo "$STACKS" | jq -r '.[] | select(.Name=="app_provedor") | .Id')
           
           # Se a stack não existir, você pode precisar criar ou apenas logar o erro
           if [ "$STACK_ID" == "null" ] || [ -z "$STACK_ID" ]; then
-            echo "❌ Stack 'app-provedor' não encontrada no Portainer!"
+            echo "❌ Stack 'app_provedor' não encontrada no Portainer!"
             exit 1
           fi
 
