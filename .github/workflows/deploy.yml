@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: juniorssilvaa/app-provedor
+  IMAGE_NAME: juniorssilvaa/app_provedor
 
 jobs:
   test:
@@ -117,8 +117,8 @@ jobs:
           fi
 
           COMPOSE=$(cat docker-compose.yml \
-            | sed "s|ghcr.io/juniorssilvaa/app-provedor-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}|g" \
-            | sed "s|ghcr.io/juniorssilvaa/app-provedor-webhook:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}|g")
+            | sed "s|ghcr.io/juniorssilvaa/app_provedor-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}|g" \
+            | sed "s|ghcr.io/juniorssilvaa/app_provedor-webhook:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}|g")
           
           ESCAPED=$(echo "$COMPOSE" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
           
