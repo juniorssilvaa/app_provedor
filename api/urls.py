@@ -12,6 +12,7 @@ urlpatterns = [
     # Endpoint Público para o App (Configuração do Tenant)
     path('public/config/', views.get_app_configuration, name='get_app_configuration'),
     path('public/warnings/', views.get_in_app_warnings, name='get_in_app_warnings'),
+    path('public/plans/', views.get_plans, name='get_plans'),
 
     path('providers/', views.providers_api, name='api_providers'),
     path('providers/<int:pk>/', views.provider_detail_api, name='api_provider_detail'),

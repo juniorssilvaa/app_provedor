@@ -1,6 +1,8 @@
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers
 from django.views.decorators.csrf import csrf_exempt
 from core.models import Device, Provider, AppUser
 from .push_service import send_push_notification_core
@@ -13,6 +15,21 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------
 # 2) REGISTRO DE DISPOSITIVO (POST /devices/register/)
 # --------------------------------------------------
+@extend_schema(
+    tags=['Push'],
+    summary="Registrar dispositivo para Push",
+    description="Vincula um token de notificação (FCM/Expo) a um usuário para permitir o envio de notificações.",
+    request=inline_serializer(
+        name='RegisterDeviceRequest',
+        fields={
+            'provider_token': serializers.CharField(help_text="Token sk_live_... do provedor"),
+            'push_token': serializers.CharField(help_text="Token de notificação"),
+            'platform': serializers.ChoiceField(choices=['android', 'ios']),
+            'cpf': serializers.CharField(required=False, help_text="CPF do usuário para vínculo"),
+            'user_id': serializers.IntegerField(required=False, help_text="ID do usuário para vínculo")
+        }
+    )
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_device(request):
@@ -114,6 +131,7 @@ def register_device(request):
 # --------------------------------------------------
 # 5) WEBHOOK DO SGP (POST /webhooks/sgp/)
 # --------------------------------------------------
+@extend_schema(tags=['Push'])
 @api_view(['POST', 'GET'])
 @permission_classes([AllowAny])
 def sgp_webhook(request):
@@ -335,6 +353,7 @@ def sgp_webhook(request):
 # --------------------------------------------------
 # 6) ENVIO PELO PAINEL (POST /admin/push/send/)
 # --------------------------------------------------
+@extend_schema(tags=['Push'])
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def admin_send_push(request):

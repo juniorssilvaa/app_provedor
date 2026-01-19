@@ -7,7 +7,7 @@ from django import forms
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib import messages
-from .models import Provider, Notification, InAppWarning, AppConfig, AppUser, SystemSettings
+from .models import Provider, Notification, InAppWarning, AppConfig, AppUser, SystemSettings, Plan
 from api.push_service import send_push_notification_core
 
 
@@ -576,3 +576,64 @@ def super_admin_ai_config(request):
         'segment': 'super_admin_ai',
         'settings': settings
     })
+
+@login_required
+def provider_plans(request):
+    blocked = check_active(request)
+    if blocked: return blocked
+    
+    provider = request.user.provider
+    if not provider:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        plan_id = request.POST.get('plan_id')
+        name = request.POST.get('name')
+        type = request.POST.get('type')
+        download_speed = request.POST.get('download_speed')
+        upload_speed = request.POST.get('upload_speed')
+        price = request.POST.get('price')
+        description = request.POST.get('description')
+        is_active = request.POST.get('is_active') == 'on'
+
+        if plan_id:
+            plan = get_object_or_404(Plan, id=plan_id, provider=provider)
+            plan.name = name
+            plan.type = type
+            plan.download_speed = download_speed
+            plan.upload_speed = upload_speed
+            plan.price = price
+            plan.description = description
+            plan.is_active = is_active
+            plan.save()
+            messages.success(request, 'Plano atualizado com sucesso!')
+        else:
+            Plan.objects.create(
+                provider=provider,
+                name=name,
+                type=type,
+                download_speed=download_speed,
+                upload_speed=upload_speed,
+                price=price,
+                description=description,
+                is_active=is_active
+            )
+            messages.success(request, 'Plano criado com sucesso!')
+        
+        return redirect('provider_plans')
+
+    plans = Plan.objects.filter(provider=provider).order_by('-created_at')
+    return render(request, 'plans_config.html', {
+        'segment': 'plans_config',
+        'plans': plans
+    })
+
+@login_required
+def delete_plan(request, pk):
+    blocked = check_active(request)
+    if blocked: return blocked
+    
+    plan = get_object_or_404(Plan, pk=pk, provider=request.user.provider)
+    plan.delete()
+    messages.success(request, 'Plano excluído com sucesso!')
+    return redirect('provider_plans')

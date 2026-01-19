@@ -5,10 +5,12 @@ from django.contrib.auth.decorators import user_passes_test
 from django.utils.decorators import method_decorator
 from django.views import View
 import json
-from core.models import Provider, CustomUser, AppConfig, AppUser, InAppWarning, Device
+from core.models import Provider, CustomUser, AppConfig, AppUser, InAppWarning, Device, Plan
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiParameter, inline_serializer
+from rest_framework import serializers
 
 # Helper to check superuser
 def is_superuser(user):
@@ -16,6 +18,7 @@ def is_superuser(user):
 
 
 
+@extend_schema(tags=['SuperAdmin'])
 @api_view(['GET', 'POST'])
 @user_passes_test(is_superuser)
 def providers_api(request):
@@ -69,6 +72,7 @@ def providers_api(request):
         except Exception as e:
             return Response({'error': str(e)}, status=500)
 
+@extend_schema(tags=['SuperAdmin'])
 @api_view(['PUT', 'PATCH'])
 @user_passes_test(is_superuser)
 def provider_detail_api(request, pk):
@@ -96,6 +100,58 @@ def provider_detail_api(request, pk):
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
+@extend_schema(
+    tags=['Public'],
+    summary="Listar planos do provedor",
+    description="Retorna os planos cadastrados pelo provedor que estão ativos para exibição no App.",
+    parameters=[
+        OpenApiParameter(name='provider_token', type=str, location=OpenApiParameter.QUERY, description="Token de identificação do provedor", required=True)
+    ]
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_plans(request):
+    """
+    Retorna os planos cadastrados pelo provedor.
+    Usa provider_token via Query Param.
+    """
+    provider_token = request.GET.get('provider_token')
+    if not provider_token:
+        return Response({'error': 'provider_token é obrigatório.'}, status=400)
+
+    from core.models import ProviderToken
+    provider = None
+    
+    # Resolve Provider via Token
+    token_obj = ProviderToken.objects.filter(token=provider_token, is_active=True).first()
+    if token_obj:
+        provider = token_obj.provider
+    else:
+        # Fallback legado
+        provider = Provider.objects.filter(sgp_token=provider_token, is_active=True).first()
+
+    if not provider:
+        return Response({'error': 'Token de provedor inválido ou inativo.'}, status=403)
+
+    try:
+        plans = Plan.objects.filter(provider=provider, is_active=True).order_by('price')
+        data = []
+        for p in plans:
+            data.append({
+                'id': str(p.id),
+                'name': p.name,
+                'type': p.type,
+                'download_speed': p.download_speed,
+                'upload_speed': p.upload_speed,
+                'price': float(p.price),
+                'price_display': f"R$ {p.price}".replace('.', ','),
+                'description': p.description
+            })
+        return Response(data)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+@extend_schema(tags=['SuperAdmin'])
 @api_view(['GET', 'POST'])
 @user_passes_test(is_superuser)
 def users_api(request):
@@ -162,6 +218,7 @@ def users_api(request):
         except Exception as e:
             return Response({'error': str(e)}, status=500)
 
+@extend_schema(tags=['SuperAdmin'])
 @api_view(['DELETE', 'POST', 'PUT'])
 @user_passes_test(is_superuser)
 def user_detail_api(request, pk):
@@ -238,6 +295,7 @@ def user_detail_api(request, pk):
         except Exception as e:
             return Response({'error': str(e)}, status=500)
 
+@extend_schema(tags=['Panel'])
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_sgp_integration(request):
@@ -266,6 +324,7 @@ def get_sgp_integration(request):
         'webhook_url': webhook_url
     })
 
+@extend_schema(tags=['Panel'])
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def generate_sgp_token(request):
@@ -285,6 +344,14 @@ def generate_sgp_token(request):
         'created_at': token_obj.created_at.strftime('%d/%m/%Y %H:%M:%S')
     }, status=201)
 
+@extend_schema(
+    tags=['Public'],
+    summary="Configurações visuais do App",
+    description="Retorna cores, logo, atalhos ativos e links sociais do provedor para personalização dinâmica do App.",
+    parameters=[
+        OpenApiParameter(name='provider_token', type=str, location=OpenApiParameter.QUERY, description="Token de identificação do provedor", required=True)
+    ]
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_app_configuration(request):
@@ -318,6 +385,7 @@ def get_app_configuration(request):
         response_data = {
             'provider_id': provider.id,
             'provider_name': provider.name,
+            'provider_phone': provider.number,
             'primary_color': provider.primary_color,
             'logo_url': request.build_absolute_uri(provider.logo.url) if provider.logo else None,
             'active_shortcuts': app_config.active_shortcuts,
@@ -331,6 +399,25 @@ def get_app_configuration(request):
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
+@extend_schema(
+    tags=['App'],
+    summary="Registrar usuário do App",
+    description="Registra ou atualiza as informações do usuário e do dispositivo após o login no SGP.",
+    request=inline_serializer(
+        name='RegisterAppUserRequest',
+        fields={
+            'provider_token': serializers.CharField(help_text="Token sk_live_... do provedor"),
+            'cpf': serializers.CharField(help_text="CPF ou CNPJ do cliente"),
+            'name': serializers.CharField(required=False, help_text="Nome do cliente"),
+            'email': serializers.EmailField(required=False, help_text="E-mail do cliente"),
+            'customer_id': serializers.CharField(required=False, help_text="ID do cliente no SGP"),
+            'device_platform': serializers.ChoiceField(choices=['android', 'ios'], required=False),
+            'device_model': serializers.CharField(required=False),
+            'device_os': serializers.CharField(required=False),
+            'push_token': serializers.CharField(required=False, help_text="Token para notificações Push"),
+        }
+    )
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_app_user(request):
@@ -411,6 +498,16 @@ def register_app_user(request):
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
+@extend_schema(
+    tags=['Public'],
+    summary="Avisos In-App",
+    description="Retorna avisos e alertas configurados para serem exibidos dentro do aplicativo para clientes específicos ou gerais.",
+    parameters=[
+        OpenApiParameter(name='provider_token', type=str, location=OpenApiParameter.QUERY, description="Token de identificação do provedor", required=True),
+        OpenApiParameter(name='cpf', type=str, location=OpenApiParameter.QUERY, description="CPF do cliente para filtrar avisos direcionados"),
+        OpenApiParameter(name='contract_id', type=str, location=OpenApiParameter.QUERY, description="ID do contrato para filtrar avisos direcionados")
+    ]
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_in_app_warnings(request):

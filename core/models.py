@@ -216,3 +216,26 @@ class SystemSettings(models.Model):
     class Meta:
         verbose_name = "Configuração Global"
         verbose_name_plural = "Configurações Globais"
+
+class Plan(models.Model):
+    TYPE_CHOICES = [
+        ('FIBRA', 'Fibra Óptica'),
+        ('RADIO', 'Rádio'),
+        ('CABO', 'Cabo'),
+    ]
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='plans')
+    name = models.CharField(max_length=255, verbose_name="Nome do Plano")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='FIBRA', verbose_name="Tipo de Tecnologia")
+    download_speed = models.IntegerField(verbose_name="Velocidade Download (Mbps)")
+    upload_speed = models.IntegerField(verbose_name="Velocidade Upload (Mbps)")
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Preço Mensal")
+    description = models.TextField(blank=True, verbose_name="Descrição Detalhada", help_text="O que está incluso no plano")
+    is_active = models.BooleanField(default=True, verbose_name="Ativo")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.provider.name}"
+
+    class Meta:
+        verbose_name = "Plano"
+        verbose_name_plural = "Planos"
