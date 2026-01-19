@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-xl font-bold text-white mb-1">Configurar Planos</h2>
+            <p class="text-sm text-gray-400">Cadastre e gerencie os planos que aparecem para seus clientes no app.</p>
+        </div>
+        <button onclick="openModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors shadow-lg flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Novo Plano
+        </button>
+    </div>
+
+    <!-- Plans Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for plan in plans %}
+        <div class="glass-panel rounded-2xl border border-gray-700 shadow-xl overflow-hidden group">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-500">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a10 10 0 0114.142 0M2.828 9.9a15 10 0 0121.214 0"></path></svg>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editPlan('{{ plan.id }}', '{{ plan.name }}', '{{ plan.type }}', '{{ plan.download_speed }}', '{{ plan.upload_speed }}', '{{ plan.price }}', '{{ plan.description|escapejs }}', {{ plan.is_active|yesno:'true,false' }})" class="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                        <a href="{% url 'delete_plan' plan.id %}" onclick="return confirm('Tem certeza que deseja excluir este plano?')" class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-500 rounded-lg transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </a>
+                    </div>
+                </div>
+                
+                <h3 class="text-xl font-bold text-white mb-1">{{ plan.name }}</h3>
+                <span class="inline-block px-2 py-1 rounded bg-blue-600 text-[10px] font-bold text-white uppercase mb-4">{{ plan.get_type_display }}</span>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6 py-4 border-y border-gray-700">
+                    <div>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">Download</p>
+                        <p class="text-lg font-bold text-white">{{ plan.download_speed }} Mbps</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">Upload</p>
+                        <p class="text-lg font-bold text-white">{{ plan.upload_speed }} Mbps</p>
+                    </div>
+                </div>
+
+                <div class="text-center mb-6">
+                    <p class="text-xs text-gray-500 mb-1">Por apenas</p>
+                    <p class="text-3xl font-black text-white">R$ {{ plan.price }}</p>
+                </div>
+
+                {% if plan.description %}
+                <div class="bg-gray-900/50 rounded-lg p-3">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Descrição (Botão Detalhes)</p>
+                    <p class="text-xs text-gray-400 italic">"{{ plan.description|truncatechars:100 }}"</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="px-6 py-3 bg-gray-800/50 flex items-center justify-between">
+                <span class="text-[10px] font-bold {% if plan.is_active %}text-green-500{% else %}text-red-500{% endif %} uppercase">
+                    {% if plan.is_active %}● Ativo no App{% else %}● Inativo{% endif %}
+                </span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center glass-panel rounded-2xl border border-dashed border-gray-700">
+            <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+            <h3 class="text-lg font-bold text-white">Nenhum plano cadastrado</h3>
+            <p class="text-gray-500">Comece cadastrando seu primeiro plano de internet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="planModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-black opacity-75"></div>
+        </div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom glass-panel border border-gray-700 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form method="POST" action="{% url 'provider_plans' %}">
+                {% csrf_token %}
+                <input type="hidden" name="plan_id" id="modal_plan_id">
+                <div class="p-6">
+                    <h3 class="text-lg font-bold text-white mb-6" id="modalTitle">Novo Plano</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Plano</label>
+                            <input type="text" name="name" id="modal_name" required placeholder="Ex: FIBRA 100 MEGA START" 
+                                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tecnologia</label>
+                                <select name="type" id="modal_type" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none">
+                                    <option value="FIBRA">Fibra Óptica</option>
+                                    <option value="RADIO">Rádio</option>
+                                    <option value="CABO">Cabo</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Preço Mensal (R$)</label>
+                                <input type="number" step="0.01" name="price" id="modal_price" required placeholder="89.90" 
+                                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Download (Mbps)</label>
+                                <input type="number" name="download_speed" id="modal_download" required placeholder="100" 
+                                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Upload (Mbps)</label>
+                                <input type="number" name="upload_speed" id="modal_upload" required placeholder="50" 
+                                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descrição (Aparece em Detalhes)</label>
+                            <textarea name="description" id="modal_description" rows="4" placeholder="Descreva o que está incluso no plano..." 
+                                      class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none"></textarea>
+                        </div>
+
+                        <div class="flex items-center">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="is_active" id="modal_active" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                <span class="ml-3 text-sm font-bold text-gray-400 uppercase">Ativo no App</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-800/50 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white font-bold transition-colors uppercase text-xs">Cancelar</button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors shadow-lg uppercase text-xs">Salvar Plano</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openModal() {
+    document.getElementById('modal_plan_id').value = '';
+    document.getElementById('modal_name').value = '';
+    document.getElementById('modal_type').value = 'FIBRA';
+    document.getElementById('modal_price').value = '';
+    document.getElementById('modal_download').value = '';
+    document.getElementById('modal_upload').value = '';
+    document.getElementById('modal_description').value = '';
+    document.getElementById('modal_active').checked = true;
+    document.getElementById('modalTitle').innerText = 'Novo Plano';
+    document.getElementById('planModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('planModal').classList.add('hidden');
+}
+
+function editPlan(id, name, type, download, upload, price, description, active) {
+    document.getElementById('modal_plan_id').value = id;
+    document.getElementById('modal_name').value = name;
+    document.getElementById('modal_type').value = type;
+    document.getElementById('modal_price').value = price.replace(',', '.');
+    document.getElementById('modal_download').value = download;
+    document.getElementById('modal_upload').value = upload;
+    document.getElementById('modal_description').value = description;
+    document.getElementById('modal_active').checked = active;
+    document.getElementById('modalTitle').innerText = 'Editar Plano';
+    document.getElementById('planModal').classList.remove('hidden');
+}
+</script>
+{% endblock %}

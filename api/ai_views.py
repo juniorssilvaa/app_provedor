@@ -2,6 +2,8 @@ from google import genai as genai_v2
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers
 from django.conf import settings
 from core.models import AppUser, Provider, NetworkTelemetry, AIChatSession, AIChatMessage, ProviderToken, SystemSettings
 import json
@@ -97,6 +99,7 @@ def abrir_chamado_tecnico(provider, contrato_id, motivo):
     except Exception as e:
         return {"error": str(e)}
 
+@extend_schema(tags=['AI'])
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def network_telemetry_api(request):
@@ -136,6 +139,20 @@ def network_telemetry_api(request):
 
     return Response({'success': True, 'telemetry_id': telemetry.id})
 
+@extend_schema(
+    tags=['AI'],
+    summary="Chat com IA",
+    description="Inicia ou continua uma conversa com o assistente inteligente do provedor.",
+    request=inline_serializer(
+        name='AIChatRequest',
+        fields={
+            'provider_token': serializers.CharField(help_text="Token sk_live_... do provedor"),
+            'cpf': serializers.CharField(help_text="CPF do cliente"),
+            'message': serializers.CharField(help_text="Mensagem enviada pelo usuário"),
+            'session_id': serializers.IntegerField(required=False, help_text="ID da sessão anterior (opcional)")
+        }
+    )
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def ai_chat_api(request):
