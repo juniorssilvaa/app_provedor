@@ -3,7 +3,7 @@ version: "3.8"
 services:
 
   # ===============================
-  # 🐘 POSTGRESQL (Banco de dados exclusivo para este App)
+  # 🐘 POSTGRESQL (Banco de dados exclusivo)
   # ===============================
   postgres:
     image: postgres:14
@@ -22,7 +22,7 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app_user} -d ${POSTGRES_DB:-app_provedor_db}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -51,16 +51,12 @@ services:
     command: gunicorn niochat.wsgi:application --bind 0.0.0.0:8000 --workers 3
     labels:
       - "traefik.enable=true"
-      # Rota para o Painel Administrativo
-      - "traefik.http.routers.app-provedor-painel.rule=Host(`painel.niochat.com.br`)"
-      - "traefik.http.routers.app-provedor-painel.entrypoints=websecure"
-      - "traefik.http.routers.app-provedor-painel.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.app-provedor-painel.loadbalancer.server.port=8000"
-      # Rota para as APIs
-      - "traefik.http.routers.app-provedor-apis.rule=Host(`apis.niochat.com.br`)"
-      - "traefik.http.routers.app-provedor-apis.entrypoints=websecure"
-      - "traefik.http.routers.app-provedor-apis.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.app-provedor-apis.loadbalancer.server.port=8000"
+      # Rota unificada para Painel e APIs
+      - "traefik.http.routers.app-provedor-backend.rule=Host(`painel.niochat.com.br`) || Host(`apis.niochat.com.br`)"
+      - "traefik.http.routers.app-provedor-backend.entrypoints=websecure"
+      - "traefik.http.routers.app-provedor-backend.tls.certresolver=letsencryptresolver"
+      - "traefik.http.routers.app-provedor-backend.priority=10"
+      - "traefik.http.services.app-provedor-backend.loadbalancer.server.port=8000"
     restart: always
 
   # ===============================
@@ -80,10 +76,11 @@ services:
     command: uvicorn webhook_server:app --host 0.0.0.0 --port 8001
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app-provedor-webhooks.rule=Host(`webhooks.niochat.com.br`)"
-      - "traefik.http.routers.app-provedor-webhooks.entrypoints=websecure"
-      - "traefik.http.routers.app-provedor-webhooks.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.app-provedor-webhooks.loadbalancer.server.port=8001"
+      - "traefik.http.routers.app-provedor-webhook.rule=Host(`webhooks.niochat.com.br`)"
+      - "traefik.http.routers.app-provedor-webhook.entrypoints=websecure"
+      - "traefik.http.routers.app-provedor-webhook.tls.certresolver=letsencryptresolver"
+      - "traefik.http.routers.app-provedor-webhook.priority=10"
+      - "traefik.http.services.app-provedor-webhook.loadbalancer.server.port=8001"
     restart: always
 
 networks:
