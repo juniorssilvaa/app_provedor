@@ -326,8 +326,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         // 1. Atualiza as configurações do App (Botões, Cores, etc.)
         await refreshConfig();
         // 2. Atualiza dados do usuário (Faturas, Contratos, etc.)
-        if (user?.cpfCnpj) {
-          const updatedUser = await sgpService.consultaCliente(user.cpfCnpj);
+        const currentCpf = user?.cpfCnpj;
+        if (currentCpf) {
+          const updatedUser = await sgpService.consultaCliente(currentCpf);
           if (updatedUser) {
             await updateUser(updatedUser);
           }
@@ -340,7 +341,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     refreshData();
-  }, [user?.cpfCnpj, updateUser, refreshConfig]);
+  }, [user, updateUser, refreshConfig]);
 
   React.useEffect(() => {
     const loadServiceAccess = async () => {
