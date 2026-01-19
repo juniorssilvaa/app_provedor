@@ -107,7 +107,20 @@ jobs:
           BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
           WEBHOOK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:latest
         run: |
+          echo "Fetching stacks from $PORTAINER_URL/api/stacks..."
           STACKS=$(curl -s -H "X-API-Key: $PORTAINER_API_KEY" "$PORTAINER_URL/api/stacks")
+          
+          # Debug: Mostrar a resposta crua para entender o erro
+          echo "DEBUG: Portainer Response Body:"
+          echo "$STACKS"
+          
+          # Verifica se a resposta é um array JSON (começa com [)
+          if [[ ! "$STACKS" =~ ^\[ ]]; then
+             echo "❌ Erro: A resposta do Portainer não é uma lista de stacks válida."
+             echo "Verifique se a PORTAINER_API_KEY está correta e tem permissões."
+             exit 1
+          fi
+
           STACK_ID=$(echo "$STACKS" | jq -r '.[] | select(.Name=="app_provedor") | .Id')
           
           # Se a stack não existir, você pode precisar criar ou apenas logar o erro
