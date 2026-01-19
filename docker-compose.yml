@@ -41,7 +41,7 @@ services:
     volumes:
       - app-provedor-media:/app/media
       - app-provedor-static:/app/staticfiles
-      - ./firebase-credentials.json:/app/service_account_key.json
+      - /opt/app_provedor/firebase-credentials.json:/app/service_account_key.json
     environment:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG}
@@ -74,7 +74,7 @@ services:
     networks:
       - nioNet
     volumes:
-      - ./firebase-credentials.json:/app/service_account_key.json
+      - /opt/app_provedor/firebase-credentials.json:/app/service_account_key.json
     environment:
       FIREBASE_CREDENTIALS: /app/service_account_key.json
     command: uvicorn webhook_server:app --host 0.0.0.0 --port 8001
