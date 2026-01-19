@@ -11,6 +11,8 @@ urlpatterns = [
     # Dashboard
     path('', views.dashboard, name='dashboard'),
     path('users/', views.user_list, name='user_list'),
+    path('panel/users/', views.panel_user_list, name='panel_user_list'),
+    path('panel/users/<int:pk>/delete/', views.panel_user_delete, name='panel_user_delete'),
     path('notifications/', views.notification_list, name='notification_list'),
     path('warnings/', views.in_app_warnings, name='in_app_warnings'),
     path('warnings/<int:pk>/delete/', views.delete_in_app_warning, name='delete_in_app_warning'),

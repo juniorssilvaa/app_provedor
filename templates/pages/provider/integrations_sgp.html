@@ -92,22 +92,31 @@
                 <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
                     <p>Para integrar com o SGP, configure um novo webhook com as seguintes informações:</p>
                     <ol class="list-decimal pl-5 space-y-2">
-                        <li><strong>URL:</strong> Use a URL do Webhook fornecida acima.</li>
+                        <li><strong>URL:</strong> Use a URL do Webhook fornecida acima. Certifique-se de que ela contenha o seu <code class="font-mono text-sm bg-gray-200 dark:bg-dark-700 px-1 rounded">provider_token</code>.</li>
                         <li><strong>Método HTTP:</strong> POST</li>
                         <li>
                             <strong>Corpo da Requisição (Body):</strong> O corpo da requisição deve ser um JSON contendo o seu token de integração.
                         </li>
                     </ol>
-                    <p class="mt-4"><strong>Exemplo do corpo da requisição (JSON):</strong></p>
-                    <pre class="bg-gray-100 dark:bg-dark-700 p-4 rounded-md text-sm"><code class="language-json">{
-    "provider_token": "SEU_TOKEN_DE_INTEGRACAO_AQUI",
+                    <p class="mt-4"><strong>Exemplo de configuração no SGP (JSON):</strong></p>
+                    <div class="relative group">
+                        <pre id="json-example" class="bg-gray-100 dark:bg-dark-700 p-4 rounded-md text-sm overflow-x-auto"><code class="language-json">{
+  "url": "https://webhooks.niochat.com.br/api/webhooks/sgp/?provider_id={{ provider.id }}&provider_token=SEU_TOKEN_AQUI&do_post=true&message_title=Aviso%20Importante",
+  "method": "POST",
+  "body": {
     "event_type": "new_message",
     "data": {
-        "customer_id": "12345",
-        "message_title": "Sua fatura de Junho chegou!",
-        "message_body": "Clique para visualizar e pagar sua fatura."
+      "info": "Payload opcional enviado pelo SGP"
     }
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  }
 }</code></pre>
+                        <button onclick="copyExample()" class="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                            Copiar Exemplo
+                        </button>
+                    </div>
                     <p class="mt-4">
                         O campo <code class="font-mono text-sm bg-gray-200 dark:bg-dark-700 px-1 rounded">provider_token</code> é <strong>obrigatório</strong> e nos ajuda a identificar seu provedor para enviar a notificação push para os clientes corretos.
                     </p>
@@ -267,6 +276,11 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.classList.add('hidden');
         });
     });
+
+    window.copyExample = function() {
+        const example = document.getElementById('json-example').textContent;
+        copyToClipboard(example, 'Exemplo JSON');
+    };
 
     fetchIntegrationData();
 });
