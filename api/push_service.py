@@ -53,9 +53,22 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
 
     if not tokens:
         # Debug detalhado para entender por que não encontrou
-        total_devices = Device.objects.filter(provider_id=provider_id, active=True).count()
-        print(f"[{source}] Nenhum token válido encontrado para Provider {provider_id} (Target: {target_customer_id}). Dispositivos ativos totais: {total_devices}")
-        return {'status': 'skipped', 'reason': 'no_devices_found'}
+        total_devices = Device.objects.filter(provider_id=provider_id).count()
+        active_devices = Device.objects.filter(provider_id=provider_id, active=True).count()
+        devices_with_token = Device.objects.filter(provider_id=provider_id).exclude(push_token__isnull=True).exclude(push_token='').count()
+        
+        print(f"[{source}] Falha no envio: Nenhum dispositivo com token encontrado para Provider {provider_id}.")
+        print(f"DEBUG: Total={total_devices}, Ativos={active_devices}, Com Token={devices_with_token}")
+        
+        return {
+            'status': 'skipped', 
+            'reason': 'no_devices_found',
+            'debug': {
+                'total': total_devices,
+                'active': active_devices,
+                'with_token': devices_with_token
+            }
+        }
 
     # 2. Prepara Mensagem Multicast
     # O FCM suporta até 500 tokens por envio multicast.

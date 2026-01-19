@@ -380,7 +380,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={() => (navigation as any).openDrawer?.()}>
           <Image
-            source={require('../../assets/icon.png')}
+            source={require('../../assets/logo_home.png')}
             style={{ width: 450, height: 110, marginLeft: 40 }}
             resizeMode="contain"
           />
@@ -536,7 +536,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </View>
 
         {/* AI Assistant Card */}
-        {isToolActive('DOWN DETECTOR') && (
+        {isToolActive('AGENTE DE IA') && (
           <View style={styles.downdetectorCard}>
             <View style={styles.downdetectorHeader}>
               <MaterialCommunityIcons name="robot" size={24} color={colors.primary} />

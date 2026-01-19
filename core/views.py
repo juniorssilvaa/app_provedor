@@ -7,7 +7,7 @@ from django import forms
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib import messages
-from .models import Provider, Notification, InAppWarning, AppConfig, AppUser, SystemSettings, Plan
+from .models import Provider, Notification, InAppWarning, AppConfig, AppUser, SystemSettings, Plan, CustomUser
 from api.push_service import send_push_notification_core
 
 
@@ -153,6 +153,84 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 @login_required
+def panel_user_list(request):
+    blocked = check_active(request)
+    if blocked: return blocked
+    
+    provider = request.user.provider
+    if not provider:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'create':
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+            email = request.POST.get('email')
+            
+            if not username or not password:
+                messages.error(request, 'Usuário e senha são obrigatórios.')
+            elif CustomUser.objects.filter(username=username).exists():
+                messages.error(request, 'Este nome de usuário já está em uso.')
+            else:
+                CustomUser.objects.create_user(
+                    username=username,
+                    password=password,
+                    email=email,
+                    provider=provider
+                )
+                messages.success(request, f'Usuário {username} criado com sucesso!')
+                return redirect('panel_user_list')
+        
+        elif action == 'edit':
+            user_id = request.POST.get('user_id')
+            user_to_edit = get_object_or_404(CustomUser, pk=user_id, provider=provider)
+            
+            new_username = request.POST.get('username')
+            new_password = request.POST.get('password')
+            new_email = request.POST.get('email')
+            
+            if new_username:
+                if CustomUser.objects.filter(username=new_username).exclude(pk=user_id).exists():
+                    messages.error(request, 'Este nome de usuário já está em uso.')
+                else:
+                    user_to_edit.username = new_username
+            
+            if new_email is not None:
+                user_to_edit.email = new_email
+                
+            if new_password:
+                user_to_edit.set_password(new_password)
+                
+            user_to_edit.save()
+            messages.success(request, f'Usuário {user_to_edit.username} atualizado com sucesso!')
+            return redirect('panel_user_list')
+
+    users = CustomUser.objects.filter(provider=provider).order_by('-date_joined')
+    return render(request, 'provider_users.html', {
+        'segment': 'panel_users',
+        'users': users
+    })
+
+@login_required
+def panel_user_delete(request, pk):
+    blocked = check_active(request)
+    if blocked: return blocked
+    
+    provider = request.user.provider
+    user_to_delete = get_object_or_404(CustomUser, pk=pk, provider=provider)
+    
+    if user_to_delete == request.user:
+        messages.error(request, 'Você não pode excluir seu próprio usuário.')
+    else:
+        username = user_to_delete.username
+        user_to_delete.delete()
+        messages.success(request, f'Usuário {username} excluído com sucesso!')
+        
+    return redirect('panel_user_list')
+
+@login_required
 def user_list(request):
     blocked = check_active(request)
     if blocked: return blocked
@@ -256,6 +334,15 @@ def notification_list(request):
                 )
                 
                 messages.success(request, f"Notificação processada! Enviados: {sent}, Falhas: {failed}")
+            elif result.get('reason') == 'no_devices_found':
+                debug = result.get('debug', {})
+                msg = "Nenhum dispositivo encontrado para receber esta mensagem."
+                if debug.get('total', 0) == 0:
+                    msg = "Erro: Não há nenhum dispositivo vinculado ao seu provedor. Verifique se o Token de Integração no Aplicativo está configurado corretamente."
+                elif debug.get('with_token', 0) == 0:
+                    msg = "Existem clientes cadastrados, mas nenhum possui um token de push válido no momento."
+                
+                messages.warning(request, msg)
             else:
                 messages.warning(request, f"Resultado do envio: {result.get('status')} - {result.get('reason', '')}")
                 
@@ -346,7 +433,7 @@ def app_config(request):
             'CHAMADOS', 'TERMOS'
         ],
         'all_tools': [
-            'MEU WI-FI', 'MEU ROTEADOR', 'DOWN DETECTOR', 
+            'MEU WI-FI', 'MEU ROTEADOR', 'AGENTE DE IA', 
             'SPEED TEST', 'FAST TEST', 'DIAGNÓSTICO WI-FI', 'CÂMERAS'
         ]
     })
@@ -407,7 +494,6 @@ def super_admin_dashboard(request):
     blocked = check_active(request)
     if blocked:
         return blocked
-    from .models import CustomUser
     from django.db.models import Count
 
     # Otimiza a consulta para buscar provedores, contar usuários de app e buscar admins relacionados
@@ -454,8 +540,6 @@ def provider_create(request):
         
         if name and username and password and cnpj and number:
             try:
-                from .models import CustomUser
-                
                 # Check if username already exists
                 if CustomUser.objects.filter(username=username).exists():
                     return render(request, 'super_admin/provider_form.html', {

@@ -14,16 +14,17 @@ Notifications.setNotificationHandler({
 });
 
 export async function registerForPushNotificationsAsync() {
-  let token;
+  let token: string | undefined;
 
-  const isStandaloneApp = Constants.appOwnership === 'standalone';
+  const isStandaloneApp = Constants.executionEnvironment === 'standalone' || Constants.executionEnvironment === 'bare';
 
   // Evita chamar APIs nativas de push em Expo Go / Dev Client (Android),
   // onde o push FCM direto não é suportado.
   if (!isStandaloneApp) {
     console.log(
-      '[Push] Registro de token FCM ignorado (app não está em modo standalone).'
+      '[Push] Registro de token FCM ignorado (app não está em modo standalone/bare).'
     );
+    // Para testes locais (Expo Go), retornamos undefined ou um token dummy se necessário
     return;
   }
 

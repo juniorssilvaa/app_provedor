@@ -315,7 +315,14 @@ def get_sgp_integration(request):
     # Construindo a URL base de forma dinâmica
     scheme = request.is_secure() and "https" or "http"
     host = request.get_host()
-    webhook_url = f"{scheme}://{host}/webhooks/sgp/"
+    
+    # Ajuste para produção: Se o acesso for via painel, o webhook deve apontar para o subdomínio correto
+    if "painel.niochat.com.br" in host:
+        host = "webhooks.niochat.com.br"
+        scheme = "https"
+        
+    # Importante: Todas as rotas da api.urls estão sob o prefixo /api/ no niochat/urls.py
+    webhook_url = f"{scheme}://{host}/api/webhooks/sgp/"
 
     return Response({
         'provider_token': active_token,
@@ -459,24 +466,29 @@ def register_app_user(request):
                 'name': name,
                 'email': email,
                 'active': True,
-                'customer_id': data.get('customer_id') # Salva ID SGP
+                'customer_id': data.get('customer_id') or data.get('external_id') # Salva ID SGP
             }
         )
 
         # Register Device
-        device_platform = data.get('device_platform')
-        device_model = data.get('device_model')
-        device_os = data.get('device_os')
+        device_platform = data.get('device_platform') or data.get('platform')
+        device_model = data.get('device_model') or data.get('model')
+        device_os = data.get('device_os') or data.get('os_version')
         device_timestamp = data.get('device_timestamp')
-        push_token = data.get('push_token')
+        push_token = data.get('push_token') or data.get('fcm_token')
         
-        print(f"DEBUG: register_app_user called for {cpf}. Push Token Present: {bool(push_token)}")
+        print(f"DEBUG: register_app_user for {cpf_limpo}. Push Token: {bool(push_token)}")
 
         if device_platform and device_model:
+            # Garante que o push_token seja único por provedor, removendo de outros usuários se necessário
+            if push_token:
+                Device.objects.filter(provider=provider, push_token=push_token).exclude(user=user).delete()
+
             defaults = {
                 'os_version': device_os or 'Unknown',
                 'active': True,
-                'provider': user.provider
+                'provider': provider,
+                'last_active': timezone.now()
             }
             
             if push_token:

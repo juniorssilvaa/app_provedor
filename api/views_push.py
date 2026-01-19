@@ -397,6 +397,20 @@ def admin_send_push(request):
             source='admin_panel'
         )
         
+        if result.get('status') == 'skipped':
+            debug = result.get('debug', {})
+            msg = "Nenhum dispositivo encontrado para receber esta mensagem."
+            if debug.get('total', 0) > 0 and debug.get('with_token', 0) == 0:
+                msg = "Existem dispositivos cadastrados, mas nenhum possui Token de Push válido. Peça aos clientes para atualizarem o app."
+            elif debug.get('total', 0) == 0:
+                msg = "Não há nenhum dispositivo vinculado ao seu provedor. Verifique se o Token de Integração no App está correto."
+            
+            return Response({
+                'status': 'error',
+                'message': msg,
+                'debug': debug
+            }, status=200) # Retornamos 200 para o painel tratar a mensagem amigavelmente
+        
         return Response(result)
 
     except Exception as e:
