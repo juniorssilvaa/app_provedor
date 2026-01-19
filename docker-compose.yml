@@ -41,12 +41,13 @@ services:
     volumes:
       - app-provedor-media:/app/media
       - app-provedor-static:/app/staticfiles
+      - ./firebase-credentials.json:/app/service_account_key.json
     environment:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      FIREBASE_CREDENTIALS: /app/firebase-credentials.json
+      FIREBASE_CREDENTIALS: /app/service_account_key.json
     command: gunicorn niochat.wsgi:application --bind 0.0.0.0:8000 --workers 3
     labels:
       - "traefik.enable=true"
@@ -72,8 +73,10 @@ services:
       - app-provedor-backend
     networks:
       - nioNet
+    volumes:
+      - ./firebase-credentials.json:/app/service_account_key.json
     environment:
-      FIREBASE_CREDENTIALS: /app/firebase-credentials.json
+      FIREBASE_CREDENTIALS: /app/service_account_key.json
     command: uvicorn webhook_server:app --host 0.0.0.0 --port 8001
     labels:
       - "traefik.enable=true"
