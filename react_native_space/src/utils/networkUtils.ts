@@ -13,46 +13,9 @@ export interface NetworkInfo {
   linkSpeed: number | null;
   rxLinkSpeed: number | null;
   txLinkSpeed: number | null;
-  latency: number | null;
-  jitter: number | null;
-  packetLoss: number | null;
 }
 
 NetInfo.configure({ shouldFetchWiFiSSID: true });
-
-const measureLatency = async (): Promise<{ latency: number; jitter: number; loss: number }> => {
-  const samples: number[] = [];
-  let lost = 0;
-  const target = 'https://www.google.com/favicon.ico';
-  
-  for (let i = 0; i < 5; i++) {
-    const start = Date.now();
-    try {
-      const response = await fetch(target, { method: 'HEAD', cache: 'no-cache' });
-      if (response.ok) {
-        samples.push(Date.now() - start);
-      } else {
-        lost++;
-      }
-    } catch (e) {
-      lost++;
-    }
-  }
-
-  if (samples.length === 0) return { latency: null, jitter: null, loss: 100 };
-
-  const avgLatency = samples.reduce((a, b) => a + b, 0) / samples.length;
-  
-  // Basic Jitter calculation (average difference between consecutive samples)
-  let totalDiff = 0;
-  for (let i = 1; i < samples.length; i++) {
-    totalDiff += Math.abs(samples[i] - samples[i - 1]);
-  }
-  const jitter = samples.length > 1 ? totalDiff / (samples.length - 1) : 0;
-  const loss = (lost / 5) * 100;
-
-  return { latency: Math.round(avgLatency), jitter: Math.round(jitter), loss };
-};
 
 let didRequestForegroundLocationPermission = false;
 
@@ -101,8 +64,6 @@ export const getNetworkInfo = async (
 
     if (ssid === 'Wi-Fi' || ssid === '<unknown ssid>') ssid = null;
 
-    const quality = await measureLatency();
-
     return {
       ssid,
       ipAddress,
@@ -114,9 +75,6 @@ export const getNetworkInfo = async (
       linkSpeed,
       rxLinkSpeed,
       txLinkSpeed,
-      latency: quality.latency,
-      jitter: quality.jitter,
-      packetLoss: quality.loss,
     };
   } catch (error) {
     console.error('Error fetching network info:', error);
@@ -131,9 +89,6 @@ export const getNetworkInfo = async (
       linkSpeed: null,
       rxLinkSpeed: null,
       txLinkSpeed: null,
-      latency: null,
-      jitter: null,
-      packetLoss: null,
     };
   }
 };

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Modal, FlatList, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { sgpService } from '../services/sgpService';
 import { CustomHeader } from '../components/CustomHeader';
@@ -10,9 +10,8 @@ import { SGPTipoOcorrencia } from '../types';
 
 export const SupportFormScreen = () => {
   const navigation = useNavigation();
-  const { user, activeContract } = useAuth();
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { user } = useAuth();
+  const activeContract = user?.contracts?.[0];
   
   const [loading, setLoading] = useState(false);
   const [loadingTypes, setLoadingTypes] = useState(true);
@@ -208,10 +207,10 @@ export const SupportFormScreen = () => {
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.darkBackground,
   },
   content: {
     padding: 20,
@@ -224,7 +223,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: '#00BCD4',
     marginTop: 10,
     marginBottom: 5,
   },
@@ -244,9 +243,9 @@ const createStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderRadius: 8,
     padding: 12,
-    color: colors.text,
+    color: colors.white,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   textArea: {
     minHeight: 100,
@@ -259,11 +258,11 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.1)',
     marginBottom: 16,
   },
   pickerText: {
-    color: colors.text,
+    color: colors.white,
     flex: 1,
     marginRight: 10,
   },
@@ -286,7 +285,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.darkBackground,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -298,13 +297,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
     paddingBottom: 10,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
   },
   modalList: {
     width: '100%',
@@ -315,7 +314,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   modalItemText: {
     color: colors.textSecondary,
@@ -327,4 +326,4 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
 });
 
-
+export default SupportFormScreen;

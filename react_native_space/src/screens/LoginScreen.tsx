@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,17 +7,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Linking,
-  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, TextInput, Button, Checkbox, Snackbar, ActivityIndicator } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { sgpService } from '../services/sgpService';
-import { validateCPForCNPJ, maskCPForCNPJ } from '../utils/validation';
+import { validateCPForCNPJ } from '../utils/validation';
 import { LoadingOverlay } from '../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -27,43 +25,17 @@ interface Props {
   navigation: LoginScreenNavigationProp;
 }
 
-const STORAGE_CPF_KEY = '@NANET:savedCpf';
+const STORAGE_CPF_KEY = '@OnFly:savedCpf';
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const { login } = useAuth();
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
-  const [providerPhone, setProviderPhone] = useState<string | null>(null);
 
   useEffect(() => {
     loadSavedCpf();
-    loadAppConfig();
-  }, []);
-
-  const loadAppConfig = async (isRefresh = false) => {
-    try {
-      if (!isRefresh) setLoading(true);
-      const configData = await sgpService.getAppConfig();
-      if (configData && configData.provider_phone) {
-        setProviderPhone(configData.provider_phone);
-      }
-    } catch (err) {
-      console.error('Error loading app config:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    loadAppConfig(true);
   }, []);
 
   const loadSavedCpf = async () => {
@@ -100,27 +72,6 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const handleCpfCnpjChange = (text: string) => {
     const formatted = formatCpfCnpj(text);
     setCpfCnpj(formatted);
-  };
-
-  const handleHelp = () => {
-    if (providerPhone) {
-      const cleanPhone = providerPhone.replace(/\D/g, '');
-      const message = 'Olá, preciso de ajuda com o acesso ao aplicativo.';
-      const url = `whatsapp://send?phone=55${cleanPhone}&text=${encodeURIComponent(message)}`;
-      
-      Linking.canOpenURL(url).then(supported => {
-        if (supported) {
-          return Linking.openURL(url);
-        } else {
-          return Linking.openURL(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`);
-        }
-      });
-    } else {
-      // Fallback para o número fixo se não conseguir carregar o config
-      const phoneNumber = '558182337720';
-      const message = 'Olá, preciso de ajuda com o acesso ao aplicativo.';
-      Linking.openURL(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`);
-    }
   };
 
   const handleLogin = async () => {
@@ -179,14 +130,6 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
       >
         <View style={styles.logoContainer}>
           <Image
@@ -206,10 +149,8 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           <TextInput
             mode="outlined"
             label="CPF/CNPJ"
-            value={isFocused ? cpfCnpj : (cpfCnpj ? maskCPForCNPJ(cpfCnpj) : '')}
+            value={cpfCnpj}
             onChangeText={handleCpfCnpjChange}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
             keyboardType="number-pad"
             maxLength={18}
             style={styles.input}
@@ -239,7 +180,6 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             onPress={handleLogin}
             style={styles.loginButton}
             buttonColor={colors.primary}
-            textColor="#FFFFFF"
             contentStyle={styles.loginButtonContent}
             labelStyle={styles.loginButtonLabel}
             disabled={loading}
@@ -248,7 +188,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           </Button>
 
           {/* Help link */}
-          <TouchableOpacity style={styles.helpButton} onPress={handleHelp}>
+          <TouchableOpacity style={styles.helpButton}>
             <Text style={styles.helpText}>Precisa de ajuda?</Text>
           </TouchableOpacity>
         </View>
@@ -261,6 +201,10 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           >
             <Text style={styles.footerText}>Ver planos</Text>
           </TouchableOpacity>
+          <Text style={styles.footerSeparator}>•</Text>
+          <TouchableOpacity style={styles.footerButton}>
+            <Text style={styles.footerText}>Quero ser cliente</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -272,17 +216,17 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         duration={3000}
         style={styles.snackbar}
       >
-        <Text style={{ color: '#FFFFFF' }}>{error}</Text>
+        <Text style={{ color: colors.white }}>{error}</Text>
       </Snackbar>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.darkBackground,
   },
   scrollContent: {
     flexGrow: 1,
@@ -295,8 +239,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginBottom: 48,
   },
   logoImage: {
-    width: 280,
-    height: 180,
+    width: 200,
+    height: 140,
   },
   formContainer: {
     flex: 1,
@@ -304,7 +248,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
     marginBottom: 8,
   },
   subtitle: {
@@ -324,7 +268,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   checkboxLabel: {
     flex: 1,
     fontSize: 14,
-    color: colors.text,
+    color: colors.white,
     marginLeft: 8,
   },
   loginButton: {
@@ -336,7 +280,6 @@ const createStyles = (colors: any) => StyleSheet.create({
   loginButtonLabel: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   },
   helpButton: {
     alignItems: 'center',

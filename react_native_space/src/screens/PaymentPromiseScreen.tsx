@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { sgpService } from '../services/sgpService';
 
@@ -14,10 +14,11 @@ type Props = {
 };
 
 export const PaymentPromiseScreen: React.FC<Props> = ({ navigation }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const { activeContract } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  
+  // Use the first contract if multiple exist, or handle logic for selection if needed
+  const activeContract = user?.contracts?.[0];
 
   const handlePromise = async () => {
     if (!activeContract?.id) {
@@ -102,10 +103,10 @@ export const PaymentPromiseScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.darkBackground,
   },
   header: {
     flexDirection: 'row',
@@ -141,7 +142,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -154,7 +155,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     maxWidth: '90%',
   },
   infoBox: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     padding: 16,
     borderRadius: 12,
     width: '100%',
@@ -163,7 +164,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   infoTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
     marginBottom: 8,
   },
   infoText: {
@@ -186,13 +187,13 @@ const createStyles = (colors: any) => StyleSheet.create({
   buttonLabel: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.white,
   },
   termsButton: {
     padding: 12,
   },
   termsText: {
-    color: colors.text,
+    color: colors.white,
     fontSize: 14,
     fontWeight: 'bold',
     textTransform: 'uppercase',

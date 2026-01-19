@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
+import { colors } from '../theme/colors';
 import { CustomHeader } from '../components';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import { sgpService } from '../services/sgpService';
 import { UsageChart, UsageDataPoint } from '../components/UsageChart';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -22,9 +22,8 @@ interface Props {
 }
 
 export const UsageScreen: React.FC<Props> = ({ navigation }) => {
-  const { user, activeContract } = useAuth();
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { user } = useAuth();
+  const activeContract = user?.contracts?.[0];
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -56,10 +55,10 @@ export const UsageScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const load = async () => {
-    if (!user || !activeContract?.centralPassword || !activeContract?.id) return;
+    if (!user || !activeContract?.servicePassword || !activeContract?.id) return;
     setLoading(true);
     try {
-      const res = await sgpService.extratoUso(user.cpfCnpj, activeContract.id, activeContract.centralPassword, year, month);
+      const res = await sgpService.extratoUso(user.cpfCnpj, activeContract.id, activeContract.servicePassword, year, month);
       setData(res);
     } catch (error) {
       console.error(error);
@@ -170,11 +169,11 @@ export const UsageScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <MaterialCommunityIcons name="download" size={20} color={colors.text} />
+                <MaterialCommunityIcons name="download" size={20} color={colors.white} />
                 <Text style={styles.statValue}>{formatGB(item.downloadGB)}</Text>
               </View>
               <View style={styles.statItem}>
-                <MaterialCommunityIcons name="upload" size={20} color={colors.text} />
+                <MaterialCommunityIcons name="upload" size={20} color={colors.white} />
                 <Text style={styles.statValue}>{formatGB(item.uploadGB)}</Text>
               </View>
             </View>
@@ -189,10 +188,10 @@ export const UsageScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#1F222B', // Dark background
   },
   content: {
     flex: 1,
@@ -209,11 +208,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1,
     borderTopWidth: 1,
-    borderBottomWidth: 1, 
+    borderBottomWidth: 1, // Visual style similar to lines in image? Or just lines on side.
+    // The image has lines on sides of text. Let's simplify with just text for now.
     textAlign: 'center',
   },
   selectorButton: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: '#2A2E3D',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -221,12 +221,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   selectorText: {
-    color: colors.text,
+    color: colors.white,
     fontSize: 16,
     fontWeight: 'bold',
   },
   reportCard: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: '#2A2E3D',
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
@@ -251,7 +251,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginRight: 20,
   },
   statValue: {
-    color: colors.text,
+    color: colors.white,
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 8,
@@ -269,14 +269,14 @@ const createStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: '#2A2E3D',
     width: '90%',
     borderRadius: 16,
     padding: 20,
     maxHeight: '80%',
   },
   modalTitle: {
-    color: colors.text,
+    color: colors.white,
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -299,7 +299,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 5,
-    backgroundColor: colors.background,
+    backgroundColor: '#1F222B',
   },
   pickerItemActive: {
     backgroundColor: colors.primary,
@@ -309,7 +309,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     textAlign: 'center',
   },
   pickerItemTextActive: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontWeight: 'bold',
   },
   closeButton: {
@@ -320,7 +320,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   closeButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontWeight: 'bold',
   },
 });

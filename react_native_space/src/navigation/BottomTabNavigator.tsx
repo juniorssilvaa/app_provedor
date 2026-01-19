@@ -15,9 +15,10 @@ const Tab = createBottomTabNavigator<MainTabsParamList>();
 const EmptyComponent = () => null;
 
 export const BottomTabNavigator: React.FC = () => {
-  const { activeContract } = useAuth();
+  const { user } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  const activeContract = user?.contracts?.[0];
   const isSuspended = activeContract?.status === 'suspended' || activeContract?.status === 'inactive'; // Adjust status check as needed
   
   // Per user request: Green if active, Red if suspended
@@ -99,7 +100,7 @@ export const BottomTabNavigator: React.FC = () => {
       />
 
       <Tab.Screen
-        name="Support"
+        name="SupportPlaceholder"
         component={EmptyComponent} 
         options={{
           tabBarLabel: 'Suporte',
@@ -110,7 +111,7 @@ export const BottomTabNavigator: React.FC = () => {
         listeners={{
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('SupportList');
+            // Navigate to support or do nothing for now
           },
         }}
       />

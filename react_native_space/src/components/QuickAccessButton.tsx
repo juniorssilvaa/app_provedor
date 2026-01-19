@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 
 interface QuickAccessButtonProps {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
@@ -11,9 +11,6 @@ interface QuickAccessButtonProps {
 }
 
 export const QuickAccessButton: React.FC<QuickAccessButtonProps> = ({ icon, label, onPress }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <MaterialCommunityIcons name={icon} size={32} color={colors.primary} />
@@ -22,7 +19,7 @@ export const QuickAccessButton: React.FC<QuickAccessButtonProps> = ({ icon, labe
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
     borderRadius: 12,
@@ -34,7 +31,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   label: {
     marginTop: 8,
     fontSize: 12,
-    color: colors.text,
+    color: colors.white,
     textAlign: 'center',
   },
 });

@@ -1,35 +1,18 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 import { Contract } from '../types';
 
 interface ContractCardProps {
   contract: Contract;
   onPress?: () => void;
-  selected?: boolean;
 }
 
-export const ContractCard: React.FC<ContractCardProps> = ({ contract, onPress, selected }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const isSuspended = contract.status === 'suspended' || contract.status === 'inactive';
-  const statusText = isSuspended ? 'SUSPENSO' : 'ATIVO';
-  const statusBgColor = isSuspended ? 'rgba(244, 67, 54, 0.2)' : 'rgba(76, 175, 80, 0.2)';
-  const statusTextColor = isSuspended ? colors.error : colors.success;
-
+export const ContractCard: React.FC<ContractCardProps> = ({ contract, onPress }) => {
   return (
-    <TouchableOpacity
-      style={[styles.container, selected ? styles.containerSelected : undefined]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.statusBadge, { backgroundColor: statusBgColor }]}>
-        <Text style={[styles.statusText, { color: statusTextColor }]}>{statusText}</Text>
-      </View>
-
+    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.iconContainer}>
         <MaterialCommunityIcons name="file-document-outline" size={32} color={colors.primary} />
       </View>
@@ -50,7 +33,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({ contract, onPress, s
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -58,29 +41,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  containerSelected: {
-    borderColor: colors.primary,
-  },
-  statusBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700',
   },
   iconContainer: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.primary + '1A',
+    backgroundColor: 'rgba(255, 107, 0, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -91,7 +57,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   contractNumber: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
     marginBottom: 4,
   },
   clientName: {
@@ -111,13 +77,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 10,
     fontWeight: 'bold',
   },
   planName: {
     fontSize: 12,
-    color: colors.text,
+    color: colors.white,
     flex: 1,
   },
 });

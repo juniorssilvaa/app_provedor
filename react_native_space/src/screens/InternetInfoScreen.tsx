@@ -14,8 +14,8 @@ import {
 import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useIsFocused } from '@react-navigation/native';
-import { useTheme } from '../contexts/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
+import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { sgpService } from '../services/sgpService';
 import { SGPCpeResponse } from '../types';
@@ -23,9 +23,7 @@ import { getNetworkInfo, NetworkInfo } from '../utils/networkUtils';
 
 export const InternetInfoScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { user, activeContract } = useAuth();
-  const { colors } = useTheme();
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [cpeInfo, setCpeInfo] = useState<SGPCpeResponse['info'] | null>(null);
   const [networkInfo, setNetworkInfo] = useState<NetworkInfo | null>(null);
@@ -41,7 +39,7 @@ export const InternetInfoScreen: React.FC = () => {
   const [showPassword5, setShowPassword5] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const isFocused = useIsFocused();
+  const activeContract = user?.contracts?.[0];
 
   const fetchData = useCallback(async () => {
     try {
@@ -88,17 +86,6 @@ export const InternetInfoScreen: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  useEffect(() => {
-    if (isFocused) {
-      const interval = setInterval(async () => {
-        const netInfo = await getNetworkInfo({ requestLocationPermission: false });
-        setNetworkInfo(netInfo);
-      }, 2000);
-
-      return () => clearInterval(interval);
-    }
-  }, [isFocused]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -173,8 +160,8 @@ export const InternetInfoScreen: React.FC = () => {
           <View style={styles.card}>
             {/* Modem Header */}
             <View style={styles.modemHeader}>
-              <View style={[styles.modemIconContainer, { backgroundColor: colors.primary }]}>
-                <MaterialCommunityIcons name="router-wireless" size={32} color={colors.white} />
+              <View style={styles.modemIconContainer}>
+                <MaterialCommunityIcons name="router-wireless" size={32} color={colors.primary} />
               </View>
               <Text style={styles.modemTitle}>Modem</Text>
               <Text style={styles.modemModel}>{modemModel}</Text>
@@ -185,8 +172,8 @@ export const InternetInfoScreen: React.FC = () => {
             {/* Wi-Fi Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconContainer, { backgroundColor: colors.primary }]}>
-                  <MaterialCommunityIcons name="wifi" size={20} color={colors.white} />
+                <View style={styles.sectionIconContainer}>
+                  <MaterialCommunityIcons name="wifi" size={20} color={colors.primary} />
                 </View>
                 <Text style={styles.sectionTitle}>Wi-Fi</Text>
               </View>
@@ -201,13 +188,6 @@ export const InternetInfoScreen: React.FC = () => {
                   • {displaySsid5} (5 GHz)
                 </Text>
               </View>
-              {networkInfo?.strength !== null && networkInfo?.strength !== undefined && (
-                <View style={styles.itemRow}>
-                  <Text style={styles.itemLabel}>
-                    • Sinal do Dispositivo: {networkInfo.strength} dBm
-                  </Text>
-                </View>
-              )}
             </View>
 
             <View style={styles.divider} />
@@ -215,8 +195,8 @@ export const InternetInfoScreen: React.FC = () => {
             {/* Internet Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconContainer, { backgroundColor: colors.primary }]}>
-                  <MaterialCommunityIcons name="web" size={20} color={colors.white} />
+                <View style={styles.sectionIconContainer}>
+                  <MaterialCommunityIcons name="web" size={20} color={colors.primary} />
                 </View>
                 <Text style={styles.sectionTitle}>Internet</Text>
               </View>
@@ -234,8 +214,8 @@ export const InternetInfoScreen: React.FC = () => {
             {/* Devices Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconContainer, { backgroundColor: colors.primary }]}>
-                  <MaterialCommunityIcons name="cellphone" size={20} color={colors.white} />
+                <View style={styles.sectionIconContainer}>
+                  <MaterialCommunityIcons name="cellphone" size={20} color={colors.primary} />
                 </View>
                 <Text style={styles.sectionTitle}>Dispositivos</Text>
               </View>
@@ -253,8 +233,8 @@ export const InternetInfoScreen: React.FC = () => {
           {/* Wi-Fi Configuration Card */}
           <View style={[styles.card, styles.configCard]}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconContainer, { backgroundColor: colors.primary }]}>
-                <MaterialCommunityIcons name="wifi-cog" size={20} color={colors.white} />
+              <View style={styles.sectionIconContainer}>
+                <MaterialCommunityIcons name="wifi-cog" size={20} color={colors.primary} />
               </View>
               <Text style={styles.sectionTitle}>Configurar Wi-Fi</Text>
             </View>
@@ -327,7 +307,7 @@ export const InternetInfoScreen: React.FC = () => {
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator color={'#FFFFFF'} />
+                <ActivityIndicator color={colors.white} />
               ) : (
                 <Text style={styles.saveButtonText}>Salvar Alterações</Text>
               )}
@@ -340,10 +320,10 @@ export const InternetInfoScreen: React.FC = () => {
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.darkBackground,
   },
   header: {
     flexDirection: 'row',
@@ -354,7 +334,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
   },
   content: {
     flex: 1,
@@ -378,7 +358,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.primary + '1A',
+    backgroundColor: 'rgba(255, 107, 0, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
@@ -386,7 +366,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   modemTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
     marginBottom: 4,
   },
   modemModel: {
@@ -395,7 +375,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     width: '100%',
     marginVertical: 16,
   },
@@ -411,7 +391,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.background,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -419,7 +399,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.white,
   },
   itemRow: {
     marginBottom: 8,
@@ -435,7 +415,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   badge: {
-    backgroundColor: colors.primary + '33',
+    backgroundColor: 'rgba(255, 107, 0, 0.2)',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
@@ -457,28 +437,28 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontWeight: '500',
   },
   input: {
-    backgroundColor: colors.background,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 8,
     padding: 12,
-    color: colors.text,
+    color: colors.white,
     fontSize: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: 12,
   },
   passwordInput: {
     flex: 1,
     padding: 12,
-    color: colors.text,
+    color: colors.white,
     fontSize: 16,
   },
   eyeIcon: {
@@ -493,7 +473,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 16,
     fontWeight: 'bold',
   },
