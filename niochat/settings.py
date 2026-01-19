@@ -89,11 +89,19 @@ WSGI_APPLICATION = 'niochat.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
+        env='DATABASE_URL',
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
         conn_health_checks=True,
     )
 }
+
+# Se o dj_database_url não conseguir o NAME (em alguns ambientes de CI ou configs incompletas)
+if not DATABASES['default'].get('NAME'):
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 
 
 # Password validation
