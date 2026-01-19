@@ -1,16 +1,13 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native-paper';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 
 interface LoadingOverlayProps {
   message?: string;
 }
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ message = 'Carregando...' }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -21,10 +18,10 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ message = 'Carre
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(26, 31, 46, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
@@ -38,7 +35,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   message: {
     marginTop: 16,
-    color: colors.text,
+    color: colors.white,
     fontSize: 16,
   },
 });

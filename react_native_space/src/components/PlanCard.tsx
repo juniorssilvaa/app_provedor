@@ -1,20 +1,16 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 import { Plan } from '../types';
 
 interface PlanCardProps {
   plan: Plan;
-  onSelect?: () => void;
+  onPress?: () => void;
 }
 
-export const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const [showDescription, setShowDescription] = React.useState(false);
-
+export const PlanCard: React.FC<PlanCardProps> = ({ plan, onPress }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -40,7 +36,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect }) => {
         </View>
       </View>
       
-      {plan.price !== undefined && (
+      {plan.price && (
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Por apenas</Text>
           <View style={styles.priceBadge}>
@@ -48,25 +44,12 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect }) => {
           </View>
         </View>
       )}
-
-      {showDescription && plan.description && (
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.descriptionText}>{plan.description}</Text>
-        </View>
-      )}
       
       {plan.description && (
-        <TouchableOpacity 
-          style={styles.detailsButton} 
-          onPress={() => setShowDescription(!showDescription)}
-        >
-          <Text style={styles.detailsButtonText}>
-            {showDescription ? 'Ocultar Detalhes' : 'Detalhes'}
-          </Text>
-        </TouchableOpacity>
+        <Text style={styles.description}>{plan.description}</Text>
       )}
       
-      <TouchableOpacity style={styles.button} onPress={onSelect} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.button} onPress={onPress} activeOpacity={0.8}>
         <Text style={styles.buttonText}>Quero este</Text>
         <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
       </TouchableOpacity>
@@ -74,7 +57,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect }) => {
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
     borderRadius: 12,
@@ -101,7 +84,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   planName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
     marginBottom: 8,
   },
   badge: {
@@ -123,7 +106,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   speedItem: {
     flexDirection: 'row',
@@ -132,7 +115,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   speedLabel: {
     marginLeft: 8,
     fontSize: 14,
-    color: colors.text,
+    color: colors.white,
     fontWeight: '600',
   },
   priceContainer: {
@@ -155,34 +138,11 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontWeight: 'bold',
     color: colors.white,
   },
-  descriptionContainer: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  descriptionText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  detailsButton: {
+  description: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 16,
-  },
-  detailsButton: {
-    paddingVertical: 8,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  detailsButtonText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
   },
   button: {
     flexDirection: 'row',

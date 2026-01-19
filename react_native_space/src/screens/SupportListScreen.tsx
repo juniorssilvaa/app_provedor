@@ -1,18 +1,17 @@
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { sgpService } from '../services/sgpService';
 import { SGPChamado } from '../types';
 import { CustomHeader } from '../components/CustomHeader';
 
 export const SupportListScreen = () => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<any>();
-  const { user, activeContract } = useAuth();
+  const { user } = useAuth();
+  const activeContract = user?.contracts?.[0];
   const [chamados, setChamados] = useState<SGPChamado[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -45,16 +44,16 @@ export const SupportListScreen = () => {
 
   const renderItem = ({ item }: { item: SGPChamado }) => (
     <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.protocolo}>Protocolo: {item.oc_protocolo}</Text>
-          <View style={[styles.badge, { backgroundColor: item.oc_status === 0 ? colors.warning : colors.success }]}>
-            <Text style={styles.badgeText}>{item.oc_status_descricao}</Text>
-          </View>
+      <View style={styles.cardHeader}>
+        <Text style={styles.protocolo}>Protocolo: {item.oc_protocolo}</Text>
+        <View style={[styles.badge, { backgroundColor: item.oc_status === 0 ? colors.warning : colors.success }]}>
+          <Text style={styles.badgeText}>{item.oc_status_descricao}</Text>
         </View>
-        <Text style={styles.tipo}>{item.oc_tipo_descricao}</Text>
-        <Text style={styles.conteudo}>{item.oc_conteudo}</Text>
-        <Text style={styles.data}>{item.oc_data_cadastro}</Text>
       </View>
+      <Text style={styles.tipo}>{item.oc_tipo_descricao}</Text>
+      <Text style={styles.conteudo}>{item.oc_conteudo}</Text>
+      <Text style={styles.data}>{item.oc_data_cadastro}</Text>
+    </View>
   );
 
   return (
@@ -92,7 +91,7 @@ export const SupportListScreen = () => {
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.darkBackground,
@@ -180,4 +179,4 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
 });
 
-
+export default SupportListScreen;

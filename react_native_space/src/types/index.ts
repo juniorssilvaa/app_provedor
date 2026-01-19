@@ -1,8 +1,6 @@
 export interface User {
   cpfCnpj: string;
   name: string;
-  email?: string;
-  customerId?: string; // ID do cliente no SGP
   contracts: Contract[];
 }
 
@@ -14,7 +12,6 @@ export interface Contract {
   status: 'active' | 'blocked' | 'cancelled' | 'inactive' | 'pending' | 'suspended';
   invoices: Invoice[];
   servicePassword?: string;
-  centralPassword?: string;
   address?: string;
   wifiSSID?: string;
   wifiPassword?: string;
@@ -49,7 +46,6 @@ export interface Invoice {
   linkCobranca?: string;
   linhaDigitavel?: string;
   codigoPix?: string;
-  codigopix?: string; // SGP às vezes retorna em minúsculas
   numeroDocumento?: string;
 }
 
@@ -152,15 +148,13 @@ export type RootStackParamList = {
   InternetInfo: undefined;
   SupportList: undefined;
   SupportForm: undefined;
-  SpeedTest: undefined;
-  AIChat: undefined;
 };
 
 export type MainTabsParamList = {
   Home: undefined;
   Invoices: undefined;
   PaymentPromisePlaceholder: undefined;
-  Support: undefined;
+  SupportPlaceholder: undefined;
   Profile: undefined;
 };
 
@@ -189,7 +183,6 @@ export interface SGPClientResponse {
     planointernet?: string;
     contratoStatusDisplay?: string;
     dataCadastro?: string;
-    contratoCentralSenha?: string;
     [key: string]: any;
   }>;
 }
@@ -222,8 +215,7 @@ export interface SGPTitulosResponse {
     link: string;
     link_cobranca: string;
     linhaDigitavel: string;
-    codigoPix?: string;
-    codigopix?: string; // SGP às vezes retorna em minúsculas
+    codigoPix: string;
     numeroDocumento: string;
   }>;
 }

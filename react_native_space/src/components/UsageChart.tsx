@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, LayoutChangeEvent, Text } from 'react-native';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Line, G } from 'react-native-svg';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 
 export interface UsageDataPoint {
   date: string;
@@ -15,8 +15,6 @@ interface UsageChartProps {
 }
 
 export const UsageChart: React.FC<UsageChartProps> = ({ data }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const [dimensions, setDimensions] = useState({ width: 0, height: 200 });
   const padding = { top: 20, right: 20, bottom: 40, left: 40 };
 
@@ -129,7 +127,7 @@ export const UsageChart: React.FC<UsageChartProps> = ({ data }) => {
           <Text style={styles.legendText}>Download</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: colors.text }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.white }]} />
           <Text style={styles.legendText}>Upload</Text>
         </View>
       </View>
@@ -141,8 +139,8 @@ export const UsageChart: React.FC<UsageChartProps> = ({ data }) => {
             <Stop offset="1" stopColor={colors.primary} stopOpacity="0.0" />
           </LinearGradient>
           <LinearGradient id="uploadGradient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={colors.text} stopOpacity="0.3" />
-            <Stop offset="1" stopColor={colors.text} stopOpacity="0.0" />
+            <Stop offset="0" stopColor={colors.white} stopOpacity="0.3" />
+            <Stop offset="1" stopColor={colors.white} stopOpacity="0.0" />
           </LinearGradient>
         </Defs>
 
@@ -154,7 +152,7 @@ export const UsageChart: React.FC<UsageChartProps> = ({ data }) => {
               y1={line.y}
               x2={width - padding.right}
               y2={line.y}
-              stroke={colors.border}
+              stroke="rgba(255,255,255,0.1)"
               strokeDasharray="5, 5"
             />
           </G>
@@ -166,13 +164,13 @@ export const UsageChart: React.FC<UsageChartProps> = ({ data }) => {
 
         {/* Upload Area & Line */}
         <Path d={uploadArea} fill="url(#uploadGradient)" />
-        <Path d={uploadPath} stroke={colors.text} strokeWidth="2" fill="none" />
+        <Path d={uploadPath} stroke={colors.white} strokeWidth="2" fill="none" />
 
         {/* Dots */}
         {chartData.points.map((p, i) => (
           <G key={i}>
             <Circle cx={p.x} cy={p.yDownload} r="4" fill={colors.primary} />
-            <Circle cx={p.x} cy={p.yUpload} r="4" fill={colors.text} />
+            <Circle cx={p.x} cy={p.yUpload} r="4" fill={colors.white} />
           </G>
         ))}
       </Svg>
@@ -198,10 +196,10 @@ export const UsageChart: React.FC<UsageChartProps> = ({ data }) => {
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     height: 300,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: '#2A2E3D',
     borderRadius: 16,
     padding: 10,
     marginVertical: 10,

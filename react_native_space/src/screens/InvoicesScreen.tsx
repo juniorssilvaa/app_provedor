@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
-import { Text, Card, Button, Chip } from 'react-native-paper';
+import { Text, Card, Button, Chip, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MainTabsParamList } from '../types';
+import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import { Invoice } from '../types';
 import { StatusBadge } from '../components';
 
@@ -18,8 +18,7 @@ interface Props {
 
 export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuth();
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const theme = useTheme();
 
   const allInvoices = useMemo(() => {
     if (!user?.contracts) return [];
@@ -113,10 +112,10 @@ export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.darkBackground,
   },
   content: {
     padding: 16,
@@ -130,7 +129,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
     marginBottom: 16,
   },
   card: {
@@ -138,7 +137,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#333844',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -154,14 +153,14 @@ const createStyles = (colors: any) => StyleSheet.create({
   invoiceAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: '#333844',
     paddingTop: 12,
   },
   contractText: {
@@ -174,7 +173,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.white,
     marginTop: 24,
     marginBottom: 8,
   },

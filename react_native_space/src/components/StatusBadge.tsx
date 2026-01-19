@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
-import { useTheme } from '../contexts/ThemeContext';
+import { colors } from '../theme/colors';
 
 type InvoiceStatus = 'paid' | 'overdue' | 'pending';
 
@@ -10,9 +10,6 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'overdue':
@@ -53,7 +50,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   badge: {
     borderWidth: 1,
     paddingHorizontal: 8,

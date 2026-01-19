@@ -129,22 +129,3 @@ export const formatCPForCNPJ = (value: string): string => {
     return formatCNPJ(clean);
   }
 };
-
-/**
- * Mask CPF or CNPJ for privacy
- * Example: ***.456.789-**
- */
-export const maskCPForCNPJ = (value: string): string => {
-  const clean = value.replace(/\D/g, '');
-  if (!clean) return '';
-
-  if (clean.length <= 11) {
-    // CPF: 000.000.000-00 -> ***.000.000-**
-    const formatted = formatCPF(clean);
-    return `***${formatted.substring(3, 12)}**`;
-  } else {
-    // CNPJ: 00.000.000/0000-00 -> ***00.000/0000-**
-    const formatted = formatCNPJ(clean);
-    return `***${formatted.substring(3, 15)}**`;
-  }
-};

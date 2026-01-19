@@ -9,54 +9,29 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#121212"
+      "backgroundColor": "#1A1F2E"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nanet.telecom"
+      "bundleIdentifier": "com.onfly.internet"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#121212"
+        "backgroundColor": "#1A1F2E"
       },
-      "package": "com.nanet.telecom",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.onfly.internet"
     },
     "web": {
-      "favicon": "./public/favicon-96x96.png",
+      "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
     "plugins": [
       "expo-secure-store",
-      "expo-font",
-      "expo-notifications",
-      "expo-location",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "compileSdkVersion": 35,
-            "targetSdkVersion": 34,
-            "buildToolsVersion": "35.0.0",
-            "usesCleartextTraffic": true,
-            "extraFonts": [],
-            "packagingOptions": {
-              "pickFirst": [
-                "**/libc++_shared.so"
-              ]
-            }
-          }
-        }
-      ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "d2fcbace-87b2-4e55-893a-38285024083f"
-      }
-    }
+      "expo-font"
+    ]
   }
 }
