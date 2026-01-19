@@ -53,9 +53,17 @@ export async function registerForPushNotificationsAsync() {
         // Mudança para pegar o token nativo do dispositivo (FCM) ao invés do Expo Token
         const tokenData = await Notifications.getDevicePushTokenAsync();
         token = tokenData.data;
-        console.log("Native FCM Token:", token);
+        console.log("Native FCM Token Success:", token);
     } catch (e) {
         console.error("Error getting push token:", e);
+        // Fallback: Tenta pegar o Expo Push Token se o nativo falhar (embora o backend espere FCM)
+        try {
+             const expoToken = await Notifications.getExpoPushTokenAsync();
+             console.log("Fallback Expo Token:", expoToken.data);
+             // Não usamos o expo token por padrão, mas serve para debug
+        } catch (e2) {
+             console.error("Error getting fallback expo token:", e2);
+        }
     }
   } else {
     console.log('Must use physical device for Push Notifications');

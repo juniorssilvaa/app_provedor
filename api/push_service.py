@@ -52,7 +52,9 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
     tokens = list(devices.values_list('push_token', flat=True).distinct())
 
     if not tokens:
-        print(f"[{source}] Nenhum dispositivo ativo encontrado para Provider {provider_id} (Target: {target_customer_id})")
+        # Debug detalhado para entender por que não encontrou
+        total_devices = Device.objects.filter(provider_id=provider_id, active=True).count()
+        print(f"[{source}] Nenhum token válido encontrado para Provider {provider_id} (Target: {target_customer_id}). Dispositivos ativos totais: {total_devices}")
         return {'status': 'skipped', 'reason': 'no_devices_found'}
 
     # 2. Prepara Mensagem Multicast

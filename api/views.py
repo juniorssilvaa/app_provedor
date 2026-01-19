@@ -470,6 +470,8 @@ def register_app_user(request):
         device_timestamp = data.get('device_timestamp')
         push_token = data.get('push_token')
         
+        print(f"DEBUG: register_app_user called for {cpf}. Push Token Present: {bool(push_token)}")
+
         if device_platform and device_model:
             defaults = {
                 'os_version': device_os or 'Unknown',
