@@ -1,4 +1,4 @@
-import uvicorn
+import os
 import firebase_admin
 from firebase_admin import credentials, messaging
 from fastapi import FastAPI, Request, HTTPException
@@ -6,16 +6,36 @@ from pydantic import BaseModel
 from typing import Any, Dict, List
 
 # --- Configuração do Firebase ---
-# Substitua 'path/to/your/firebase-credentials.json' pelo caminho real do seu arquivo.
-try:
-    cred = credentials.Certificate("firebase-credentials.json")
-    firebase_admin.initialize_app(cred)
-    FIREBASE_INITIALIZED = True
-    print("Firebase Admin SDK inicializado com sucesso.")
-except Exception as e:
-    FIREBASE_INITIALIZED = False
-    print(f"ERRO: Não foi possível inicializar o Firebase Admin SDK. Verifique o caminho do arquivo de credenciais.")
-    print(f"Detalhes do erro: {e}")
+FIREBASE_INITIALIZED = False
+
+def initialize_firebase():
+    global FIREBASE_INITIALIZED
+    if not firebase_admin._apps:
+        cred_path = os.environ.get('FIREBASE_CREDENTIALS')
+        
+        if not cred_path:
+            possible_paths = [
+                'firebase-credentials.json',
+                'service_account_key.json',
+                '/app/service_account_key.json'
+            ]
+            for p in possible_paths:
+                if os.path.exists(p):
+                    cred_path = p
+                    break
+
+        if cred_path and os.path.exists(cred_path):
+            try:
+                cred = credentials.Certificate(cred_path)
+                firebase_admin.initialize_app(cred)
+                FIREBASE_INITIALIZED = True
+                print(f"✅ Firebase Admin SDK inicializado com sucesso usando: {cred_path}")
+            except Exception as e:
+                print(f"❌ Erro ao inicializar Firebase Admin SDK: {e}")
+        else:
+            print(f"⚠️ Arquivo de credenciais do Firebase não encontrado no Webhook Server.")
+
+initialize_firebase()
 # --------------------------------
 
 app = FastAPI(
