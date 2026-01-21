@@ -1,0 +1,44 @@
+# General
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Android
+android_sdk/
+android/app/build/
+android/app/src/main/assets/
+android/app/src/main/res/drawable-mdpi/
+android/app/src/main/res/drawable-hdpi/
+android/app/src/main/res/drawable-xhdpi/
+android/app/src/main/res/drawable-xxhdpi/
+android/app/src/main/res/drawable-xxxhdpi/
+*.keystore
+*.jks
+.kotlin/
+*/.kotlin/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python/Django (if any remains)
+__pycache__/
+*.py[cod]
+venv/
+env/
+.env
+
+# React Native specific
+react_native_space/node_modules/
+react_native_space/android/app/build/
+react_native_space/.expo/
+react_native_space/android/.kotlin/

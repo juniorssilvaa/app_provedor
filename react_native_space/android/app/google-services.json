@@ -1,0 +1,29 @@
+{ 
+   "project_info": { 
+     "project_number": "454735615208", 
+     "project_id": "app-provedor-6e059", 
+     "storage_bucket": "app-provedor-6e059.firebasestorage.app" 
+   }, 
+   "client": [ 
+     { 
+       "client_info": { 
+         "mobilesdk_app_id": "1:454735615208:android:cac3233436f14c627b255d", 
+         "android_client_info": { 
+           "package_name": "com.nanet.telecom" 
+         } 
+       }, 
+       "oauth_client": [], 
+       "api_key": [ 
+         { 
+           "current_key": "AIzaSyDug6ebHwdPFsWRC3uTHyOsXt6352P7fzQ" 
+         } 
+       ], 
+       "services": { 
+         "appinvite_service": { 
+           "other_platform_oauth_client": [] 
+         } 
+       } 
+     } 
+   ], 
+   "configuration_version": "1" 
+ }
