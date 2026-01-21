@@ -23,9 +23,9 @@ def initialize_firebase():
             try:
                 cred = credentials.Certificate(cred_path)
                 firebase_admin.initialize_app(cred)
-                print(f"✅ Firebase Admin SDK inicializado com sucesso usando: {cred_path}")
+                print(f"[OK] Firebase Admin SDK inicializado com sucesso usando: {cred_path}")
             except Exception as e:
-                print(f"❌ Erro ao inicializar Firebase Admin SDK: {e}")
+                print(f"[ERRO] Erro ao inicializar Firebase Admin SDK: {e}")
         else:
             if os.environ.get('GITHUB_ACTIONS') != 'true':
-                print(f"⚠️ Arquivo de credenciais do Firebase não encontrado. Notificações Push podem não funcionar.")
+                print(f"[AVISO] Arquivo de credenciais do Firebase nao encontrado. Notificacoes Push podem nao funcionar.")

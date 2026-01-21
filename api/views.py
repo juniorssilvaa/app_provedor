@@ -399,7 +399,11 @@ def get_app_configuration(request):
             'active_tools': app_config.active_tools,
             'social_links': app_config.social_links,
             'update_warning_active': app_config.update_warning_active,
-            'is_active': provider.is_active
+            'is_active': provider.is_active,
+            # Credenciais do SGP para uso direto no app
+            'sgp_url': provider.sgp_url or '',
+            'sgp_token': provider.sgp_token or '',
+            'sgp_app_name': provider.sgp_app_name or 'webchat'
         }
         
         return Response(response_data)
