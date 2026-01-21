@@ -106,7 +106,9 @@ jobs:
           PORTAINER_API_KEY: ${{ secrets.PORTAINER_API_KEY }}
           BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
           WEBHOOK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:latest
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
+          echo "🔍 Verificando conexão com Portainer..."
           echo "Fetching stacks from $PORTAINER_URL/api/stacks..."
           STACKS=$(curl -s -H "X-API-Key: $PORTAINER_API_KEY" "$PORTAINER_URL/api/stacks")
           
@@ -129,16 +131,45 @@ jobs:
             exit 1
           fi
 
+          # Atualiza o docker-compose.yml com as novas tags de imagem
           COMPOSE=$(cat docker-compose.yml \
             | sed "s|ghcr.io/juniorssilvaa/app_provedor-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}|g" \
             | sed "s|ghcr.io/juniorssilvaa/app_provedor-webhook:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}|g")
           
+          # Escapa o conteúdo do docker-compose para JSON
           ESCAPED=$(echo "$COMPOSE" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
           
-          curl -s -X PUT \
+          echo "🔄 Atualizando stack no Portainer..."
+          echo "📦 Imagem Backend: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}"
+          echo "📦 Imagem Webhook: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}"
+          
+          # Faz a atualização da stack no Portainer
+          # IMPORTANTE: O Portainer precisa estar configurado para autenticar no ghcr.io
+          # Configure um registry no Portainer: Settings > Registries > Add registry
+          # Type: Docker Hub, URL: ghcr.io, Username: juniorssilvaa, Password: [GHCR_TOKEN]
+          echo "🔄 Atualizando stack no Portainer (Stack ID: $STACK_ID, Endpoint ID: 1)..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
             -H "X-API-Key: $PORTAINER_API_KEY" \
             -H "Content-Type: application/json" \
-            --data "{\"StackFileContent\":\"$ESCAPED\"}" \
-            "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=1&pullImage=true&forceRecreate=true"
+            --data "{\"StackFileContent\":\"$ESCAPED\",\"PullImage\":true,\"ForceRecreate\":true}" \
+            "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=1")
           
-          echo "✅ Deploy finalizado com sucesso na stack $STACK_ID"
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 204 ]; then
+            echo "✅ Deploy finalizado com sucesso na stack $STACK_ID"
+            echo "📋 Resposta do Portainer: $BODY"
+            echo ""
+            echo "⚠️  NOTA: Se o Portainer não puxar as novas imagens automaticamente,"
+            echo "   verifique se há um registry configurado para ghcr.io no Portainer:"
+            echo "   Settings > Registries > Add registry"
+            echo "   Type: Docker Hub"
+            echo "   URL: ghcr.io"
+            echo "   Username: juniorssilvaa"
+            echo "   Password: [use o GHCR_TOKEN]"
+          else
+            echo "❌ Erro ao atualizar stack no Portainer. HTTP Code: $HTTP_CODE"
+            echo "📋 Resposta: $BODY"
+            exit 1
+          fi
