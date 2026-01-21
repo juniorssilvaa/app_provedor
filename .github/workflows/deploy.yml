@@ -133,28 +133,28 @@ jobs:
           
           echo "✅ Stack encontrada: ID=$STACK_ID"
           
-          # Verificar se a rede nioNet existe, se não, criar
-          echo "🔍 Verificando se a rede 'nioNet' existe..."
+          # Verificar se a rede appNet existe, se não, criar
+          echo "🔍 Verificando se a rede 'appNet' existe..."
           NETWORKS=$(curl -s -H "X-API-Key: $PORTAINER_API_KEY" "$PORTAINER_URL/api/endpoints/1/docker/networks")
-          NETWORK_EXISTS=$(echo "$NETWORKS" | jq -r '.[] | select(.Name=="nioNet") | .Id')
+          NETWORK_EXISTS=$(echo "$NETWORKS" | jq -r '.[] | select(.Name=="appNet") | .Id')
           
           if [ -z "$NETWORK_EXISTS" ] || [ "$NETWORK_EXISTS" == "null" ]; then
-            echo "📡 Rede 'nioNet' não encontrada. Criando rede..."
+            echo "📡 Rede 'appNet' não encontrada. Criando rede..."
             CREATE_NETWORK_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
               -H "X-API-Key: $PORTAINER_API_KEY" \
               -H "Content-Type: application/json" \
-              --data '{"Name":"nioNet","Driver":"overlay","Attachable":true,"Scope":"swarm"}' \
+              --data '{"Name":"appNet","Driver":"overlay","Attachable":true,"Scope":"swarm"}' \
               "$PORTAINER_URL/api/endpoints/1/docker/networks/create")
             
             CREATE_NETWORK_CODE=$(echo "$CREATE_NETWORK_RESPONSE" | tail -n1)
             if [ "$CREATE_NETWORK_CODE" -eq 201 ] || [ "$CREATE_NETWORK_CODE" -eq 200 ]; then
-              echo "✅ Rede 'nioNet' criada com sucesso!"
+              echo "✅ Rede 'appNet' criada com sucesso!"
             else
-              echo "⚠️  Aviso: Não foi possível criar a rede 'nioNet'. HTTP Code: $CREATE_NETWORK_CODE"
+              echo "⚠️  Aviso: Não foi possível criar a rede 'appNet'. HTTP Code: $CREATE_NETWORK_CODE"
               echo "   A rede pode já existir ou você precisa criá-la manualmente no Portainer."
             fi
           else
-            echo "✅ Rede 'nioNet' já existe (ID: $NETWORK_EXISTS)"
+            echo "✅ Rede 'appNet' já existe (ID: $NETWORK_EXISTS)"
           fi
 
           # Atualiza o docker-compose.yml com as novas tags de imagem

@@ -14,7 +14,7 @@ services:
     volumes:
       - app-provedor-db-data:/var/lib/postgresql/data
     networks:
-      nioNet:
+      appNet:
         aliases:
           - app_provedor_postgres
           - postgres
@@ -34,7 +34,7 @@ services:
     depends_on:
       - postgres
     networks:
-      - nioNet
+      - appNet
     volumes:
       - app-provedor-media:/app/media
       - app-provedor-static:/app/staticfiles
@@ -63,7 +63,7 @@ services:
     depends_on:
       - app-provedor-backend
     networks:
-      - nioNet
+      - appNet
     volumes:
       - /opt/app_provedor/firebase-credentials.json:/app/service_account_key.json
     environment:
@@ -78,7 +78,7 @@ services:
       - "traefik.http.services.app-provedor-webhook.loadbalancer.server.port=8001"
 
 networks:
-  nioNet:
+  appNet:
     external: true
 
 volumes:
