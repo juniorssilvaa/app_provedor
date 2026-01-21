@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  webhook-server:
+    image: ghcr.io/juniorssilvaa/app_provedor:latest
+    container_name: app_provedor_webhook
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - FIREBASE_CREDENTIALS=/app/firebase-credentials.json
+    volumes:
+      - ./firebase-credentials.json:/app/firebase-credentials.json
