@@ -96,7 +96,7 @@ jobs:
           ORG_GRADLE_PROJECT_NANET_UPLOAD_STORE_FILE: niochat-global.keystore
           ORG_GRADLE_PROJECT_NANET_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_NANET_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ORG_GRADLE_PROJECT_NANET_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_NANET_UPLOAD_KEY_ALIAS: niochat-global-alias
           NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           cd android
