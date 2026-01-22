@@ -63,10 +63,11 @@ jobs:
           NANET_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           NANET_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           NANET_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew bundleRelease assembleRelease
+          ./gradlew bundleRelease assembleRelease --stacktrace --info
 
       - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
