@@ -52,11 +52,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to Portainer
-        uses: carneirofc/portainer-deploy-action@v1.2.4
+        uses: rypet/portainer-stack-deploy-action@v1.3
         with:
-          url: ${{ secrets.PORTAINER_URL }}
-          token: ${{ secrets.PORTAINER_API_KEY }}
-          file: 'docker-compose.yml'
-          stack: 'app_provedor_stack'
-          endpoint: ${{ vars.PORTAINER_ENV_ID }}
-          # image: ghcr.io/${{ github.repository }}:latest # A imagem é definida no docker-compose.yml
+          portainerUrl: ${{ secrets.PORTAINER_URL }}
+          accessToken: ${{ secrets.PORTAINER_API_KEY }}
+          environmentId: ${{ vars.PORTAINER_ENV_ID }}
+          stackName: app_provedor_stack
+          stackFile: docker-compose.yml
+          image: ghcr.io/${{ github.repository }}:latest
