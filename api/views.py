@@ -307,29 +307,50 @@ def get_sgp_integration(request):
 
     provider = request.user.provider
     active_token = provider.get_active_token()
+    token_obj = provider.tokens.filter(is_active=True).first()
     
     # Fallback para token legado se não houver novo
     if not active_token:
         active_token = provider.sgp_token
+        token_obj = None
 
-    # Construindo a URL base de forma dinâmica
-    scheme = request.is_secure() and "https" or "http"
-    host = request.get_host()
-    
-    # Ajuste para produção: Se o acesso for via painel, o webhook deve apontar para o subdomínio correto
-    if "painel.niochat.com.br" in host:
-        host = "webhooks.niochat.com.br"
-        scheme = "https"
+    # Se o provedor tiver uma URL customizada salva, usa ela
+    # Caso contrário, gera a URL padrão
+    if provider.webhook_url:
+        webhook_url = provider.webhook_url
+    else:
+        # Construindo a URL do webhook - sempre usa webhooks.niochat.com.br em produção
+        # Em desenvolvimento, usa uma variável de ambiente ou o host atual
+        import os
+        webhook_host = os.environ.get('WEBHOOK_HOST', 'webhooks.niochat.com.br')
         
-    # Importante: Todas as rotas da api.urls estão sob o prefixo /api/ no niochat/urls.py
-    webhook_url = f"{scheme}://{host}/api/webhooks/sgp/"
+        # Se estiver em localhost/desenvolvimento, usa o host atual
+        host = request.get_host()
+        if 'localhost' in host or '127.0.0.1' in host:
+            scheme = request.is_secure() and "https" or "http"
+            webhook_host = host
+        else:
+            # Em produção, sempre usa webhooks.niochat.com.br
+            scheme = "https"
+            webhook_host = "webhooks.niochat.com.br"
+            
+        # Importante: Todas as rotas da api.urls estão sob o prefixo /api/ no niochat/urls.py
+        webhook_url = f"{scheme}://{webhook_host}/api/webhooks/sgp/"
 
-    return Response({
-        'provider_token': active_token,
-        'sgp_token': provider.sgp_token or '',
+    response_data = {
+        'provider_token': active_token or '',
+        'sgp_token': active_token or '',
         'sgp_url': provider.sgp_url or '',
         'webhook_url': webhook_url
-    })
+    }
+    
+    # Adiciona data de criação se houver token ativo
+    if token_obj:
+        response_data['sgp_token_created_at'] = token_obj.created_at.strftime('%d/%m/%Y %H:%M:%S')
+    elif provider.sgp_token_created_at:
+        response_data['sgp_token_created_at'] = provider.sgp_token_created_at.strftime('%d/%m/%Y %H:%M:%S')
+    
+    return Response(response_data)
 
 @extend_schema(tags=['Panel'])
 @api_view(['POST'])
@@ -348,8 +369,37 @@ def generate_sgp_token(request):
         'message': 'Novo token de integração gerado com sucesso!',
         'provider_token': token_obj.token,
         'sgp_token': token_obj.token, # Compatibilidade UI
-        'created_at': token_obj.created_at.strftime('%d/%m/%Y %H:%M:%S')
+        'sgp_token_created_at': token_obj.created_at.strftime('%d/%m/%Y %H:%M:%S'),
+        'created_at': token_obj.created_at.strftime('%d/%m/%Y %H:%M:%S') # Compatibilidade
     }, status=201)
+
+@extend_schema(tags=['Panel'])
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_webhook_url(request):
+    """
+    Atualiza a URL customizada do webhook para o provedor.
+    """
+    if not hasattr(request.user, 'provider') or not request.user.provider:
+        return Response({'error': 'Usuário não é um administrador de provedor.'}, status=403)
+    
+    provider = request.user.provider
+    webhook_url = request.data.get('webhook_url', '').strip()
+    
+    if not webhook_url:
+        return Response({'error': 'URL do webhook é obrigatória.'}, status=400)
+    
+    # Validação básica de URL
+    if not webhook_url.startswith(('http://', 'https://')):
+        return Response({'error': 'URL inválida. Deve começar com http:// ou https://'}, status=400)
+    
+    provider.webhook_url = webhook_url
+    provider.save()
+    
+    return Response({
+        'message': 'URL do webhook atualizada com sucesso!',
+        'webhook_url': provider.webhook_url
+    }, status=200)
 
 @extend_schema(
     tags=['Public'],

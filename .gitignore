@@ -4,3 +4,7 @@ db.sqlite3
 media/
 .env
 .DS_Store
+react_native_space/android/app/.cxx/
+react_native_space/android/app/build/
+react_native_space/node_modules/
+*.log

@@ -103,14 +103,41 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
             if response.failure_count > 0:
                 for idx, resp in enumerate(response.responses):
                     if not resp.success:
-                        error_code = resp.exception.code if resp.exception else 'unknown'
+                        error_code = 'unknown'
+                        error_message = str(resp.exception) if resp.exception else 'unknown error'
+                        
+                        if resp.exception:
+                            # Tenta obter o código do erro
+                            if hasattr(resp.exception, 'code'):
+                                error_code = resp.exception.code
+                            elif hasattr(resp.exception, 'error_code'):
+                                error_code = resp.exception.error_code
+                            
+                            # Verifica se a mensagem contém indicações de token inválido
+                            error_str = str(resp.exception).lower()
+                            if any(term in error_str for term in ['invalid', 'not registered', 'not found', 'registration token']):
+                                error_code = 'invalid-registration-token'
+                        
                         # Se o token não existe mais (app desinstalado ou token expirado)
-                        if error_code in ['NOT_FOUND', 'registration-token-not-registered', 'invalid-registration-token']:
+                        invalid_codes = [
+                            'NOT_FOUND', 
+                            'registration-token-not-registered', 
+                            'invalid-registration-token',
+                            'INVALID_ARGUMENT'
+                        ]
+                        
+                        if error_code in invalid_codes or 'invalid' in error_message.lower() or 'not registered' in error_message.lower():
                             invalid_token = batch_tokens[idx]
-                            print(f"Token inválido removido: {invalid_token[:10]}... (Erro: {error_code})")
-                            Device.objects.filter(push_token=invalid_token).delete()
+                            try:
+                                # Remove apenas os primeiros caracteres para log (segurança)
+                                token_preview = invalid_token[:20] + '...' if len(invalid_token) > 20 else invalid_token
+                                print(f"Token inválido removido: {token_preview} (Erro: {error_code})")
+                                Device.objects.filter(push_token=invalid_token).update(active=False, push_token='')
+                            except Exception as cleanup_error:
+                                print(f"Erro ao limpar token inválido: {cleanup_error}")
                         else:
-                             print(f"Falha envio token: {resp.exception}")
+                            # Outros tipos de erro (não relacionados a token inválido)
+                            print(f"Falha envio token (outro erro): {error_message}")
 
         except Exception as e:
             print(f"Erro CRÍTICO no envio de lote FCM: {e}")

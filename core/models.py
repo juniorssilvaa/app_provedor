@@ -19,6 +19,7 @@ class Provider(models.Model):
     sgp_token = models.CharField(max_length=64, unique=True, blank=True, null=True, help_text="Token de autenticação para webhooks do SGP.")
     sgp_app_name = models.CharField(max_length=64, blank=True, null=True, help_text="Nome do App cadastrado no SGP (ex: webchat)")
     sgp_token_created_at = models.DateTimeField(blank=True, null=True, help_text="Data de criação do token SGP.")
+    webhook_url = models.URLField(max_length=500, blank=True, null=True, help_text="URL customizada do webhook para integração SGP")
 
     def __str__(self):
         return self.name
@@ -48,6 +49,92 @@ class ProviderToken(models.Model):
 
     def __str__(self):
         return f"{self.provider.name} - {self.token[:15]}..."
+
+
+class NotificationTemplate(models.Model):
+    """Template de notificação push que pode ser reutilizado"""
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='notification_templates')
+    name = models.CharField(max_length=255, help_text="Nome do template")
+    title = models.CharField(max_length=255, help_text="Título da notificação")
+    body = models.TextField(help_text="Corpo da mensagem")
+    type = models.CharField(
+        max_length=20,
+        choices=[
+            ('info', 'Informativo'),
+            ('promo', 'Promocional'),
+            ('warning', 'Aviso'),
+        ],
+        default='info',
+        help_text="Tipo da notificação"
+    )
+    image_url = models.URLField(max_length=500, blank=True, null=True, help_text="URL da imagem (opcional)")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='created_templates')
+
+    class Meta:
+        ordering = ['-updated_at']
+        verbose_name = 'Template de Notificação'
+        verbose_name_plural = 'Templates de Notificação'
+
+    def __str__(self):
+        return f"{self.name} ({self.provider.name})"
+
+
+class ScheduledNotification(models.Model):
+    """Notificação push agendada para envio futuro"""
+    STATUS_CHOICES = [
+        ('pending', 'Pendente'),
+        ('sent', 'Enviada'),
+        ('failed', 'Falhou'),
+        ('cancelled', 'Cancelada'),
+    ]
+    
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='scheduled_notifications')
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    type = models.CharField(
+        max_length=20,
+        choices=[
+            ('info', 'Informativo'),
+            ('promo', 'Promocional'),
+            ('warning', 'Aviso'),
+        ],
+        default='info'
+    )
+    image_url = models.URLField(max_length=500, blank=True, null=True)
+    scheduled_at = models.DateTimeField(help_text="Data e hora agendada para envio")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Segmentação
+    segment_type = models.CharField(max_length=20, default='all')
+    segment_tags = models.CharField(max_length=500, blank=True, null=True)
+    segment_search = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Resultado do envio
+    sent_count = models.IntegerField(default=0)
+    failed_count = models.IntegerField(default=0)
+    error_message = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(blank=True, null=True)
+    created_by = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='scheduled_notifications')
+
+    class Meta:
+        ordering = ['scheduled_at']
+        verbose_name = 'Notificação Agendada'
+        verbose_name_plural = 'Notificações Agendadas'
+        indexes = [
+            models.Index(fields=['status', 'scheduled_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.title} - {self.scheduled_at.strftime('%d/%m/%Y %H:%M')} ({self.get_status_display()})"
+    
+    def is_due(self):
+        """Verifica se a notificação está no horário de ser enviada"""
+        from django.utils import timezone
+        return self.status == 'pending' and self.scheduled_at <= timezone.now()
 
 class CustomUser(AbstractUser):
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE, null=True, blank=True)

@@ -284,6 +284,23 @@ def notification_list(request):
     if blocked: return blocked
     
     if request.method == 'POST':
+        # Verificar se deve salvar como template
+        save_as_template = request.POST.get('save_as_template')
+        if save_as_template:
+            template_name = request.POST.get('template_name')
+            if template_name:
+                from .models import NotificationTemplate
+                NotificationTemplate.objects.create(
+                    provider=request.user.provider,
+                    name=template_name,
+                    title=request.POST.get('title'),
+                    body=request.POST.get('body'),
+                    type=request.POST.get('type', 'info'),
+                    image_url=request.POST.get('image_url') or None,
+                    created_by=request.user
+                )
+                messages.success(request, f'Template "{template_name}" salvo com sucesso!')
+        
         title = request.POST.get('title')
         body = request.POST.get('body')
         push_type = request.POST.get('type', 'info')
@@ -291,6 +308,49 @@ def notification_list(request):
         segment_type = request.POST.get('segment_type', 'all')
         segment_tags = request.POST.get('segment_tags')
         segment_search = request.POST.get('segment_search')
+        scheduled_at_str = request.POST.get('scheduled_at')
+        
+        # Verificar se há agendamento
+        if scheduled_at_str:
+            from django.utils.dateparse import parse_datetime
+            from django.utils import timezone
+            from datetime import datetime
+            
+            # O datetime-local retorna formato: YYYY-MM-DDTHH:MM
+            # Precisamos converter para formato ISO com timezone
+            try:
+                # Tentar parse direto
+                scheduled_at = parse_datetime(scheduled_at_str)
+                # Se não tiver timezone, assumir timezone local
+                if scheduled_at and scheduled_at.tzinfo is None:
+                    scheduled_at = timezone.make_aware(scheduled_at)
+            except (ValueError, TypeError):
+                # Fallback: tentar parse manual
+                try:
+                    dt = datetime.strptime(scheduled_at_str, '%Y-%m-%dT%H:%M')
+                    scheduled_at = timezone.make_aware(dt)
+                except ValueError:
+                    scheduled_at = None
+            
+            if scheduled_at and scheduled_at > timezone.now():
+                # Salvar como notificação agendada
+                from .models import ScheduledNotification
+                scheduled = ScheduledNotification.objects.create(
+                    provider=request.user.provider,
+                    title=title,
+                    body=body,
+                    type=push_type,
+                    image_url=image_url or None,
+                    scheduled_at=scheduled_at,
+                    segment_type=segment_type,
+                    segment_tags=segment_tags or None,
+                    segment_search=segment_search or None,
+                    created_by=request.user
+                )
+                messages.success(request, f'Notificação agendada para {scheduled_at.strftime("%d/%m/%Y às %H:%M")}.')
+                return redirect('notification_list')
+            elif scheduled_at and scheduled_at <= timezone.now():
+                messages.warning(request, 'A data/hora agendada deve ser no futuro. Enviando imediatamente.')
         
         # Opcionais e Dados Extras
         data = {
@@ -351,7 +411,92 @@ def notification_list(request):
             
         return redirect('notification_list')
         
-    return render(request, 'notifications.html', {'segment': 'notifications'})
+    # Buscar templates do provedor
+    provider = request.user.provider
+    templates = []
+    scheduled_notifications = []
+    if provider:
+        from .models import NotificationTemplate, ScheduledNotification
+        templates = NotificationTemplate.objects.filter(provider=provider).order_by('-updated_at')
+        scheduled_notifications = ScheduledNotification.objects.filter(
+            provider=provider
+        ).order_by('-scheduled_at')[:10]  # Últimas 10 agendadas
+    
+    return render(request, 'notifications.html', {
+        'segment': 'notifications',
+        'templates': templates,
+        'scheduled_notifications': scheduled_notifications
+    })
+
+
+@login_required
+def notification_template_create(request):
+    """Criar novo template de notificação"""
+    blocked = check_active(request)
+    if blocked: return blocked
+    
+    if request.method == 'POST':
+        provider = request.user.provider
+        if not provider:
+            messages.error(request, 'Erro: Usuário sem provedor associado.')
+            return redirect('notification_list')
+        
+        from .models import NotificationTemplate
+        template = NotificationTemplate.objects.create(
+            provider=provider,
+            name=request.POST.get('name'),
+            title=request.POST.get('title'),
+            body=request.POST.get('body'),
+            type=request.POST.get('type', 'info'),
+            image_url=request.POST.get('image_url') or None,
+            created_by=request.user
+        )
+        messages.success(request, f'Template "{template.name}" criado com sucesso!')
+        return redirect('notification_list')
+    
+    return render(request, 'notification_template_form.html', {
+        'segment': 'notifications',
+        'template': None
+    })
+
+
+@login_required
+def notification_template_edit(request, pk):
+    """Editar template de notificação"""
+    blocked = check_active(request)
+    if blocked: return blocked
+    
+    from .models import NotificationTemplate
+    template = get_object_or_404(NotificationTemplate, pk=pk, provider=request.user.provider)
+    
+    if request.method == 'POST':
+        template.name = request.POST.get('name')
+        template.title = request.POST.get('title')
+        template.body = request.POST.get('body')
+        template.type = request.POST.get('type', 'info')
+        template.image_url = request.POST.get('image_url') or None
+        template.save()
+        messages.success(request, f'Template "{template.name}" atualizado com sucesso!')
+        return redirect('notification_list')
+    
+    return render(request, 'notification_template_form.html', {
+        'segment': 'notifications',
+        'template': template
+    })
+
+
+@login_required
+def notification_template_delete(request, pk):
+    """Deletar template de notificação"""
+    blocked = check_active(request)
+    if blocked: return blocked
+    
+    from .models import NotificationTemplate
+    template = get_object_or_404(NotificationTemplate, pk=pk, provider=request.user.provider)
+    name = template.name
+    template.delete()
+    messages.success(request, f'Template "{name}" excluído com sucesso!')
+    return redirect('notification_list')
 
 @login_required
 def in_app_warnings(request):

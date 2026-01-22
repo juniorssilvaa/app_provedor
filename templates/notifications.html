@@ -14,30 +14,52 @@
                 <!-- Template -->
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Template</label>
-                    <select class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none">
-                        <option value="">Nenhum template selecionado</option>
-                        <option value="promo">Promoção Relâmpago</option>
-                        <option value="maintenance">Manutenção</option>
-                    </select>
+                    <div class="flex gap-2 mb-2">
+                        <select id="template-select" name="template_id" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none">
+                            <option value="">Nenhum template selecionado</option>
+                            {% for template in templates %}
+                            <option value="{{ template.id }}" 
+                                    data-title="{{ template.title }}"
+                                    data-body="{{ template.body }}"
+                                    data-type="{{ template.type }}"
+                                    data-image="{{ template.image_url|default:'' }}">
+                                {{ template.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <a href="{% url 'notification_template_create' %}" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-3 rounded-lg transition-colors shadow-lg shadow-green-600/20 flex items-center justify-center whitespace-nowrap">
+                            <span class="mr-1">+</span> Criar Template
+                        </a>
+                    </div>
+                    {% if templates %}
+                    <div class="flex gap-2">
+                        <button type="button" id="edit-template-btn" class="text-xs text-gray-400 hover:text-blue-400 transition-colors hidden">
+                            ✏️ Editar template
+                        </button>
+                        <button type="button" id="delete-template-btn" class="text-xs text-red-400 hover:text-red-300 transition-colors hidden">
+                            🗑️ Excluir template
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Title -->
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Título</label>
-                    <input type="text" name="title" placeholder="Ex: Promoção relâmpago" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" id="title-input" name="title" placeholder="Ex: Promoção relâmpago" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
                 </div>
 
                 <!-- Message -->
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Mensagem</label>
-                    <textarea name="body" rows="4" placeholder="Conteúdo da sua notificação" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+                    <textarea id="body-input" name="body" rows="4" placeholder="Conteúdo da sua notificação" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
                 </div>
 
                 <!-- Type & Image -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Tipo</label>
-                        <select name="type" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none">
+                        <select id="type-select" name="type" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none">
                             <option value="info">Informativo</option>
                             <option value="promo">Promocional</option>
                             <option value="warning">Aviso</option>
@@ -45,7 +67,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Imagem (Opcional)</label>
-                        <input type="url" name="image_url" placeholder="https://..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
+                        <input type="url" id="image-input" name="image_url" placeholder="https://..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
                     </div>
                 </div>
 
@@ -85,6 +107,13 @@
                     <input type="hidden" name="segment_search" id="segment-search-input">
                 </div>
 
+                <!-- Save as Template -->
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="save-as-template" name="save_as_template" class="w-4 h-4 text-blue-600 bg-gray-900 border-gray-700 rounded focus:ring-blue-500">
+                    <label for="save-as-template" class="text-sm text-gray-400">Salvar como template</label>
+                    <input type="text" id="template-name-input" name="template_name" placeholder="Nome do template" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors hidden">
+                </div>
+
                 <!-- Submit -->
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition-colors shadow-lg shadow-blue-600/20">
                     Enviar notificação
@@ -95,6 +124,35 @@
 
     <!-- Right Column: Preview & Tips -->
     <div class="space-y-6">
+        <!-- Scheduled Notifications -->
+        {% if scheduled_notifications %}
+        <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-lg">
+            <h3 class="text-sm font-bold text-gray-400 uppercase mb-4">Notificações Agendadas</h3>
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+                {% for scheduled in scheduled_notifications %}
+                <div class="bg-gray-900 rounded-lg p-3 border border-gray-700">
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="text-sm font-semibold text-white">{{ scheduled.title }}</h4>
+                        <span class="text-xs px-2 py-1 rounded
+                            {% if scheduled.status == 'pending' %}bg-yellow-500/20 text-yellow-400
+                            {% elif scheduled.status == 'sent' %}bg-green-500/20 text-green-400
+                            {% elif scheduled.status == 'failed' %}bg-red-500/20 text-red-400
+                            {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                            {{ scheduled.get_status_display }}
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-2 line-clamp-2">{{ scheduled.body }}</p>
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>📅 {{ scheduled.scheduled_at|date:"d/m/Y H:i" }}</span>
+                        {% if scheduled.status == 'sent' %}
+                        <span>✓ {{ scheduled.sent_count }} enviadas</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
         <!-- Preview -->
         <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-lg flex flex-col items-center">
             <h3 class="text-sm font-bold text-gray-400 uppercase mb-4 w-full">Pré-visualização</h3>
@@ -152,8 +210,15 @@
 
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const titleInput = document.querySelector('input[name="title"]');
-                const bodyInput = document.querySelector('textarea[name="body"]');
+                const titleInput = document.getElementById('title-input');
+                const bodyInput = document.getElementById('body-input');
+                const typeSelect = document.getElementById('type-select');
+                const imageInput = document.getElementById('image-input');
+                const templateSelect = document.getElementById('template-select');
+                const editTemplateBtn = document.getElementById('edit-template-btn');
+                const deleteTemplateBtn = document.getElementById('delete-template-btn');
+                const saveAsTemplateCheck = document.getElementById('save-as-template');
+                const templateNameInput = document.getElementById('template-name-input');
                 const previewTitle = document.getElementById('preview-title');
                 const previewBody = document.getElementById('preview-body');
                 const previewCard = document.getElementById('preview-card');
@@ -164,6 +229,45 @@
                 const segmentTagsInput = document.getElementById('segment-tags-input');
                 const segmentSearchInput = document.getElementById('segment-search-input');
                 const searchButton = document.getElementById('segment-search-btn');
+
+                // Carregar template selecionado
+                templateSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    if (selectedOption.value) {
+                        titleInput.value = selectedOption.dataset.title || '';
+                        bodyInput.value = selectedOption.dataset.body || '';
+                        typeSelect.value = selectedOption.dataset.type || 'info';
+                        imageInput.value = selectedOption.dataset.image || '';
+                        updatePreview();
+                        
+                        // Mostrar botões de editar/excluir
+                        editTemplateBtn.classList.remove('hidden');
+                        deleteTemplateBtn.classList.remove('hidden');
+                        editTemplateBtn.onclick = function() {
+                            window.location.href = '/notifications/templates/' + selectedOption.value + '/edit/';
+                        };
+                        deleteTemplateBtn.onclick = function() {
+                            if (confirm('Tem certeza que deseja excluir este template?')) {
+                                window.location.href = '/notifications/templates/' + selectedOption.value + '/delete/';
+                            }
+                        };
+                    } else {
+                        // Esconder botões quando nenhum template selecionado
+                        editTemplateBtn.classList.add('hidden');
+                        deleteTemplateBtn.classList.add('hidden');
+                    }
+                });
+
+                // Mostrar/ocultar campo de nome do template
+                saveAsTemplateCheck.addEventListener('change', function() {
+                    if (this.checked) {
+                        templateNameInput.classList.remove('hidden');
+                        templateNameInput.required = true;
+                    } else {
+                        templateNameInput.classList.add('hidden');
+                        templateNameInput.required = false;
+                    }
+                });
 
                 function updatePreview() {
                     previewTitle.textContent = titleInput.value || 'Título da notificação';
