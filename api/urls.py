@@ -25,6 +25,7 @@ urlpatterns = [
     # Endpoints para Integração SGP (Painel do Provedor)
     path('panel/integrations/sgp/', views.get_sgp_integration, name='get_sgp_integration'),
     path('panel/integrations/sgp/generate/', views.generate_sgp_token, name='generate_sgp_token'),
+    path('panel/integrations/sgp/webhook/', views.update_webhook_url, name='update_webhook_url'),
 
     # Registro de Usuário do App (Legacy/Auth)
     path('app/register/', views.register_app_user, name='register_app_user'),

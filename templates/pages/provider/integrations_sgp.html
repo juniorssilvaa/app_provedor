@@ -77,13 +77,19 @@
             <div class="mt-6">
                 <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">URL do Webhook</h4>
                 <div class="flex items-center space-x-4">
-                    <div class="flex-grow p-3 bg-gray-100 dark:bg-dark-700 rounded-md">
-                        <span id="webhook-url-display" class="text-sm font-mono text-gray-700 dark:text-gray-300"></span>
-                    </div>
-                     <button id="copy-webhook-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
+                    <input 
+                        type="text" 
+                        id="webhook-url-display" 
+                        class="flex-grow p-3 bg-gray-100 dark:bg-dark-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-mono text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="https://webhooks.niochat.com.br/api/webhooks/sgp/"
+                    />
+                    <button id="copy-webhook-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out whitespace-nowrap">
                         Copiar
                     </button>
                 </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Você pode editar a URL completa do webhook. Certifique-se de incluir o <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">provider_token</code> na URL.
+                </p>
             </div>
 
             <!-- Instruções de Uso -->
@@ -207,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     copyWebhookBtn.addEventListener('click', () => {
-        const url = webhookUrlDisplay.textContent;
+        const url = webhookUrlDisplay.value || webhookUrlDisplay.textContent;
         if (url) {
             copyToClipboard(url, 'URL do Webhook');
         }
@@ -234,13 +240,95 @@ document.addEventListener('DOMContentLoaded', function() {
                 tokenDisplay.textContent = 'Nenhum token gerado.';
                 tokenCreatedAt.textContent = '';
             }
-            webhookUrlDisplay.textContent = data.webhook_url;
+            // Atualizar o campo de input com a URL e salvar como última URL salva
+            if (webhookUrlDisplay.tagName === 'INPUT') {
+                webhookUrlDisplay.value = data.webhook_url;
+                lastSavedWebhookUrl = data.webhook_url;
+            } else {
+                webhookUrlDisplay.textContent = data.webhook_url;
+                lastSavedWebhookUrl = data.webhook_url;
+            }
         })
         .catch(error => {
             console.error('Erro ao buscar dados de integração:', error);
             showToast('Não foi possível carregar os dados da integração.', true);
         });
     }
+
+    // Salvar URL do webhook quando o usuário editar
+    let webhookUrlTimeout;
+    let lastSavedWebhookUrl = '';
+    
+    webhookUrlDisplay.addEventListener('input', () => {
+        // Limpa o timeout anterior
+        clearTimeout(webhookUrlTimeout);
+        
+        // Aguarda 1 segundo após o usuário parar de digitar
+        webhookUrlTimeout = setTimeout(() => {
+            const newUrl = webhookUrlDisplay.value.trim();
+            
+            // Só salva se a URL mudou
+            if (newUrl && newUrl !== lastSavedWebhookUrl) {
+                fetch("{% url 'update_webhook_url' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        webhook_url: newUrl
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showToast(data.error, true);
+                    } else {
+                        showToast('URL do webhook salva com sucesso!');
+                        lastSavedWebhookUrl = newUrl;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao salvar URL do webhook:', error);
+                    showToast('Erro ao salvar URL do webhook.', true);
+                });
+            }
+        }, 1000); // Aguarda 1 segundo após parar de digitar
+    });
+
+    // Salvar também quando o campo perder o foco (blur)
+    webhookUrlDisplay.addEventListener('blur', () => {
+        clearTimeout(webhookUrlTimeout);
+        const newUrl = webhookUrlDisplay.value.trim();
+        
+        if (newUrl && newUrl !== lastSavedWebhookUrl) {
+            fetch("{% url 'update_webhook_url' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    webhook_url: newUrl
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, true);
+                } else {
+                    showToast('URL do webhook salva com sucesso!');
+                    lastSavedWebhookUrl = newUrl;
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao salvar URL do webhook:', error);
+                showToast('Erro ao salvar URL do webhook.', true);
+            });
+        }
+    });
 
     generateTokenBtn.addEventListener('click', () => {
         modal.classList.remove('hidden');
@@ -265,8 +353,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast(data.error, true);
             } else {
                 showToast(data.message);
-                tokenDisplay.textContent = data.sgp_token;
-                tokenCreatedAt.textContent = `Gerado em: ${data.sgp_token_created_at}`;
+                // Atualiza o token exibido
+                tokenDisplay.textContent = data.sgp_token || data.provider_token;
+                tokenDisplay.classList.remove('text-red-500');
+                // Atualiza a data de criação
+                if (data.sgp_token_created_at) {
+                    tokenCreatedAt.textContent = `Gerado em: ${data.sgp_token_created_at}`;
+                } else if (data.created_at) {
+                    tokenCreatedAt.textContent = `Gerado em: ${data.created_at}`;
+                }
+                // Recarrega os dados para garantir consistência
+                fetchIntegrationData();
             }
             modal.classList.add('hidden');
         })

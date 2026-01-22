@@ -48,8 +48,8 @@ services:
     command: gunicorn niochat.wsgi:application --bind 0.0.0.0:8000 --workers 3
     labels:
       - "traefik.enable=true"
-      # Rota unificada para Painel e APIs
-      - "traefik.http.routers.app-provedor-backend.rule=Host(`painel.niochat.com.br`) || Host(`apis.niochat.com.br`)"
+      # Rota unificada para Painel, APIs e Webhooks
+      - "traefik.http.routers.app-provedor-backend.rule=Host(`painel.niochat.com.br`) || Host(`apis.niochat.com.br`) || Host(`webhooks.niochat.com.br`)"
       - "traefik.http.routers.app-provedor-backend.entrypoints=websecure"
       - "traefik.http.routers.app-provedor-backend.tls.certresolver=letsencryptresolver"
       - "traefik.http.routers.app-provedor-backend.priority=10"
@@ -76,6 +76,39 @@ services:
       - "traefik.http.routers.app-provedor-webhook.tls.certresolver=letsencryptresolver"
       - "traefik.http.routers.app-provedor-webhook.priority=10"
       - "traefik.http.services.app-provedor-webhook.loadbalancer.server.port=8001"
+
+  # ===============================
+  # ⏰ SCHEDULER (Processador de Notificações Agendadas)
+  # ===============================
+  app-provedor-scheduler:
+    image: ghcr.io/juniorssilvaa/app_provedor-backend:latest
+    depends_on:
+      - postgres
+      - app-provedor-backend
+    networks:
+      - appNet
+    volumes:
+      - app-provedor-media:/app/media
+      - app-provedor-static:/app/staticfiles
+      - /opt/app_provedor/firebase-credentials.json:/app/service_account_key.json
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-acK0Z6lOzI_g0tQhb_Ir9bisTC8dZQrTaoIPgBpmjqRzye1XaVsPBXgF2LbhkkbPPAU}
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-SOMxcet2sQT5oJHFhUBStA}@postgres:5432/${POSTGRES_DB:-app_provedor_db}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      FIREBASE_CREDENTIALS: /app/service_account_key.json
+    entrypoint: /bin/sh
+    command: >
+      -c "
+        echo '⏰ Aguardando PostgreSQL...' &&
+        until nc -z postgres 5432; do sleep 1; done &&
+        echo '✅ PostgreSQL disponível!' &&
+        echo '⏰ Iniciando processador de notificações agendadas...' &&
+        while true; do
+          python manage.py process_scheduled_notifications
+          sleep 60
+        done
+      "
 
 networks:
   appNet:

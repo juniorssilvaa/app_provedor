@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-2xl">
+    <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <h2 class="text-xl font-bold text-white mb-2">
+            {% if template %}Editar Template{% else %}Criar Template{% endif %}
+        </h2>
+        <p class="text-sm text-gray-400 mb-6">
+            {% if template %}Atualize as informações do template.{% else %}Crie um template reutilizável para suas notificações push.{% endif %}
+        </p>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Nome do Template -->
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Nome do Template</label>
+                <input type="text" name="name" value="{{ template.name|default:'' }}" placeholder="Ex: Promoção Relâmpago" required
+                       class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
+            </div>
+
+            <!-- Título -->
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Título</label>
+                <input type="text" name="title" value="{{ template.title|default:'' }}" placeholder="Ex: Promoção relâmpago" required
+                       class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
+            </div>
+
+            <!-- Mensagem -->
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Mensagem</label>
+                <textarea name="body" rows="4" placeholder="Conteúdo da sua notificação" required
+                          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none">{{ template.body|default:'' }}</textarea>
+            </div>
+
+            <!-- Type & Image -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Tipo</label>
+                    <select name="type" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none">
+                        <option value="info" {% if template.type == 'info' or not template %}selected{% endif %}>Informativo</option>
+                        <option value="promo" {% if template.type == 'promo' %}selected{% endif %}>Promocional</option>
+                        <option value="warning" {% if template.type == 'warning' %}selected{% endif %}>Aviso</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Imagem (Opcional)</label>
+                    <input type="url" name="image_url" value="{{ template.image_url|default:'' }}" placeholder="https://..."
+                           class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-4 pt-4">
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-blue-600/20">
+                    {% if template %}Atualizar Template{% else %}Criar Template{% endif %}
+                </button>
+                <a href="{% url 'notification_list' %}" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-colors text-center">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
