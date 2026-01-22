@@ -54,10 +54,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: userData.name,
         email: userData.email,
         customer_id: customerId, // Envia o primeiro contrato como referência
-        device_platform: Platform.OS,
-        device_model: Device.modelName,
-        device_os: Device.osVersion,
-        device_timestamp: new Date().toISOString(),
+        // device_platform: Platform.OS,
+        // device_model: Device.modelName,
+        // device_os: Device.osVersion,
+        // device_timestamp: new Date().toISOString(), // Removido para evitar erro 'timezone not defined' no backend
         push_token: pushToken || ''
       };
 
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const registerResponse = await axios.post(`${config.apiBaseUrl}app/register/`, payload);
       console.log('Resposta app/register:', registerResponse.status, registerResponse.data);
 
-      const registeredUserId = registerResponse.data?.id || registerResponse.data?.user?.id;
+      const registeredUserId = registerResponse.data?.id || registerResponse.data?.user?.id || registerResponse.data?.user_id;
 
       // 2. Registrar Dispositivo (Novo Endpoint Dedicado - Push/Isolation)
       // Isso garante que a lógica de push mais recente (views_push.py) seja acionada
