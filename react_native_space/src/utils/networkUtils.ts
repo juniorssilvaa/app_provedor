@@ -18,7 +18,17 @@ export interface NetworkInfo {
   packetLoss: number | null;
 }
 
-NetInfo.configure({ shouldFetchWiFiSSID: true });
+// Configura o NetInfo para sempre buscar informações do WiFi
+// IMPORTANTE: No Android, requer permissão de localização para obter SSID
+NetInfo.configure({ 
+  shouldFetchWiFiSSID: true,
+  // Força busca de informações detalhadas do WiFi
+  reachabilityUrl: 'https://clients3.google.com/generate_204',
+  reachabilityTest: async (response) => response.status === 204,
+  reachabilityLongTimeout: 60 * 1000, // 60 seconds
+  reachabilityShortTimeout: 5 * 1000, // 5 seconds
+  reachabilityRequestTimeout: 15 * 1000, // 15 seconds
+});
 
 const measureLatency = async (): Promise<{ latency: number | null; jitter: number | null; loss: number }> => {
   const samples: number[] = [];
@@ -56,26 +66,40 @@ const measureLatency = async (): Promise<{ latency: number | null; jitter: numbe
 
 let didRequestForegroundLocationPermission = false;
 
-export const ensureLocationPermission = async (): Promise<'granted' | 'denied' | 'undetermined'> => {
+export const ensureLocationPermission = async (forceRequest: boolean = false): Promise<'granted' | 'denied' | 'undetermined'> => {
   if (Platform.OS !== 'android') return 'granted';
 
   const current = await Location.getForegroundPermissionsAsync();
   if (current.status === 'granted') return 'granted';
 
-  if (didRequestForegroundLocationPermission) {
+  // Se já foi solicitado e não foi forçado, retorna o status atual
+  if (didRequestForegroundLocationPermission && !forceRequest) {
     return (current.status as 'denied' | 'undetermined') ?? 'undetermined';
   }
 
-  didRequestForegroundLocationPermission = true;
-  const requested = await Location.requestForegroundPermissionsAsync();
-  return requested.status;
+  // Força nova solicitação se necessário
+  if (forceRequest) {
+    didRequestForegroundLocationPermission = false;
+  }
+
+  if (!didRequestForegroundLocationPermission) {
+    didRequestForegroundLocationPermission = true;
+    const requested = await Location.requestForegroundPermissionsAsync();
+    return requested.status;
+  }
+
+  return (current.status as 'denied' | 'undetermined') ?? 'undetermined';
 };
 
 export const getNetworkInfo = async (
   options?: { requestLocationPermission?: boolean }
 ): Promise<NetworkInfo> => {
   try {
-    if (options?.requestLocationPermission) {
+    // Sempre solicita permissão de localização no Android para obter informações do WiFi
+    // No Android, é obrigatório ter permissão de localização para ler SSID do WiFi
+    if (Platform.OS === 'android') {
+      await ensureLocationPermission();
+    } else if (options?.requestLocationPermission) {
       await ensureLocationPermission();
     }
 

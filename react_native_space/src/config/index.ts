@@ -7,10 +7,10 @@ export const config = {
   // Se estiver em produção, use https://apis.niochat.com.br/api/
   apiBaseUrl: 'https://apis.niochat.com.br/api/', 
   
-  providerId: 2, // Referência interna
-  apiToken: '', // Token de integração (gerado no painel)
+  providerId: 1, // ID do provedor NANET
+  apiToken: '', // Token de integração do provedor NANET
   
   // Customização Visual do App (Estes dados também podem ser carregados dinamicamente via /api/public/config/)
-  clientName: 'NIONET',
+  clientName: 'NANET',
   primaryColor: '#3b82f6',
 };

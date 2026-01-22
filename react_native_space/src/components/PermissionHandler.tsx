@@ -21,15 +21,21 @@ export const PermissionHandler: React.FC = () => {
           }
           
           permissionsToRequest.push(PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE);
+          // Permissão OBRIGATÓRIA para obter informações do WiFi (SSID, IP, etc)
           permissionsToRequest.push(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
 
           const result = await PermissionsAndroid.requestMultiple(permissionsToRequest);
 
           console.log('Permissões solicitadas:', result);
           
-          // Opcional: Verificar se algo crítico foi negado e avisar o usuário
+          // Verificar se permissões críticas foram negadas
           if (result['android.permission.READ_PHONE_STATE'] === 'denied') {
              console.log('Permissão de telefone negada');
+          }
+          
+          // Permissão de localização é OBRIGATÓRIA para WiFi
+          if (result['android.permission.ACCESS_FINE_LOCATION'] === 'denied') {
+             console.warn('⚠️ Permissão de localização negada - WiFi não funcionará corretamente');
           }
 
         } catch (err) {

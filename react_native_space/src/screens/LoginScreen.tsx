@@ -190,7 +190,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={styles.logoContainer}>
           <Image
-            source={require('../../assets/logo.png')}
+            source={require('../../assets/icon.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />

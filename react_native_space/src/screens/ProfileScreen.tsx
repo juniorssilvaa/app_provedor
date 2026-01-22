@@ -65,8 +65,12 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     },
     {
       icon: 'file-document-outline',
-      title: 'Notas',
-      onPress: () => {},
+      title: 'Notas Fiscais',
+      onPress: () => {
+        console.log('[ProfileScreen] Navegando para NotasFiscais');
+        // Navega para o stack principal (fora da tab) - mesma forma que outras rotas
+        navigation.navigate('NotasFiscais');
+      },
     },
     {
       icon: 'cloud-off-outline',
@@ -83,16 +87,6 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       icon: 'chat-processing-outline',
       title: 'Suporte',
       onPress: () => navigation.navigate('SupportList'), // Updated to navigate to SupportList
-    },
-    {
-      icon: 'speedometer',
-      title: 'SpeedTest',
-      onPress: () => navigation.navigate('SpeedTest'),
-    },
-    {
-      icon: 'pulse',
-      title: 'Status',
-      onPress: () => {},
     },
     {
       icon: 'web',
@@ -122,11 +116,11 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               onPress={item.onPress}
             >
               <View style={styles.menuIconContainer}>
-                <MaterialCommunityIcons name={item.icon as any} size={28} color={colors.primary} />
+                <MaterialCommunityIcons name={item.icon as any} size={28} color="#FFFFFF" />
               </View>
               <Text style={styles.menuLabelRow}>{item.title}</Text>
               <View style={{ flex: 1 }} />
-              <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              <MaterialCommunityIcons name="chevron-right" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           ))}
         </View>
@@ -185,7 +179,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.primary,
     borderRadius: 12,
     padding: 12,
     // Add shadow for light mode
@@ -202,15 +196,15 @@ const createStyles = (colors: any) => StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.background, // Adaptive
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
   menuLabelRow: {
-    color: colors.text,
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   headerContainer: {
     paddingHorizontal: 16,

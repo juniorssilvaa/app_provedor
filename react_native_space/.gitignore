@@ -1,1 +1,15 @@
 node_modules
+
+# Keystore de produção (NUNCA commitar!)
+*.keystore
+!debug.keystore
+
+# Gradle properties com senhas
+android/gradle.properties
+!android/gradle.properties.example
+
+# Build outputs
+android/app/build/
+android/build/
+*.apk
+*.aab

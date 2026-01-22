@@ -141,6 +141,45 @@ export interface SGPTipoOcorrencia {
   descricao: string;
 }
 
+export interface NotaFiscal {
+  numero: number;
+  serie: string;
+  modelo: string;
+  data_emissao: string;
+  data_saida: string;
+  valortotal: number;
+  status: number;
+  link: string;
+  empresa_razao_social: string;
+  empresa_nome_fantasia: string;
+  empresa_cnpj: string;
+  empresa_logradouro: string;
+  empresa_numero: number;
+  empresa_bairro: string;
+  empresa_cidade: string;
+  empresa_uf: string;
+  empresa_cep: string;
+  tipo_nf: number;
+  cfop: string;
+  desconto: number;
+  outrosvalores: number;
+  icms: number;
+  infcomp?: string;
+}
+
+export interface TermoAceite {
+  cliente_id: number;
+  cliente_nome: string;
+  aceite_metodo: string;
+  aceite_ip: string;
+  aceite_status: boolean;
+  cliente_cpfcnpj: string;
+  aceite_data: string;
+  html: string;
+  contrato: number;
+  aceite_hash: string;
+}
+
 export type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
@@ -155,6 +194,8 @@ export type RootStackParamList = {
   SpeedTest: undefined;
   AIChat: undefined;
   Notifications: undefined;
+  NotasFiscais: undefined;
+  Terms: undefined;
 };
 
 export type MainTabsParamList = {
@@ -169,15 +210,54 @@ export interface SGPCpeResponse {
   success: boolean;
   msg?: string;
   info: {
+    // WiFi
     wifi_ssid?: string;
     ssid?: string;
     wifi_password?: string;
     wifi_ssid_5ghz?: string;
     wifi_password_5ghz?: string;
+    wifi_enabled?: boolean;
+    wifi_enabled_5ghz?: boolean;
+    wifi_mode?: string;
+    wifi_mode_5ghz?: string;
+    wifi_channel?: string;
+    wifi_channel_5ghz?: string;
+    wifi_frequency?: string;
+    wifi_frequency_5ghz?: string;
+    // Informações do modem
+    product_class?: string;
+    model?: string;
+    model_name?: string;
+    manufacturer?: string;
+    version?: string;
+    oui?: string;
+    // Informações de rede
+    ip?: string;
+    wan_ip?: string;
+    wan_ip_address?: string;
+    ip_address?: string;
+    public_ip?: string;
+    // Uptime (em dias)
+    wan_up_time?: number;
+    sys_up_time?: number;
+    lastboot_date?: string;
+    // Dispositivos conectados
+    lan_devices?: any[]; // Array de dispositivos conectados
+    interface_info?: {
+      lan_devices?: any[];
+      wlan_interfaces?: any[];
+    };
+    virtual_wifi?: any[];
+    // Outros campos possíveis
     online_host_num?: number;
     associated_device_num?: number;
     hosts?: any[];
-    lan_devices?: any[];
+    connected_devices?: number;
+    device_count?: number;
+    total_devices?: number;
+    // PPPoE
+    pppoe_user?: string;
+    pppoe_password?: string;
     [key: string]: any;
   };
 }

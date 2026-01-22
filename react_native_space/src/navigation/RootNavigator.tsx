@@ -3,6 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { LoginScreen, ContractsScreen, PlansScreen, InvoiceDetailsScreen, UsageScreen, PaymentPromiseScreen, InternetInfoScreen, SupportListScreen, SupportFormScreen, SpeedTestScreen, AIChatScreen, NotificationsScreen } from '../screens';
+import { NotasFiscaisScreen } from '../screens/NotasFiscaisScreen';
+import { TermsScreen } from '../screens/TermsScreen';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -53,7 +55,16 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="SupportList" component={SupportListScreen} />
             <Stack.Screen name="SupportForm" component={SupportFormScreen} />
             <Stack.Screen name="SpeedTest" component={SpeedTestScreen} />
-            <Stack.Screen name="AIChat" component={AIChatScreen} />
+            <Stack.Screen 
+              name="AIChat" 
+              component={AIChatScreen}
+              options={{
+                headerShown: false,
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen name="NotasFiscais" component={NotasFiscaisScreen} />
+            <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen 
               name="Notifications" 
               component={NotificationsScreen} 
@@ -72,7 +83,16 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="SupportList" component={SupportListScreen} />
             <Stack.Screen name="SupportForm" component={SupportFormScreen} />
             <Stack.Screen name="SpeedTest" component={SpeedTestScreen} />
-            <Stack.Screen name="AIChat" component={AIChatScreen} />
+            <Stack.Screen 
+              name="AIChat" 
+              component={AIChatScreen}
+              options={{
+                headerShown: false,
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen name="NotasFiscais" component={NotasFiscaisScreen} />
+            <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen 
               name="Notifications" 
               component={NotificationsScreen} 

@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { config } from '../config';
-import { SGPClientResponse, User, Contract, Plan, ServiceAccess, SGPVerificaAcessoResponse, SGPTitulosResponse, Invoice, SGPCpeResponse, SGPLiberacaoPromessaResponse, SGPChamado, SGPCriarChamadoResponse, SGPTipoOcorrencia } from '../types';
+import { formatCPForCNPJ } from '../utils/validation';
+import { SGPClientResponse, User, Contract, Plan, ServiceAccess, SGPVerificaAcessoResponse, SGPTitulosResponse, Invoice, SGPCpeResponse, SGPLiberacaoPromessaResponse, SGPChamado, SGPCriarChamadoResponse, SGPTipoOcorrencia, NotaFiscal, TermoAceite } from '../types';
 
 class SGPService {
   private api: AxiosInstance | null = null;
@@ -399,21 +400,35 @@ class SGPService {
       console.log('[SGP] Consultando CPE para contrato:', contratoId);
       console.log('[SGP] Endpoint:', 'api/ura/cpemanage/');
 
-      const form = new FormData();
+      // Para consulta, usa GET com query params (não envia parâmetros de alteração)
       const payload: any = this.getSGPPayload({ contrato: contratoId });
       if (servicoId) {
         payload.servico = servicoId.toString();
       }
-      Object.keys(payload).forEach(key => {
-        form.append(key, payload[key]);
-      });
 
-      const response = await this.getApi().post<SGPCpeResponse>('api/ura/cpemanage/', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Tenta GET primeiro (método de consulta)
+      try {
+        const response = await this.getApi().get<SGPCpeResponse>('api/ura/cpemanage/', {
+          params: payload,
+        });
 
-      console.log('[SGP] Resposta CPE:', JSON.stringify(response.data, null, 2));
-      return response.data;
+        console.log('[SGP] Resposta CPE (GET):', JSON.stringify(response.data, null, 2));
+        return response.data;
+      } catch (getError: any) {
+        // Se GET falhar, tenta POST (fallback)
+        console.log('[SGP] GET falhou, tentando POST como fallback');
+        const form = new FormData();
+        Object.keys(payload).forEach(key => {
+          form.append(key, payload[key]);
+        });
+
+        const response = await this.getApi().post<SGPCpeResponse>('api/ura/cpemanage/', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        console.log('[SGP] Resposta CPE (POST):', JSON.stringify(response.data, null, 2));
+        return response.data;
+      }
     } catch (error) {
       console.error('Error fetching CPE data:', error);
       return null;
@@ -591,6 +606,128 @@ class SGPService {
     }
   }
 
+
+  /**
+   * Listar Notas Fiscais
+   */
+  async listarNotasFiscais(cpfCnpj: string, contratoId: string, senha: string): Promise<NotaFiscal[]> {
+    try {
+      console.log('[SGP] Listando notas fiscais para:', cpfCnpj);
+      console.log('[SGP] Contrato ID:', contratoId);
+      console.log('[SGP] Endpoint:', 'api/central/notafiscal/list/');
+
+      // Para notas fiscais, o CPF precisa estar formatado (como no Postman)
+      const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
+      const formattedCpfCnpj = formatCPForCNPJ(cleanCpfCnpj);
+      
+      const form = new FormData();
+      const payload = this.getSGPPayload({
+        cpfcnpj: formattedCpfCnpj, // Enviar formatado como no Postman
+        contrato: contratoId,
+        senha: senha,
+      });
+      
+      console.log('[SGP] Payload notas fiscais:', {
+        cpfcnpj: formattedCpfCnpj,
+        contrato: contratoId,
+        senha: senha ? '***' : 'não fornecida',
+        token: payload.token ? 'existe' : 'não existe',
+        app: payload.app,
+      });
+      
+      Object.keys(payload).forEach(key => {
+        form.append(key, payload[key]);
+      });
+
+      console.log('[SGP] Fazendo requisição POST para api/central/notafiscal/list/');
+      const response = await this.getApi().post<NotaFiscal[]>('api/central/notafiscal/list/', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      console.log('[SGP] Resposta notas fiscais recebida. Status:', response.status);
+      console.log('[SGP] Total de notas:', Array.isArray(response.data) ? response.data.length : 0);
+      console.log('[SGP] Resposta notas fiscais:', JSON.stringify(response.data, null, 2));
+      return response.data || [];
+    } catch (error: any) {
+      console.error('[SGP] Erro ao buscar notas fiscais:', error);
+      console.error('[SGP] Erro response:', error.response?.data);
+      console.error('[SGP] Erro status:', error.response?.status);
+      return [];
+    }
+  }
+
+  /**
+   * Buscar Termo de Aceite
+   */
+  async buscarTermoAceite(contratoId: string): Promise<TermoAceite | null> {
+    try {
+      console.log('[SGP] Buscando termo de aceite para contrato:', contratoId);
+      console.log('[SGP] Endpoint:', `api/contrato/termoaceite/${contratoId}/`);
+
+      const payload = this.getSGPPayload();
+      
+      console.log('[SGP] Payload termo aceite:', {
+        token: payload.token ? 'existe' : 'não existe',
+        app: payload.app,
+      });
+
+      // GET com query params
+      const response = await this.getApi().get<TermoAceite>(`api/contrato/termoaceite/${contratoId}/`, {
+        params: payload,
+      });
+
+      console.log('[SGP] Resposta termo aceite recebida. Status:', response.status);
+      console.log('[SGP] Termo aceite status:', response.data?.aceite_status);
+      return response.data || null;
+    } catch (error: any) {
+      console.error('[SGP] Erro ao buscar termo de aceite:', error);
+      console.error('[SGP] Erro response:', error.response?.data);
+      console.error('[SGP] Erro status:', error.response?.status);
+      return null;
+    }
+  }
+
+  /**
+   * Aceitar Termo de Aceite
+   */
+  async aceitarTermoAceite(contratoId: string): Promise<{ success: boolean; msg?: string }> {
+    try {
+      console.log('[SGP] Aceitando termo de aceite para contrato:', contratoId);
+      console.log('[SGP] Endpoint:', `api/contrato/termoaceite/${contratoId}`);
+
+      const form = new FormData();
+      const payload = this.getSGPPayload({
+        aceite: '1', // Valor para aceitar
+      });
+      
+      console.log('[SGP] Payload aceitar termo:', {
+        aceite: '1',
+        token: payload.token ? 'existe' : 'não existe',
+        app: payload.app,
+      });
+      
+      Object.keys(payload).forEach(key => {
+        form.append(key, payload[key]);
+      });
+
+      const response = await this.getApi().post<{ success: boolean; msg?: string }>(
+        `api/contrato/termoaceite/${contratoId}/`,
+        form,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+
+      console.log('[SGP] Resposta aceitar termo recebida. Status:', response.status);
+      console.log('[SGP] Sucesso:', response.data?.success);
+      return response.data || { success: false };
+    } catch (error: any) {
+      console.error('[SGP] Erro ao aceitar termo de aceite:', error);
+      console.error('[SGP] Erro response:', error.response?.data);
+      console.error('[SGP] Erro status:', error.response?.status);
+      return { success: false, msg: error.response?.data?.msg || 'Erro ao aceitar termo' };
+    }
+  }
 
   /**
    * Get mock data for development/demo

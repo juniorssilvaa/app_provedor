@@ -1,0 +1,9 @@
+# Exemplo de configuração para gradle.properties
+# Copie este arquivo para android/gradle.properties e preencha com suas credenciais
+# NÃO COMMITE O ARQUIVO gradle.properties COM AS SENHAS!
+
+# Keystore de Produção NANET
+NANET_UPLOAD_STORE_FILE=nanet-release.keystore
+NANET_UPLOAD_KEY_ALIAS=nanet-key
+NANET_UPLOAD_STORE_PASSWORD=SUA_SENHA_AQUI
+NANET_UPLOAD_KEY_PASSWORD=SUA_SENHA_AQUI

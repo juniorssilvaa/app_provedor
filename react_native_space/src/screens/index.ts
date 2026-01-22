@@ -13,3 +13,4 @@ export { SupportFormScreen } from './SupportFormScreen';
 export { SpeedTestScreen } from './SpeedTestScreen';
 export { AIChatScreen } from './AIChatScreen';
 export { NotificationsScreen } from './NotificationsScreen';
+export { NotasFiscaisScreen } from './NotasFiscaisScreen';

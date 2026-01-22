@@ -166,19 +166,33 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [serviceAccess, setServiceAccess] = useState<ServiceAccess | null>(null);
 
   const fetchNetworkInfo = useCallback(async () => {
+    // Sempre solicita permissão de localização obrigatoriamente para WiFi
     const status = await ensureLocationPermission();
     if (status !== 'granted' && !didShowLocationPermissionAlert.current) {
       didShowLocationPermissionAlert.current = true;
       Alert.alert(
-        'Permissão necessária',
-        'Para mostrar o nome da rede Wi‑Fi (SSID) e dados de conexão, o Android exige permissão de Localização. Ative para continuar.',
+        'Permissão obrigatória',
+        'Para mostrar informações do Wi‑Fi conectado (nome da rede, sinal, IP), o Android exige permissão de Localização. Esta permissão é obrigatória para o funcionamento do app.',
         [
-          { text: 'Agora não', style: 'cancel' },
-          { text: 'Abrir configurações', onPress: () => Linking.openSettings() },
-        ]
+          { 
+            text: 'Abrir configurações', 
+            onPress: () => {
+              Linking.openSettings();
+              // Tenta solicitar novamente após abrir configurações
+              setTimeout(async () => {
+                await ensureLocationPermission(true);
+                fetchNetworkInfo();
+              }, 1000);
+            },
+            style: 'default'
+          },
+        ],
+        { cancelable: false }
       );
+      return; // Não busca informações se não tiver permissão
     }
-    const info = await getNetworkInfo();
+    // Busca informações do WiFi com permissão garantida
+    const info = await getNetworkInfo({ requestLocationPermission: true });
     setNetworkInfo(info);
   }, []);
 
@@ -378,12 +392,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={() => (navigation as any).openDrawer?.()}>
           <Image
-            source={require('../../assets/logo.png')}
+            source={require('../../assets/icon.png')}
             style={{ width: 600, height: 170, marginLeft: 80 }}
             resizeMode="contain"
           />
@@ -403,7 +417,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={{ paddingBottom: 24, paddingTop: 16 }}
+        contentContainerStyle={{ paddingBottom: 16, paddingTop: 16 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -617,7 +631,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           )}
           {isShortcutActive('NOTAS FISCAIS') && (
-            <TouchableOpacity style={styles.quickAccessItem} onPress={() => navigation.navigate('Invoices')}>
+            <TouchableOpacity style={styles.quickAccessItem} onPress={() => navigation.navigate('NotasFiscais')}>
               <View style={[styles.quickAccessIcon, { backgroundColor: colors.primary }]}>
                 <MaterialCommunityIcons name="receipt" size={28} color="#FFFFFF" />
               </View>
@@ -646,7 +660,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           {isShortcutActive('TERMOS') && (
             <TouchableOpacity
               style={styles.quickAccessItem}
-              onPress={() => Alert.alert('Em breve', 'Visualização de termos estará disponível em breve.')}
+              onPress={() => navigation.navigate('Terms')}
             >
               <View style={[styles.quickAccessIcon, { backgroundColor: colors.primary }]}>
                 <MaterialCommunityIcons name="file-sign" size={28} color="#FFFFFF" />

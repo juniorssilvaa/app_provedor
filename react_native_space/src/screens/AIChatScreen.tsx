@@ -70,15 +70,27 @@ export const AIChatScreen: React.FC = () => {
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
+      (event) => {
+        // Aguarda um pouco para garantir que o layout foi ajustado
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
       () => {
-        InteractionManager.runAfterInteractions(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-        });
+        // Scroll para o final quando o teclado fecha
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       }
     );
 
     return () => {
       keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
     };
   }, []);
 
@@ -317,7 +329,7 @@ export const AIChatScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -328,19 +340,26 @@ export const AIChatScreen: React.FC = () => {
           <Text style={styles.headerTitle}>Assistente Técnico e Financeiro</Text>
         </View>
         <View style={styles.headerRight}>
-          {isAnalyzing && <ActivityIndicator size="small" color={colors.primary} />}
+          {isAnalyzing ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
         </View>
       </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        enabled={true}
       >
         <ScrollView
           ref={scrollViewRef}
           style={styles.chatContent}
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
         >
           {messages.map(renderMessage)}
           {isTyping && (
@@ -367,6 +386,13 @@ export const AIChatScreen: React.FC = () => {
             value={inputText}
             onChangeText={setInputText}
             multiline
+            onFocus={() => {
+              // Scroll para o final quando o input recebe foco
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 300);
+            }}
+            blurOnSubmit={false}
           />
           <TouchableOpacity
             style={[styles.sendButton, !inputText.trim() && { opacity: 0.5 }]}
@@ -396,18 +422,21 @@ const createStyles = (colors: any) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       backgroundColor: colors.cardBackground,
+      position: 'relative',
     },
     backButton: {
       width: 40,
       height: 40,
       justifyContent: 'center',
       alignItems: 'center',
+      zIndex: 10,
     },
     headerTitleContainer: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      paddingHorizontal: 8,
     },
     headerTitle: {
       fontSize: 18,
@@ -418,6 +447,14 @@ const createStyles = (colors: any) =>
     headerRight: {
       width: 40,
       alignItems: 'center',
+      zIndex: 10,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 2,
     },
     chatContent: {
       flex: 1,
@@ -425,6 +462,7 @@ const createStyles = (colors: any) =>
     scrollContent: {
       padding: 16,
       paddingBottom: 24,
+      flexGrow: 1,
     },
     messageWrapper: {
       flexDirection: 'row',
@@ -515,9 +553,11 @@ const createStyles = (colors: any) =>
       flexDirection: 'row',
       alignItems: 'flex-end',
       padding: 12,
+      paddingBottom: Platform.OS === 'android' ? 12 : undefined,
       backgroundColor: colors.cardBackground,
       borderTopWidth: 1,
       borderTopColor: colors.border,
+      minHeight: 60,
     },
     input: {
       flex: 1,
