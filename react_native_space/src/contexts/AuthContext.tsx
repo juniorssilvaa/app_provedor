@@ -63,8 +63,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       console.log('Registrando dispositivo:', { cpf: userData.cpfCnpj, hasToken: !!pushToken, customerId });
       
+      // 1. Registrar Usuário (Legacy + Device básico)
       await axios.post(`${config.apiBaseUrl}app/register/`, payload);
-      console.log('Dispositivo e usuário registrados no backend com sucesso.');
+
+      // 2. Registrar Dispositivo (Novo Endpoint Dedicado - Push/Isolation)
+      // Isso garante que a lógica de push mais recente (views_push.py) seja acionada
+      if (pushToken) {
+        const devicePayload = {
+            provider_token: config.apiToken,
+            push_token: pushToken,
+            platform: Platform.OS,
+            cpf: userData.cpfCnpj,
+            // user_id: não temos o ID interno ainda se acabou de criar, mas o CPF resolve
+            device_model: Device.modelName,
+            device_os: Device.osVersion
+        };
+        await axios.post(`${config.apiBaseUrl}devices/register/`, devicePayload);
+        console.log('Dispositivo registrado no endpoint dedicado (devices/register) com sucesso.');
+      }
+
+      console.log('Fluxo de registro concluído.');
     } catch (error) {
       console.warn('Falha ao registrar dispositivo no backend:', error);
     }
