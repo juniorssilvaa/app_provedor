@@ -44,7 +44,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  deploy-portainer:
+  deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -56,9 +56,9 @@ jobs:
           echo "🔍 Verificando conexão com Portainer..."
           
           # Configurações
-          PORTAINER_URL="${{ secrets.PORTAINER_URL }}"
+          PORTAINER_URL="https://app-provedor.niochat.com.br"
           API_KEY="${{ secrets.PORTAINER_API_KEY }}"
-          ENDPOINT_ID="${{ vars.PORTAINER_ENV_ID }}"
+          ENDPOINT_ID="1" # ID fixo conforme solicitado
           STACK_ID="1" # ID fixo conforme solicitado
           
           # Verifica se o jq está instalado (geralmente está no ubuntu-latest)
@@ -69,7 +69,7 @@ jobs:
 
           # 1. Verificar Stack
           echo "Fetching stack info..."
-          RESPONSE=$(curl -s -H "X-API-Key: $API_KEY" "$PORTAINER_URL/api/stacks/$STACK_ID")
+          RESPONSE=$(curl -s -k -H "X-API-Key: $API_KEY" "$PORTAINER_URL/api/stacks/$STACK_ID")
           
           if [[ $RESPONSE == *"Id"* ]]; then
             echo "✅ Stack encontrada: ID=$STACK_ID"
@@ -87,7 +87,7 @@ jobs:
           PAYLOAD=$(jq -n --arg content "$(<docker-compose.yml)" \
             '{stackFileContent: $content, env: [], prune: false, pullImage: true}')
 
-          UPDATE_RESPONSE=$(curl -s -X PUT \
+          UPDATE_RESPONSE=$(curl -s -k -X PUT \
             -H "X-API-Key: $API_KEY" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" \
