@@ -41,15 +41,34 @@ jobs:
 
       - name: Inject API Token
         env:
-          # Usa o input manual se existir, senão usa o secret como fallback
-          API_TOKEN: ${{ inputs.api_token || secrets.API_TOKEN }}
+          # Prioridade: Input Manual > Secret Específico (Branch) > Secret Global
+          API_TOKEN_INPUT: ${{ inputs.api_token }}
+          API_TOKEN_GLOBAL: ${{ secrets.API_TOKEN }}
+          API_TOKEN_NANET: ${{ secrets.API_TOKEN_NANET }}
         run: |
-          if [ -z "$API_TOKEN" ]; then
-            echo "Erro: Nenhum API Token fornecido (nem via input, nem via secrets)."
+          TOKEN="$API_TOKEN_INPUT"
+          
+          # Se não veio via input (automático), tenta descobrir pela branch
+          if [ -z "$TOKEN" ]; then
+            if [[ "${{ github.ref_name }}" == *"nanet"* ]]; then
+              TOKEN="$API_TOKEN_NANET"
+              echo "Usando token específico do NANET."
+            fi
+          fi
+          
+          # Fallback para o token global se ainda estiver vazio
+          if [ -z "$TOKEN" ]; then
+            TOKEN="$API_TOKEN_GLOBAL"
+            echo "Usando token global (fallback)."
+          fi
+
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Erro Fatal: Nenhum API Token encontrado. Cadastre o segredo 'API_TOKEN' ou 'API_TOKEN_NANET' nas configurações do GitHub."
             exit 1
           fi
+          
           # Substitui o placeholder pelo token real
-          sed -i "s/TOKEN_INTEGRACAO_PROVEDOR/$API_TOKEN/g" src/config/index.ts
+          sed -i "s/TOKEN_INTEGRACAO_PROVEDOR/$TOKEN/g" src/config/index.ts
           echo "API Token injetado com sucesso!"
 
       - name: Decode Keystore
