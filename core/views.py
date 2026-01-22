@@ -85,7 +85,7 @@ def dashboard(request):
     active_users = AppUser.objects.filter(provider=provider, active=True).count()
     inactive_users = total_users - active_users
     
-    notifications = Notification.objects.filter(provider=provider).order_by('-sent_at')
+    notifications = NotificationLog.objects.filter(provider=provider).order_by('-created_at')
     total_notifications = notifications.count()
     
     # Calculate stats
@@ -108,7 +108,7 @@ def dashboard(request):
     chart_data_failed = [0] * 7
     
     for n in notifications:
-        n_date = n.sent_at.date()
+        n_date = n.created_at.date()
         if n_date in dates:
             idx = dates.index(n_date)
             chart_data_sent[idx] += n.success_count
@@ -393,7 +393,10 @@ def notification_list(request):
                     failure_count=failed
                 )
                 
-                messages.success(request, f"Notificação processada! Enviados: {sent}, Falhas: {failed}")
+                if sent > 0:
+                    messages.success(request, f"Notificação enviada com sucesso para {sent} dispositivos.")
+                else:
+                    messages.warning(request, f"Envio finalizado, mas nenhum dispositivo recebeu a mensagem. Falhas: {failed}")
             elif result.get('reason') == 'no_devices_found':
                 debug = result.get('debug', {})
                 msg = "Nenhum dispositivo encontrado para receber esta mensagem."
@@ -768,16 +771,21 @@ def provider_sgp_integrations(request):
     provider = request.user.provider
 
     if request.method == 'POST':
-        sgp_url = request.POST.get('sgp_url')
-        sgp_token = request.POST.get('sgp_token')
-        sgp_app_name = request.POST.get('sgp_app_name')
+        sgp_url = request.POST.get('sgp_url', '').strip()
+        sgp_token = request.POST.get('sgp_token', '').strip()
+        sgp_app_name = request.POST.get('sgp_app_name', '').strip()
         
         provider.sgp_url = sgp_url
-        provider.sgp_token = sgp_token
+        # Se sgp_token for vazio, salvar como None para não violar unique constraint
+        provider.sgp_token = sgp_token if sgp_token else None
         provider.sgp_app_name = sgp_app_name
-        provider.save()
         
-        messages.success(request, 'Configurações de integração SGP atualizadas com sucesso!')
+        try:
+            provider.save()
+            messages.success(request, 'Configurações de integração SGP atualizadas com sucesso!')
+        except Exception as e:
+            messages.error(request, f'Erro ao salvar configurações: {str(e)}')
+        
         return redirect('provider_sgp_integrations')
 
     context = {

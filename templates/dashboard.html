@@ -150,12 +150,12 @@
                 <h4 class="text-sm font-bold text-white mb-1">{{ notif.title }}</h4>
                 <p class="text-xs text-gray-400">{{ notif.body|truncatechars:50 }}</p>
                 <div class="mt-1 flex items-center text-xs text-gray-500">
-                    <span>{{ notif.sent_at|date:"d/m/Y, H:i:s" }}</span>
+                    <span>{{ notif.created_at|date:"d/m/Y, H:i:s" }}</span>
                     <span class="mx-1">•</span>
                     <span>{{ notif.recipients_count }} enviados</span>
                 </div>
             </div>
-            <span class="px-3 py-1 bg-gray-600 rounded-full text-xs font-bold text-gray-300 uppercase">{{ notif.status }}</span>
+            <span class="px-3 py-1 bg-gray-600 rounded-full text-xs font-bold text-gray-300 uppercase">{% if notif.success_count > 0 %}Enviado{% else %}Falha{% endif %}</span>
         </div>
         {% empty %}
         <div class="text-center py-4 text-gray-500">Nenhuma notificação enviada recentemente</div>
