@@ -42,3 +42,17 @@ react_native_space/node_modules/
 react_native_space/android/app/build/
 react_native_space/.expo/
 react_native_space/android/.kotlin/
+
+# Local credentials / artifacts (never commit)
+GITHUB_ACTIONS_CREDENTIALS.txt
+firebase-credentials.json
+app-release*.apk
+*.apk
+*.aab
+hs_err_pid*.log
+replay_pid*.log
+build_log*.txt
+
+# Android keystore helper files (never commit)
+react_native_space/android/app/debug.keystore
+react_native_space/android/app/*keystore_base64*.txt

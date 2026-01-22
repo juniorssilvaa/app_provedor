@@ -33,6 +33,7 @@ export const BottomTabNavigator: React.FC = () => {
 
   return (
     <Tab.Navigator
+      id="MainTabs"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
@@ -97,12 +98,6 @@ export const BottomTabNavigator: React.FC = () => {
               </View>
             </TouchableOpacity>
           ),
-        }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            handleMiddleButtonPress();
-          },
         }}
       />
 

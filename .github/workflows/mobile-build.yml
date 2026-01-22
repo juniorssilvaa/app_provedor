@@ -73,10 +73,27 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           # Remove newlines and decode
-          echo "$ANDROID_KEYSTORE_BASE64" | tr -d '\n\r' | base64 --decode > android/app/niochat-global.keystore
+          echo "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r\t' | base64 --decode > android/app/niochat-global.keystore
+
+      - name: Verify Keystore Password
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ ! -s "android/app/niochat-global.keystore" ]; then
+            echo "::error::Keystore não foi gerado (arquivo vazio ou inexistente). Verifique ANDROID_KEYSTORE_BASE64."
+            exit 1
+          fi
+
+          if [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "::error::Segredo ANDROID_KEYSTORE_PASSWORD está vazio ou não cadastrado."
+            exit 1
+          fi
+
+          keytool -list -keystore "android/app/niochat-global.keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" >/dev/null
 
       - name: Build Android Release (AAB & APK)
         env:
+          ORG_GRADLE_PROJECT_NANET_UPLOAD_STORE_FILE: niochat-global.keystore
           ORG_GRADLE_PROJECT_NANET_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_NANET_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ORG_GRADLE_PROJECT_NANET_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}

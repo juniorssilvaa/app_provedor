@@ -32,6 +32,7 @@ export const RootNavigator: React.FC = () => {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
+        id="RootStack"
         initialRouteName={initialRouteName}
         screenOptions={{
           headerShown: false,

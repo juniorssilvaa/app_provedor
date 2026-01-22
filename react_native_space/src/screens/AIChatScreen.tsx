@@ -449,13 +449,6 @@ const createStyles = (colors: any) =>
       alignItems: 'center',
       zIndex: 10,
     },
-    backButton: {
-      width: 40,
-      height: 40,
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 2,
-    },
     chatContent: {
       flex: 1,
     },
