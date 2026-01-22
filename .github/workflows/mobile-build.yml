@@ -39,7 +39,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Inject API Token
+      - name: Inject API Token (Optional)
         env:
           # Prioridade: Input Manual > Secret Específico (Branch) > Secret Global
           API_TOKEN_INPUT: ${{ inputs.api_token }}
@@ -52,24 +52,21 @@ jobs:
           if [ -z "$TOKEN" ]; then
             if [[ "${{ github.ref_name }}" == *"nanet"* ]]; then
               TOKEN="$API_TOKEN_NANET"
-              echo "Usando token específico do NANET."
             fi
           fi
           
-          # Fallback para o token global se ainda estiver vazio
+          # Fallback para o token global
           if [ -z "$TOKEN" ]; then
             TOKEN="$API_TOKEN_GLOBAL"
-            echo "Usando token global (fallback)."
           fi
 
-          if [ -z "$TOKEN" ]; then
-            echo "::error::Erro Fatal: Nenhum API Token encontrado. Cadastre o segredo 'API_TOKEN' ou 'API_TOKEN_NANET' nas configurações do GitHub."
-            exit 1
+          if [ -n "$TOKEN" ]; then
+            # Substitui o placeholder pelo token real APENAS se houver um token nos secrets/input
+            sed -i "s/TOKEN_INTEGRACAO_PROVEDOR/$TOKEN/g" src/config/index.ts
+            echo "API Token injetado via Secrets/Input com sucesso!"
+          else
+            echo "Aviso: Nenhum segredo encontrado. O build usará o token que estiver hardcoded no arquivo src/config/index.ts."
           fi
-          
-          # Substitui o placeholder pelo token real
-          sed -i "s/TOKEN_INTEGRACAO_PROVEDOR/$TOKEN/g" src/config/index.ts
-          echo "API Token injetado com sucesso!"
 
       - name: Decode Keystore
         env:
