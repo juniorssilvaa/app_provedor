@@ -57,8 +57,8 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
         active_devices = Device.objects.filter(provider_id=provider_id, active=True).count()
         devices_with_token = Device.objects.filter(provider_id=provider_id).exclude(push_token__isnull=True).exclude(push_token='').count()
         
-        print(f"[{source}] Falha no envio: Nenhum dispositivo com token encontrado para Provider {provider_id}.")
-        print(f"DEBUG: Total={total_devices}, Ativos={active_devices}, Com Token={devices_with_token}")
+        # print(f"[{source}] Falha no envio: Nenhum dispositivo com token encontrado para Provider {provider_id}.")
+        # print(f"DEBUG: Total={total_devices}, Ativos={active_devices}, Com Token={devices_with_token}")
         
         return {
             'status': 'skipped', 
@@ -131,16 +131,18 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
                             try:
                                 # Remove apenas os primeiros caracteres para log (segurança)
                                 token_preview = invalid_token[:20] + '...' if len(invalid_token) > 20 else invalid_token
-                                print(f"Token inválido removido: {token_preview} (Erro: {error_code})")
+                                # print(f"Token inválido removido: {token_preview} (Erro: {error_code})")
                                 Device.objects.filter(push_token=invalid_token).update(active=False, push_token='')
                             except Exception as cleanup_error:
-                                print(f"Erro ao limpar token inválido: {cleanup_error}")
+                                # print(f"Erro ao limpar token inválido: {cleanup_error}")
+                                pass
                         else:
                             # Outros tipos de erro (não relacionados a token inválido)
-                            print(f"Falha envio token (outro erro): {error_message}")
+                            # print(f"Falha envio token (outro erro): {error_message}")
+                            pass
 
         except Exception as e:
-            print(f"Erro CRÍTICO no envio de lote FCM: {e}")
+            # print(f"Erro CRÍTICO no envio de lote FCM: {e}")
             failure_count += len(batch_tokens)
 
     # 3. Auditoria (Log Obrigatório)
@@ -155,7 +157,8 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
             failure_count=failure_count
         )
     except Exception as e:
-        print(f"CRÍTICO: Falha ao salvar log de notificação: {e}")
+        # print(f"CRÍTICO: Falha ao salvar log de notificação: {e}")
+        pass
 
     return {
         'status': 'completed',

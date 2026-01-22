@@ -159,19 +159,15 @@ def sgp_webhook(request):
                 # Se for Lista ou outro, ignora o body e usa só URL
         
         # LOG EDUCACIONAL PARA DEBUG
-        print(f"DEBUG SGP WEBHOOK: Method={request.method}, Data={data}")
+        # print(f"DEBUG SGP WEBHOOK: Method={request.method}, Data={data}")
 
         # DETECÇÃO DE PROBLEMA DE REDIRECT (SLASH)
         # Se o SGP diz que é POST (via query param), mas o Django recebeu GET,
         # é quase certeza que faltou a barra '/' no final da URL no SGP.
         if request.method == 'GET' and (data.get('method') == 'POST' or data.get('do_post') == 'true'):
-            print("\n" + "="*60)
-            print("🚨 ALERTA DE CONFIGURAÇÃO SGP 🚨")
-            print("O SGP está tentando fazer um POST, mas chegou como GET.")
-            print("MOTIVO PROVÁVEL: Faltou a barra '/' no final da URL.")
-            print("CORREÇÃO: Mude '.../sgp?provider_token=...' para '.../sgp/?provider_token=...'")
-            print("CONSEQUÊNCIA: O JSON (Corpo) foi perdido. O Título será o padrão.")
-            print("="*60 + "\n")
+            # Log removido conforme solicitado
+            pass
+
 
         # Busca Token (Prioridade: Body > Query String)
         provider_token = data.get('provider_token')
@@ -229,7 +225,7 @@ def sgp_webhook(request):
         if titulo_recebido:
             titulo = titulo_recebido
         else:
-            print("AVISO: Nenhum título encontrado na requisição. Usando padrão.")
+            # print("AVISO: Nenhum título encontrado na requisição. Usando padrão.")
             titulo = "Nova Mensagem"
 
         # 2. Extração de MENSAGEM (também usada para tentar descobrir o contrato)
@@ -301,9 +297,9 @@ def sgp_webhook(request):
                     
                     # Decodifica URL (Ol%C3%A1 -> Olá, + -> Espaço)
                     mensagem = urllib.parse.unquote_plus(real_msg_encoded)
-                    print(f"RECUPERADO: Mensagem extraída do erro: {mensagem}")
+                    # print(f"RECUPERADO: Mensagem extraída do erro: {mensagem}")
                 except Exception as e:
-                    print(f"FALHA ao extrair mensagem do erro: {e}")
+                    # print(f"FALHA ao extrair mensagem do erro: {e}")
                     return Response({'error': 'Erro no gateway de origem (Loop de Erro).'}, status=400)
             else:
                 # Se não conseguir extrair, rejeita para não mandar lixo para o cliente
@@ -321,7 +317,7 @@ def sgp_webhook(request):
             )
 
         # Log de dados finais extraídos
-        print(f"DEBUG: Dados Extraídos -> Título: {titulo}, Msg: {mensagem}, Link: {link}, Customer: {customer_id}, ContractId: {contract_id}")
+        # print(f"DEBUG: Dados Extraídos -> Título: {titulo}, Msg: {mensagem}, Link: {link}, Customer: {customer_id}, ContractId: {contract_id}")
 
         if not mensagem:
             return Response({'error': 'Mensagem obrigatória (message_body, mensagem ou msg).'}, status=400)
