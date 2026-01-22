@@ -56,12 +56,12 @@ export async function registerForPushNotificationsAsync() {
         token = tokenData.data;
         console.log("Native FCM Token Success:", token);
     } catch (e) {
-        console.error("Error getting push token:", e);
-        // Fallback: Tenta pegar o Expo Push Token se o nativo falhar (embora o backend espere FCM)
+        console.error("Error getting push token (FCM):", e);
+        // Fallback: Tenta pegar o Expo Push Token se o nativo falhar
         try {
              const expoToken = await Notifications.getExpoPushTokenAsync();
-             console.log("Fallback Expo Token:", expoToken.data);
-             // Não usamos o expo token por padrão, mas serve para debug
+             token = expoToken.data; // Use expo token as fallback
+             console.log("Fallback Expo Token Success:", token);
         } catch (e2) {
              console.error("Error getting fallback expo token:", e2);
         }

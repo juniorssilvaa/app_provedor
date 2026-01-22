@@ -42,19 +42,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const pushToken = await registerForPushNotificationsAsync();
       
+      if (!pushToken) {
+        console.warn('Push token não obtido. Verifique a configuração do Firebase/Expo.');
+      }
+
+      const customerId = userData.contracts && userData.contracts.length > 0 ? userData.contracts[0].id : null;
+
       const payload = {
         provider_token: config.apiToken,
         cpf: userData.cpfCnpj,
         name: userData.name,
         email: userData.email,
-        customer_id: userData.contracts?.[0]?.id, // Envia o primeiro contrato como referência
+        customer_id: customerId, // Envia o primeiro contrato como referência
         device_platform: Platform.OS,
         device_model: Device.modelName,
         device_os: Device.osVersion,
         device_timestamp: new Date().toISOString(),
-        push_token: pushToken
+        push_token: pushToken || ''
       };
 
+      console.log('Registrando dispositivo:', { cpf: userData.cpfCnpj, hasToken: !!pushToken, customerId });
+      
       await axios.post(`${config.apiBaseUrl}app/register/`, payload);
       console.log('Dispositivo e usuário registrados no backend com sucesso.');
     } catch (error) {
