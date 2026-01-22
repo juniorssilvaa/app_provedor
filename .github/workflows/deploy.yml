@@ -52,11 +52,51 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to Portainer
-        uses: rypet/portainer-stack-deploy-action@v1.3
-        with:
-          portainerUrl: ${{ secrets.PORTAINER_URL }}
-          accessToken: ${{ secrets.PORTAINER_API_KEY }}
-          environmentId: ${{ vars.PORTAINER_ENV_ID }}
-          stackName: app_provedor_stack
-          stackFile: docker-compose.yml
-          image: ghcr.io/${{ github.repository }}:latest
+        run: |
+          echo "🔍 Verificando conexão com Portainer..."
+          
+          # Configurações
+          PORTAINER_URL="${{ secrets.PORTAINER_URL }}"
+          API_KEY="${{ secrets.PORTAINER_API_KEY }}"
+          ENDPOINT_ID="${{ vars.PORTAINER_ENV_ID }}"
+          STACK_ID="1" # ID fixo conforme solicitado
+          
+          # Verifica se o jq está instalado (geralmente está no ubuntu-latest)
+          if ! command -v jq &> /dev/null; then
+              echo "Installing jq..."
+              sudo apt-get update && sudo apt-get install -y jq
+          fi
+
+          # 1. Verificar Stack
+          echo "Fetching stack info..."
+          RESPONSE=$(curl -s -H "X-API-Key: $API_KEY" "$PORTAINER_URL/api/stacks/$STACK_ID")
+          
+          if [[ $RESPONSE == *"Id"* ]]; then
+            echo "✅ Stack encontrada: ID=$STACK_ID"
+            echo "DEBUG: Portainer Response Body: $RESPONSE"
+          else
+            echo "❌ Erro ao conectar ou Stack não encontrada. Resposta: $RESPONSE"
+            exit 1
+          fi
+
+          # 2. Atualizar Stack
+          echo "🔄 Atualizando stack no Portainer (Stack ID: $STACK_ID, Endpoint ID: $ENDPOINT_ID)..."
+          
+          # Ler o arquivo docker-compose.yml e criar o payload JSON de forma segura
+          # Note: pullImage=true força o Portainer a baixar as novas imagens do registry
+          PAYLOAD=$(jq -n --arg content "$(<docker-compose.yml)" \
+            '{stackFileContent: $content, env: [], prune: false, pullImage: true}')
+
+          UPDATE_RESPONSE=$(curl -s -X PUT \
+            -H "X-API-Key: $API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID")
+
+          if [[ $UPDATE_RESPONSE == *"Id"* ]]; then
+            echo "✅ Deploy finalizado com sucesso na stack $STACK_ID"
+            echo "📋 Resposta do Portainer: $UPDATE_RESPONSE"
+          else
+            echo "❌ Erro ao atualizar stack: $UPDATE_RESPONSE"
+            exit 1
+          fi
