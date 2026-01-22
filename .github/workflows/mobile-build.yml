@@ -33,6 +33,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Inject API Token
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: |
+          sed -i "s/TOKEN_INTEGRACAO_PROVEDOR/$API_TOKEN/g" src/config/index.ts
+
       - name: Decode Keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
