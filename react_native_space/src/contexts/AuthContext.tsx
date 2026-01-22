@@ -64,7 +64,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log('Registrando dispositivo:', { cpf: userData.cpfCnpj, hasToken: !!pushToken, customerId });
       
       // 1. Registrar Usuário (Legacy + Device básico)
-      await axios.post(`${config.apiBaseUrl}app/register/`, payload);
+      const registerResponse = await axios.post(`${config.apiBaseUrl}app/register/`, payload);
+      console.log('Resposta app/register:', registerResponse.status, registerResponse.data);
+
+      const registeredUserId = registerResponse.data?.id || registerResponse.data?.user?.id;
 
       // 2. Registrar Dispositivo (Novo Endpoint Dedicado - Push/Isolation)
       // Isso garante que a lógica de push mais recente (views_push.py) seja acionada
@@ -74,17 +77,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             push_token: pushToken,
             platform: Platform.OS,
             cpf: userData.cpfCnpj,
-            // user_id: não temos o ID interno ainda se acabou de criar, mas o CPF resolve
+            user_id: registeredUserId, // Tenta vincular ao ID retornado
             device_model: Device.modelName,
             device_os: Device.osVersion
         };
-        await axios.post(`${config.apiBaseUrl}devices/register/`, devicePayload);
-        console.log('Dispositivo registrado no endpoint dedicado (devices/register) com sucesso.');
+        console.log('Enviando para devices/register:', devicePayload);
+        try {
+            const deviceResponse = await axios.post(`${config.apiBaseUrl}devices/register/`, devicePayload);
+            console.log('Dispositivo registrado no endpoint dedicado com sucesso:', deviceResponse.status, deviceResponse.data);
+        } catch (deviceError: any) {
+            console.error('ERRO ao registrar no endpoint dedicado devices/register:', deviceError.response?.data || deviceError.message);
+        }
       }
 
       console.log('Fluxo de registro concluído.');
-    } catch (error) {
-      console.warn('Falha ao registrar dispositivo no backend:', error);
+    } catch (error: any) {
+      console.warn('Falha ao registrar dispositivo no backend:', error.response?.data || error.message);
     }
   };
 
