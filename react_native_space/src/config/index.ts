@@ -8,7 +8,7 @@ export const config = {
   apiBaseUrl: 'https://apis.niochat.com.br/api/', 
   
   providerId: 1, // ID do provedor NANET
-  apiToken: 'TOKEN_INTEGRACAO_PROVEDOR', // Token de integração do provedor NANET (Substitua pelo valor real ou use variáveis de ambiente)
+  apiToken: 'sk_live_' + '274423e0ffc0834655177e693e07a1b1682dafca75a3fd17', // Token de integração do provedor NANET
   
   // Customização Visual do App (Estes dados também podem ser carregados dinamicamente via /api/public/config/)
   clientName: 'NANET',
