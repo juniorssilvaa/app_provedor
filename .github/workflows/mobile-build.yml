@@ -60,14 +60,14 @@ jobs:
 
       - name: Build Android Release (AAB & APK)
         env:
-          NANET_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          NANET_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          NANET_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_NANET_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_NANET_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_NANET_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew bundleRelease assembleRelease --stacktrace --info
+          ./gradlew bundleRelease assembleRelease --no-daemon --max-workers=2
 
       - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
