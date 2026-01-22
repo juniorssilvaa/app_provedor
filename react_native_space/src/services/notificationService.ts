@@ -5,7 +5,6 @@ import Constants from 'expo-constants';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true, // Ativado para mostrar badge no ícone do app
     shouldShowBanner: true,
