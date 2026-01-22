@@ -48,12 +48,15 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Deploy to Portainer
-        uses: rypet/portainer-stack-deploy-action@v1.3
+        uses: carneirofc/portainer-deploy-action@v1.2.4
         with:
-          portainerUrl: ${{ secrets.PORTAINER_URL }}
-          accessToken: ${{ secrets.PORTAINER_API_KEY }}
-          environmentId: ${{ vars.PORTAINER_ENV_ID }} # ID 1
-          stackName: app_provedor_stack
-          stackFile: docker-compose.yml
-          image: ghcr.io/${{ github.repository }}:latest
+          url: ${{ secrets.PORTAINER_URL }}
+          token: ${{ secrets.PORTAINER_API_KEY }}
+          file: 'docker-compose.yml'
+          stack: 'app_provedor_stack'
+          endpoint: ${{ vars.PORTAINER_ENV_ID }}
+          # image: ghcr.io/${{ github.repository }}:latest # A imagem é definida no docker-compose.yml
