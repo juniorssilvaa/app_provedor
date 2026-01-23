@@ -232,24 +232,43 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const lastInvoice = useMemo(() => {
     if (!activeContract?.invoices || activeContract.invoices.length === 0) return null;
-    // Get all pending invoices (not paid)
+    
+    // Bloqueia faturas para planos gratuitos (valor 0)
+    const planPrice = parseFloat(activeContract.plan?.price?.toString() || '0');
+    if (planPrice === 0) {
+      console.log('[HomeScreen] Plano gratuito detectado (valor 0), ocultando faturas.');
+      return null;
+    }
+
+    // Filtra faturas pendentes (não pagas)
     const pendingInvoices = activeContract.invoices
-      .filter(inv => inv.status !== 'paid')
+      .filter(inv => {
+        if (inv.status === 'paid') return false;
+        
+        // Filtra faturas "futuerras" (ex: faturas geradas para meses distantes que não devem aparecer agora)
+        // Permitimos ver faturas que vencem em até 35 dias a partir de hoje
+        const dueDate = new Date(inv.dueDate);
+        const now = new Date();
+        const futureLimit = new Date();
+        futureLimit.setDate(now.getDate() + 35);
+        
+        return dueDate <= futureLimit;
+      })
       .sort((a, b) => {
-        // Sort by due date ascending (closest to today first)
+        // Ordena por data de vencimento (a mais próxima primeiro)
         const dateA = new Date(a.dueDate).getTime();
         const dateB = new Date(b.dueDate).getTime();
         return dateA - dateB;
       });
-    // If no pending, return the most recent paid one?
-    // Actually, user wants to pay, so pending is better.
+
+    // Se houver faturas pendentes dentro do prazo, retorna a primeira (mais urgente)
     if (pendingInvoices.length > 0) {
       return pendingInvoices[0];
     }
-    // Fallback to most recent paid if none pending
-    return [...activeContract.invoices].sort(
-      (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
-    )[0];
+    
+    // Se não houver faturas pendentes, retornamos null para exibir a mensagem de "Parabéns"
+    // (Anteriormente retornava a última paga, mas o usuário prefere ver a mensagem de parabéns se não houver dívidas)
+    return null;
   }, [activeContract]);
 
   const formatCurrency = (value: number) => {
@@ -272,20 +291,18 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handlePixCopy = async () => {
     // Busca a chave PIX em múltiplas localizações conforme estrutura da API SGP
-    console.log('Last Invoice:', JSON.stringify(lastInvoice, null, 2));
     
     // Primeiro tenta buscar na lastInvoice
     let pixKey =
-      lastInvoice?.codigopix || // Primeiro tenta codigopix direto (minúscula como vem da API)
-      lastInvoice?.codigoPix || // Depois codigoPix (maiúscula)
-      lastInvoice?.pixCode || // Fallback para pixCode genérico, se vier de outro backend
-      (lastInvoice as any)?.links?.[0]?.codigopix || // Dentro de links[0].codigopix
-      (lastInvoice as any)?.links?.[0]?.codigoPix || // Dentro de links[0].codigoPix
+      lastInvoice?.codigopix || 
+      lastInvoice?.codigoPix || 
+      lastInvoice?.pixCode || 
+      (lastInvoice as any)?.links?.[0]?.codigopix || 
+      (lastInvoice as any)?.links?.[0]?.codigoPix || 
       '';
     
     // Se não encontrou na lastInvoice, busca em outras invoices pendentes que tenham PIX
     if (!pixKey || pixKey.trim().length === 0) {
-      console.log('PIX não encontrado na lastInvoice, buscando em outras invoices pendentes...');
       const pendingInvoices = activeContract?.invoices?.filter(inv => inv.status !== 'paid') || [];
       for (const inv of pendingInvoices) {
         const invPixKey =
@@ -297,13 +314,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           '';
         if (invPixKey && invPixKey.trim().length > 0) {
           pixKey = invPixKey;
-          console.log('PIX encontrado em outra invoice:', inv.id);
           break;
         }
       }
     }
     
-    console.log('PIX Key encontrada:', pixKey ? 'SIM' : 'NÃO', pixKey ? pixKey.substring(0, 50) + '...' : '');
     if (pixKey && pixKey.trim().length > 0) {
       await Clipboard.setStringAsync(pixKey.trim());
       Alert.alert('Sucesso', 'Chave PIX copiada para a área de transferência!');

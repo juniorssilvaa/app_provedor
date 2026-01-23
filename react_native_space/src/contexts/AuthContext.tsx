@@ -42,10 +42,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const pushToken = await registerForPushNotificationsAsync();
       
-      if (!pushToken) {
-        console.warn('Push token não obtido. Verifique a configuração do Firebase/Expo.');
-      }
-
       const customerId = userData.contracts && userData.contracts.length > 0 ? userData.contracts[0].id : null;
 
       const payload = {
@@ -53,46 +49,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         cpf: userData.cpfCnpj,
         name: userData.name,
         email: userData.email,
-        customer_id: customerId, // Envia o primeiro contrato como referência
-        // device_platform: Platform.OS,
-        // device_model: Device.modelName,
-        // device_os: Device.osVersion,
-        // device_timestamp: new Date().toISOString(), // Removido para evitar erro 'timezone not defined' no backend
+        customer_id: customerId, 
         push_token: pushToken || ''
       };
 
-      console.log('Registrando dispositivo:', { cpf: userData.cpfCnpj, hasToken: !!pushToken, customerId });
-      
       // 1. Registrar Usuário (Legacy + Device básico)
       const registerResponse = await axios.post(`${config.apiBaseUrl}app/register/`, payload);
-      console.log('Resposta app/register:', registerResponse.status, registerResponse.data);
 
       const registeredUserId = registerResponse.data?.id || registerResponse.data?.user?.id || registerResponse.data?.user_id;
 
       // 2. Registrar Dispositivo (Novo Endpoint Dedicado - Push/Isolation)
-      // Isso garante que a lógica de push mais recente (views_push.py) seja acionada
       if (pushToken) {
         const devicePayload = {
             provider_token: config.apiToken,
             push_token: pushToken,
             platform: Platform.OS,
             cpf: userData.cpfCnpj,
-            user_id: registeredUserId, // Tenta vincular ao ID retornado
+            user_id: registeredUserId, 
             device_model: Device.modelName,
             device_os: Device.osVersion
         };
-        console.log('Enviando para devices/register:', devicePayload);
         try {
-            const deviceResponse = await axios.post(`${config.apiBaseUrl}devices/register/`, devicePayload);
-            console.log('Dispositivo registrado no endpoint dedicado com sucesso:', deviceResponse.status, deviceResponse.data);
+            await axios.post(`${config.apiBaseUrl}devices/register/`, devicePayload);
         } catch (deviceError: any) {
-            console.error('ERRO ao registrar no endpoint dedicado devices/register:', deviceError.response?.data || deviceError.message);
+            // Silently fail in production
         }
       }
 
-      console.log('Fluxo de registro concluído.');
     } catch (error: any) {
-      console.warn('Falha ao registrar dispositivo no backend:', error.response?.data || error.message);
+      // Silently fail in production
     }
   };
 

@@ -43,8 +43,8 @@ export const BottomTabNavigator: React.FC = () => {
           borderTopColor: 'rgba(255, 255, 255, 0.1)',
           borderTopWidth: 1,
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-          height: Platform.OS === 'ios' ? 85 : 70,
+          paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+          height: Platform.OS === 'ios' ? 100 : 85,
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: {
