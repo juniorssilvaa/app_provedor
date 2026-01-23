@@ -358,7 +358,8 @@ def ai_chat_api(request):
         # Prepara o prompt do sistema formatado
         system_msg = SYSTEM_PROMPT.format(
             client_context=client_context,
-            telemetry_context=telemetry_context
+            telemetry_context=telemetry_context,
+            nome_do_provedor=provider.name
         )
 
         # Prepara o histórico para o formato da nova SDK
