@@ -104,7 +104,7 @@ export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
               </View>
               
               <Text style={styles.invoiceDate}>
-                Vence em {formatDate(invoice.dueDate)}
+                {invoice.status === 'paid' ? 'Vencia em' : 'Vence em'} {formatDate(invoice.dueDate)}
               </Text>
               
               <View style={styles.cardFooter}>

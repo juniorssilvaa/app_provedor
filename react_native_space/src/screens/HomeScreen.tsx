@@ -437,7 +437,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 100, 120), paddingTop: 16 }}
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 60, 80), paddingTop: 16 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

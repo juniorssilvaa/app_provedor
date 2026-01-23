@@ -30,6 +30,10 @@ interface Message {
   text: string;
   role: 'user' | 'assistant' | 'system';
   timestamp: Date;
+  paymentData?: {
+    codigoPix?: string;
+    linhaDigitavel?: string;
+  };
 }
 
 export const AIChatScreen: React.FC = () => {
@@ -168,6 +172,7 @@ export const AIChatScreen: React.FC = () => {
             text: msgText,
             role: 'assistant',
             timestamp: new Date(),
+            paymentData: response.data.payment_data || undefined,
           };
           setMessages(prev => [...prev, aiMessage]);
           // Pequeno delay entre mensagens para parecer mais humano
@@ -179,6 +184,7 @@ export const AIChatScreen: React.FC = () => {
           text: response.data.response,
           role: 'assistant',
           timestamp: new Date(),
+          paymentData: response.data.payment_data || undefined,
         };
         setMessages(prev => [...prev, aiMessage]);
       }
@@ -226,17 +232,43 @@ export const AIChatScreen: React.FC = () => {
 
   const renderMessage = (message: Message) => {
     const isAssistant = message.role === 'assistant';
-    const pixCode = isAssistant ? extractPixCode(message.text) : null;
-    const barcode = isAssistant ? extractBarcode(message.text) : null;
+    
+    // Usar dados de pagamento da resposta JSON (prioridade) ou extrair do texto (fallback)
+    const pixCode = isAssistant 
+      ? (message.paymentData?.codigoPix || extractPixCode(message.text) || null)
+      : null;
+    const barcode = isAssistant 
+      ? (message.paymentData?.linhaDigitavel || extractBarcode(message.text) || null)
+      : null;
     const pdfLink = isAssistant ? extractPdfLink(message.text) : null;
 
-    // Limpa o texto da IA para não mostrar o código Pix longo no balão de conversa
+    // Limpa o texto da IA para não mostrar códigos longos no balão de conversa
     let cleanText = message.text;
     if (pixCode) {
       cleanText = cleanText.replace(pixCode, '').trim();
       // Remove possíveis prefixos como "Código Pix:" ou "Chave Pix:" que ficam sobrando
-      cleanText = cleanText.replace(/(?:Código|Chave|Copia e cola)\s*Pix:\s*$/i, '').trim();
-      if (!cleanText) cleanText = "Aqui está o seu QR Code para pagamento:";
+      cleanText = cleanText.replace(/(?:Código|Chave|Copia e cola)\s*Pix[:\s]*/gi, '').trim();
+    }
+    if (barcode) {
+      cleanText = cleanText.replace(barcode, '').trim();
+      // Remove possíveis prefixos de linha digitável
+      cleanText = cleanText.replace(/(?:Linha\s+digitável|Código\s+de\s+barras)[:\s]*/gi, '').trim();
+    }
+    // Remove linhas que contenham apenas códigos longos
+    cleanText = cleanText.split('\n')
+      .filter(line => {
+        const trimmed = line.trim();
+        // Remove linhas que são apenas códigos PIX ou linha digitável
+        if (trimmed.match(/^000201[a-zA-Z0-9.\-_$#@%&*\/]{80,}$/)) return false;
+        if (trimmed.match(/^\d{5}\.\d{5}\s\d{5}\.\d{6}\s\d{5}\.\d{6}\s\d\s\d{14}$/)) return false;
+        if (trimmed.match(/^\d{44,48}$/)) return false;
+        return true;
+      })
+      .join('\n')
+      .trim();
+    
+    if (!cleanText && (pixCode || barcode)) {
+      cleanText = "Aqui estão as opções de pagamento:";
     }
 
     return (
@@ -287,22 +319,39 @@ export const AIChatScreen: React.FC = () => {
                       onPress={() => copyToClipboard(pixCode, 'Pix')}
                       style={styles.actionButton}
                       icon="content-copy"
-                      buttonColor="#25D366"
+                      buttonColor={colors.primary}
+                      textColor="#FFFFFF"
                     >
                       Copiar Chave Pix
                     </Button>
+                    
+                    {/* Botão de Boleto abaixo do PIX, na mesma seção */}
+                    {barcode && (
+                      <Button 
+                        mode="contained" 
+                        onPress={() => copyToClipboard(barcode, 'Boleto')}
+                        style={[styles.actionButton, { marginTop: 12 }]}
+                        icon="barcode"
+                        buttonColor={colors.primary}
+                        textColor="#FFFFFF"
+                      >
+                        Copiar Código de Barras
+                      </Button>
+                    )}
                   </View>
                 )}
 
-                {barcode && (
-                  <View style={[styles.paymentSection, pixCode && { marginTop: 16, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }]}>
+                {/* Se não houver PIX mas houver boleto */}
+                {!pixCode && barcode && (
+                  <View style={styles.paymentSection}>
                     <Text style={styles.sectionLabel}>Boleto - Linha Digitável</Text>
                     <Button 
-                      mode="outlined" 
+                      mode="contained" 
                       onPress={() => copyToClipboard(barcode, 'Boleto')}
                       style={styles.actionButton}
                       icon="barcode"
-                      textColor={colors.primary}
+                      buttonColor={colors.primary}
+                      textColor="#FFFFFF"
                     >
                       Copiar Código de Barras
                     </Button>
