@@ -16,7 +16,7 @@ class Provider(models.Model):
 
     # Campos para Integração SGP (Legacy - Mantidos para compatibilidade se necessário)
     sgp_url = models.URLField(max_length=255, blank=True, null=True, help_text="URL base do SGP (ex: https://r7fibra.sgp.tsmx.com.br)")
-    sgp_token = models.CharField(max_length=255, unique=True, blank=True, null=True, help_text="Token de autenticação para webhooks do SGP.")
+    sgp_token = models.CharField(max_length=500, unique=True, blank=True, null=True, help_text="Token de autenticação para webhooks do SGP.")
     sgp_app_name = models.CharField(max_length=255, blank=True, null=True, help_text="Nome do App cadastrado no SGP (ex: webchat)")
     sgp_token_created_at = models.DateTimeField(blank=True, null=True, help_text="Data de criação do token SGP.")
     webhook_url = models.URLField(max_length=500, blank=True, null=True, help_text="URL customizada do webhook para integração SGP")

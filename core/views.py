@@ -775,6 +775,8 @@ def provider_sgp_integrations(request):
         sgp_token = request.POST.get('sgp_token', '').strip()
         sgp_app_name = request.POST.get('sgp_app_name', '').strip()
         
+        print(f"DEBUG: Saving SGP Config - Token Length: {len(sgp_token)}")
+        
         provider.sgp_url = sgp_url
         # Se sgp_token for vazio, salvar como None para não violar unique constraint
         provider.sgp_token = sgp_token if sgp_token else None
@@ -782,11 +784,21 @@ def provider_sgp_integrations(request):
         
         try:
             provider.save()
+            print(f"DEBUG: Saved Provider successfully. Token saved: {bool(provider.sgp_token)}")
             messages.success(request, 'Configurações de integração SGP atualizadas com sucesso!')
+            # Força recarregamento do objeto para garantir que os dados exibidos sejam os do banco
+            provider.refresh_from_db()
+            return redirect('provider_sgp_integrations')
         except Exception as e:
             messages.error(request, f'Erro ao salvar configurações: {str(e)}')
-        
-        return redirect('provider_sgp_integrations')
+            context = {
+                'segment': 'provider_integrations_sgp',
+                'provider': provider
+            }
+            return render(request, 'pages/provider/integrations_sgp.html', context)
+
+    # GET request
+    provider.refresh_from_db()
 
     context = {
         'segment': 'provider_integrations_sgp',
