@@ -4,10 +4,10 @@ from django.contrib.auth import logout, authenticate
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 from django.core.paginator import Paginator
 from django.contrib import messages
-from .models import Provider, Notification, InAppWarning, AppConfig, AppUser, SystemSettings, Plan, CustomUser
+from .models import Provider, Notification, NotificationLog, InAppWarning, AppConfig, AppUser, SystemSettings, Plan, CustomUser
 from api.push_service import send_push_notification_core
 
 
@@ -85,34 +85,48 @@ def dashboard(request):
     active_users = AppUser.objects.filter(provider=provider, active=True).count()
     inactive_users = total_users - active_users
     
-    notifications = NotificationLog.objects.filter(provider=provider).order_by('-created_at')
-    total_notifications = notifications.count()
+    # Otimizado: Agregar no banco ao invés de carregar tudo na memória
+    notifications_qs = NotificationLog.objects.filter(provider=provider)
+    total_notifications = notifications_qs.count()
     
-    # Calculate stats
-    success_count = sum(n.success_count for n in notifications)
-    failure_count = sum(n.failure_count for n in notifications)
+    stats = notifications_qs.aggregate(
+        total_success=Sum('success_count'),
+        total_failure=Sum('failure_count')
+    )
+    success_count = stats['total_success'] or 0
+    failure_count = stats['total_failure'] or 0
+    
     total_sent = success_count + failure_count
     delivery_rate = int((success_count / total_sent * 100)) if total_sent > 0 else 0
     
-    last_notification = notifications.first()
+    last_notification = notifications_qs.order_by('-created_at').first()
     
     # Dynamic dates for the last 7 days
     from django.utils import timezone
     from datetime import timedelta
     today = timezone.now().date()
+    seven_days_ago = today - timedelta(days=6)
+    
     dates = [today - timedelta(days=i) for i in range(6, -1, -1)]
     chart_labels_7d = [d.strftime('%d/%m') for d in dates]
     
-    # Chart data from notifications
+    # Chart data from notifications (Filtered for last 7 days only)
     chart_data_sent = [0] * 7
     chart_data_failed = [0] * 7
     
-    for n in notifications:
-        n_date = n.created_at.date()
-        if n_date in dates:
-            idx = dates.index(n_date)
-            chart_data_sent[idx] += n.success_count
-            chart_data_failed[idx] += n.failure_count
+    # Busca apenas logs dos últimos 7 dias para o gráfico
+    recent_logs = notifications_qs.filter(created_at__date__gte=seven_days_ago).values('created_at__date').annotate(
+        daily_success=Sum('success_count'),
+        daily_failure=Sum('failure_count')
+    )
+
+    # Mapear para acesso rápido
+    logs_map = {log['created_at__date']: log for log in recent_logs}
+
+    for i, date_obj in enumerate(dates):
+        if date_obj in logs_map:
+            chart_data_sent[i] = logs_map[date_obj]['daily_success'] or 0
+            chart_data_failed[i] = logs_map[date_obj]['daily_failure'] or 0
             
     # Devices
     from .models import Device
@@ -144,7 +158,7 @@ def dashboard(request):
         'android_percentage': int((android_devices / total_devices * 100)) if total_devices > 0 else 0,
         
         'top_models': top_models,
-        'recent_notifications': notifications[:5],
+        'recent_notifications': notifications_qs.order_by('-created_at')[:5],
         
         'chart_labels_7d': chart_labels_7d,
         'chart_data_sent': chart_data_sent,

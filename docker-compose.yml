@@ -7,6 +7,15 @@ services:
   # ===============================
   postgres:
     image: postgres:14
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-app_provedor_db}
       POSTGRES_USER: ${POSTGRES_USER:-app_user}
@@ -45,7 +54,16 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-SOMxcet2sQT5oJHFhUBStA}@postgres:5432/${POSTGRES_DB:-app_provedor_db}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       FIREBASE_CREDENTIALS: /app/service_account_key.json
-    command: gunicorn niochat.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    command: gunicorn niochat.wsgi:application --bind 0.0.0.0:8000 --workers 2
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.80'
+          memory: 512M
+        reservations:
+          cpus: '0.40'
+          memory: 300M
     labels:
       - "traefik.enable=true"
       # Rota unificada para Painel, APIs e Webhooks
@@ -69,6 +87,15 @@ services:
     environment:
       FIREBASE_CREDENTIALS: /app/service_account_key.json
     command: uvicorn webhook_server:app --host 0.0.0.0 --port 8001
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app-provedor-webhook.rule=Host(`webhooks.niochat.com.br`)"
@@ -97,6 +124,15 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-SOMxcet2sQT5oJHFhUBStA}@postgres:5432/${POSTGRES_DB:-app_provedor_db}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       FIREBASE_CREDENTIALS: /app/service_account_key.json
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
     entrypoint: /bin/sh
     command: >
       -c "
