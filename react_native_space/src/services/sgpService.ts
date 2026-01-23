@@ -87,22 +87,72 @@ class SGPService {
   }
 
   /**
-   * Consulta faturas por CPF/CNPJ
+   * Consulta faturas por CPF/CNPJ usando múltiplos endpoints para garantir dados completos
    */
   async consultaFaturas(cpfCnpj: string): Promise<Invoice[]> {
     try {
       const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
-      console.log('[SGP] Consultando faturas para:', cleanCpfCnpj);
       
-      const response = await this.getApi().post<SGPTitulosResponse>('api/ura/titulos/', this.getSGPPayload({
-        cpfcnpj: cleanCpfCnpj,
-      }));
+      // 1. Consulta 2ª Via (Dados de pagamento mais precisos para faturas em aberto)
+      let invoices2via: Invoice[] = [];
+      try {
+        const response2via = await this.getApi().post<any>('api/ura/fatura2via/', this.getSGPPayload({
+          cpfcnpj: cleanCpfCnpj,
+        }));
+        if (response2via.data?.links) {
+          invoices2via = this.mapInvoices(response2via.data.links, response2via.data.contratoId?.toString());
+        }
+      } catch (err2via) {
+        // Silently fail
+      }
 
-      // SGP pode retornar em 'titulos' ou 'links' dependendo da versão/endpoint
-      const rawInvoices = response.data?.titulos || (response.data as any)?.links || [];
-      return this.mapInvoices(rawInvoices);
+      // 2. Consulta Títulos (Histórico completo - agora usando /api/ura/titulos/)
+      let invoicesTitulos: Invoice[] = [];
+      try {
+        const responseTitulos = await this.getApi().post<SGPTitulosResponse>('api/ura/titulos/', this.getSGPPayload({
+          cpfcnpj: cleanCpfCnpj,
+        }));
+        if (responseTitulos.data?.titulos) {
+          invoicesTitulos = this.mapInvoices(responseTitulos.data.titulos);
+        }
+      } catch (errTitulos) {
+        // Silently fail
+      }
+
+      // 3. Mesclar faturas
+      const mergedMap = new Map<string, Invoice>();
+      
+      // Filtramos conforme pedido do usuário: abertas/atrasadas + 2 últimas pagas
+      const paidInvoices = invoicesTitulos
+        .filter(inv => inv.status === 'paid')
+        .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
+        .slice(0, 2);
+      
+      // Mantém todas as abertas/atrasadas encontradas em titulos
+      invoicesTitulos.forEach(inv => {
+        if (inv.status !== 'paid') {
+          mergedMap.set(inv.id, inv);
+        }
+      });
+      
+      paidInvoices.forEach(inv => {
+        mergedMap.set(inv.id, inv);
+      });
+
+      // Adiciona/Sobrescreve com dados da 2ª via (que costumam ter PIX e Linha Digitável mais atualizados)
+      invoices2via.forEach(inv => {
+        const existing = mergedMap.get(inv.id);
+        if (existing) {
+          mergedMap.set(inv.id, { ...existing, ...inv });
+        } else {
+          mergedMap.set(inv.id, inv);
+        }
+      });
+
+      return Array.from(mergedMap.values()).sort((a, b) => 
+        new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+      );
     } catch (error) {
-      console.error('Error fetching invoices:', error);
       return [];
     }
   }

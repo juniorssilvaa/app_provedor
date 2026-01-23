@@ -236,7 +236,6 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     // Bloqueia faturas para planos gratuitos (valor 0)
     const planPrice = parseFloat(activeContract.plan?.price?.toString() || '0');
     if (planPrice === 0) {
-      console.log('[HomeScreen] Plano gratuito detectado (valor 0), ocultando faturas.');
       return null;
     }
 
@@ -267,7 +266,6 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
     
     // Se não houver faturas pendentes, retornamos null para exibir a mensagem de "Parabéns"
-    // (Anteriormente retornava a última paga, mas o usuário prefere ver a mensagem de parabéns se não houver dívidas)
     return null;
   }, [activeContract]);
 

@@ -24,7 +24,7 @@ export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
   const allInvoices = useMemo(() => {
     if (!user?.contracts) return [];
     
-    // Collect all invoices from all contracts and sort by due date (descending)
+    // Coletar todas as faturas de todos os contratos
     const invoices: Invoice[] = [];
     user.contracts.forEach(contract => {
       if (contract.invoices) {
@@ -32,7 +32,26 @@ export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
       }
     });
 
-    return invoices.sort((a, b) => 
+    // Filtros solicitados:
+    // 1. Nunca mostrar faturas de meses seguintes (faturas futuras)
+    // 2. Mostrar faturas abertas ou atrasadas
+    // 3. Mostrar apenas as duas últimas pagas
+    
+    const now = new Date();
+    // Início do próximo mês para filtrar faturas futuras
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    // Separar por status
+    const paidInvoices = invoices
+      .filter(inv => inv.status === 'paid' && new Date(inv.dueDate) < nextMonth)
+      .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
+      .slice(0, 2); // Apenas as duas últimas pagas
+
+    const pendingOrOverdueInvoices = invoices
+      .filter(inv => inv.status !== 'paid' && new Date(inv.dueDate) < nextMonth);
+
+    // Unir e ordenar por data de vencimento (decrescente)
+    return [...pendingOrOverdueInvoices, ...paidInvoices].sort((a, b) => 
       new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
     );
   }, [user]);
