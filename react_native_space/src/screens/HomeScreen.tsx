@@ -231,41 +231,48 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const statusTextColor = isSuspended ? colors.error : colors.success;
 
   const lastInvoice = useMemo(() => {
-    if (!activeContract?.invoices || activeContract.invoices.length === 0) return null;
-    
-    // Bloqueia faturas para planos gratuitos (valor 0)
-    const planPrice = parseFloat(activeContract.plan?.price?.toString() || '0');
-    if (planPrice === 0) {
+    if (!activeContract?.invoices || activeContract.invoices.length === 0) {
+      console.log('[Home] Nenhuma fatura encontrada no contrato');
       return null;
     }
-
-    // Filtra faturas pendentes (não pagas)
-    const pendingInvoices = activeContract.invoices
-      .filter(inv => {
-        if (inv.status === 'paid') return false;
-        
-        // Filtra faturas "futuerras" (ex: faturas geradas para meses distantes que não devem aparecer agora)
-        // Permitimos ver faturas que vencem em até 35 dias a partir de hoje
-        const dueDate = new Date(inv.dueDate);
-        const now = new Date();
-        const futureLimit = new Date();
-        futureLimit.setDate(now.getDate() + 35);
-        
-        return dueDate <= futureLimit;
-      })
+    
+    console.log('[Home] Total de faturas no contrato:', activeContract.invoices.length);
+    console.log('[Home] Faturas:', activeContract.invoices.map(inv => ({ id: inv.id, status: inv.status, dueDate: inv.dueDate })));
+    
+    // Buscar faturas abertas ou vencidas (não pagas)
+    // Mostrar mesmo que sejam futuras ou planos gratuitos
+    // Prioridade: vencidas > abertas
+    const overdueInvoices = activeContract.invoices
+      .filter(inv => inv.status === 'overdue')
       .sort((a, b) => {
-        // Ordena por data de vencimento (a mais próxima primeiro)
         const dateA = new Date(a.dueDate).getTime();
         const dateB = new Date(b.dueDate).getTime();
-        return dateA - dateB;
+        return dateA - dateB; // Mais antiga primeiro
       });
 
-    // Se houver faturas pendentes dentro do prazo, retorna a primeira (mais urgente)
-    if (pendingInvoices.length > 0) {
-      return pendingInvoices[0];
+    const openInvoices = activeContract.invoices
+      .filter(inv => inv.status === 'pending')
+      .sort((a, b) => {
+        const dateA = new Date(a.dueDate).getTime();
+        const dateB = new Date(b.dueDate).getTime();
+        return dateA - dateB; // Mais antiga primeiro
+      });
+
+    console.log('[Home] Faturas vencidas:', overdueInvoices.length);
+    console.log('[Home] Faturas abertas:', openInvoices.length);
+
+    // Priorizar vencidas sobre abertas
+    if (overdueInvoices.length > 0) {
+      console.log('[Home] Retornando fatura vencida:', overdueInvoices[0].id);
+      return overdueInvoices[0];
     }
     
-    // Se não houver faturas pendentes, retornamos null para exibir a mensagem de "Parabéns"
+    if (openInvoices.length > 0) {
+      console.log('[Home] Retornando fatura aberta:', openInvoices[0].id);
+      return openInvoices[0];
+    }
+    
+    console.log('[Home] Nenhuma fatura aberta ou vencida encontrada');
     return null;
   }, [activeContract]);
 
@@ -430,7 +437,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={{ paddingBottom: 16, paddingTop: 16 }}
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 100, 120), paddingTop: 16 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -486,8 +493,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Invoice Card */}
-        {lastInvoice && (
+        {/* Invoice Card - Mostra apenas se houver fatura aberta ou vencida */}
+        {lastInvoice ? (
           <View style={styles.invoiceCard}>
             <View style={styles.invoiceCardHeader}>
               <View style={styles.invoiceStatusRow}>
@@ -518,6 +525,15 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               >
                 <MaterialCommunityIcons name="credit-card-outline" size={24} color="#FFFFFF" />
               </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          /* Mensagem de parabéns quando não há faturas abertas ou vencidas */
+          <View style={styles.successCard}>
+            <View style={styles.successCardContent}>
+              <MaterialCommunityIcons name="check-circle" size={48} color={colors.success} />
+              <Text style={styles.successTitle}>Parabéns!</Text>
+              <Text style={styles.successMessage}>Você está em dia com suas faturas</Text>
             </View>
           </View>
         )}
@@ -1090,6 +1106,30 @@ const createStyles = (colors: any) =>
     quickAccessLabel: {
       color: colors.text,
       fontSize: 12,
+      textAlign: 'center',
+    },
+    successCard: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 20,
+      padding: 24,
+      marginBottom: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    successCardContent: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    successTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    successMessage: {
+      fontSize: 16,
+      color: colors.textSecondary,
       textAlign: 'center',
     },
   });

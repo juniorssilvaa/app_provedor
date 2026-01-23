@@ -3,9 +3,9 @@ export const config = {
   // O app agora se identifica apenas pelo apiToken. 
   // O Backend resolve a URL e o Token do SGP específicos de cada provedor.
   
-  // Se estiver testando localmente (NoxPlayer/Emulador), use http://192.168.3.22:8000/api/
+  // Se estiver testando localmente (NoxPlayer/Emulador), use o IP real da máquina (192.168.100.55) ou http://10.0.2.2:8000/api/
   // Se estiver em produção, use https://apis.niochat.com.br/api/
-  apiBaseUrl: 'https://apis.niochat.com.br/api/', 
+  apiBaseUrl: 'https://apis.niochat.com.br/api/', // URL de produção 
   
   providerId: 1, // ID do provedor NANET
   apiToken: 'sk_live_' + '274423e0ffc0834655177e693e07a1b1682dafca75a3fd17', // Token de integração do provedor Nanet

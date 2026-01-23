@@ -135,15 +135,8 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
       setLoading(true);
 
-      // Try to get user from API
-      let user;
-      try {
-        user = await sgpService.consultaCliente(cpfCnpj);
-      } catch (apiError: any) {
-        console.log('API error, using mock data:', apiError.message);
-        // If API fails, use mock data for demo
-        user = sgpService.getMockUser(cpfCnpj);
-      }
+      // Buscar dados reais da API
+      const user = await sgpService.consultaCliente(cpfCnpj);
 
       if (!user) {
         setError('Cliente não encontrado');

@@ -8,7 +8,7 @@ import { MainTabsParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Invoice } from '../types';
-import { StatusBadge } from '../components';
+import { StatusBadge, CustomHeader } from '../components';
 
 type InvoicesScreenNavigationProp = BottomTabNavigationProp<MainTabsParamList, 'Invoices'>;
 
@@ -25,6 +25,7 @@ export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
     if (!user?.contracts) return [];
     
     // Coletar todas as faturas de todos os contratos
+    // As faturas já vêm filtradas do serviço com a lógica correta
     const invoices: Invoice[] = [];
     user.contracts.forEach(contract => {
       if (contract.invoices) {
@@ -32,26 +33,14 @@ export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
       }
     });
 
-    // Filtros solicitados:
-    // 1. Nunca mostrar faturas de meses seguintes (faturas futuras)
-    // 2. Mostrar faturas abertas ou atrasadas
-    // 3. Mostrar apenas as duas últimas pagas
+    // As faturas já vêm do serviço com a lógica correta aplicada:
+    // - 2 últimas pagas (mais recentes)
+    // - 1 mais antiga atrasada (se houver)
+    // - OU 1 mais antiga aberta (se não houver atrasadas)
+    // - Sempre sem futuras ou canceladas
     
-    const now = new Date();
-    // Início do próximo mês para filtrar faturas futuras
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
-    // Separar por status
-    const paidInvoices = invoices
-      .filter(inv => inv.status === 'paid' && new Date(inv.dueDate) < nextMonth)
-      .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
-      .slice(0, 2); // Apenas as duas últimas pagas
-
-    const pendingOrOverdueInvoices = invoices
-      .filter(inv => inv.status !== 'paid' && new Date(inv.dueDate) < nextMonth);
-
-    // Unir e ordenar por data de vencimento (decrescente)
-    return [...pendingOrOverdueInvoices, ...paidInvoices].sort((a, b) => 
+    // Apenas ordenar por data de vencimento (mais recente primeiro) para exibição
+    return invoices.sort((a, b) => 
       new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
     );
   }, [user]);
@@ -76,7 +65,8 @@ export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
 
   if (allInvoices.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <CustomHeader title="MINHAS FATURAS" showBack={false} />
         <ScrollView contentContainerStyle={styles.emptyContent}>
           <View style={styles.emptyState}>
             <MaterialCommunityIcons
@@ -95,9 +85,9 @@ export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <CustomHeader title="MINHAS FATURAS" showBack={false} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.headerTitle}>Minhas Faturas</Text>
         
         {allInvoices.map((invoice) => (
           <Card

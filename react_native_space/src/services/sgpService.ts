@@ -7,6 +7,7 @@ class SGPService {
   private api: AxiosInstance | null = null;
   private publicApi: AxiosInstance;
   private sgpCredentials: { url: string; token: string; app: string } | null = null;
+  private pendingConsultas = new Map<string, Promise<User | null>>();
 
   constructor() {
     // Remove barra final da apiBaseUrl se existir para evitar "//"
@@ -92,66 +93,174 @@ class SGPService {
   async consultaFaturas(cpfCnpj: string): Promise<Invoice[]> {
     try {
       const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
       
-      // 1. Consulta 2ª Via (Dados de pagamento mais precisos para faturas em aberto)
-      let invoices2via: Invoice[] = [];
-      try {
-        const response2via = await this.getApi().post<any>('api/ura/fatura2via/', this.getSGPPayload({
-          cpfcnpj: cleanCpfCnpj,
-        }));
-        if (response2via.data?.links) {
-          invoices2via = this.mapInvoices(response2via.data.links, response2via.data.contratoId?.toString());
-        }
-      } catch (err2via) {
-        // Silently fail
-      }
-
-      // 2. Consulta Títulos (Histórico completo - agora usando /api/ura/titulos/)
-      let invoicesTitulos: Invoice[] = [];
+      // Coletar dados brutos para filtrar antes de mapear
+      const rawInvoicesMap = new Map<string, any>();
+      
+      // 1. Consulta Títulos (endpoint principal)
       try {
         const responseTitulos = await this.getApi().post<SGPTitulosResponse>('api/ura/titulos/', this.getSGPPayload({
           cpfcnpj: cleanCpfCnpj,
         }));
         if (responseTitulos.data?.titulos) {
-          invoicesTitulos = this.mapInvoices(responseTitulos.data.titulos);
+          responseTitulos.data.titulos.forEach((t: any) => {
+            rawInvoicesMap.set((t.id || '').toString(), t);
+          });
         }
-      } catch (errTitulos) {
-        // Silently fail
-      }
+      } catch (errTitulos) {}
 
-      // 3. Mesclar faturas
-      const mergedMap = new Map<string, Invoice>();
-      
-      // Filtramos conforme pedido do usuário: abertas/atrasadas + 2 últimas pagas
-      const paidInvoices = invoicesTitulos
-        .filter(inv => inv.status === 'paid')
-        .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
-        .slice(0, 2);
-      
-      // Mantém todas as abertas/atrasadas encontradas em titulos
-      invoicesTitulos.forEach(inv => {
-        if (inv.status !== 'paid') {
-          mergedMap.set(inv.id, inv);
+      // 2. Consulta 2ª Via (complementar)
+      try {
+        const response2via = await this.getApi().post<any>('api/ura/fatura2via/', this.getSGPPayload({
+          cpfcnpj: cleanCpfCnpj,
+        }));
+        if (response2via.data?.links) {
+          response2via.data.links.forEach((t: any) => {
+            const id = (t.id || t.fatura || '').toString();
+            if (!rawInvoicesMap.has(id)) {
+              rawInvoicesMap.set(id, t);
+            }
+          });
         }
+      } catch (err2via) {}
+      
+      // 3. Filtrar dados brutos antes de mapear:
+      // - Excluir canceladas
+      // - Excluir futuras (dataVencimento > hoje) - EXCETO para faturas pagas
+      // - Apenas status: pago, aberto ou vencido
+      const validRawInvoices = Array.from(rawInvoicesMap.values()).filter((t: any) => {
+        const rawStatus = (t.status || t.status_display || '').toLowerCase().trim();
+        
+        // Excluir canceladas
+        if (rawStatus.includes('cancelado')) {
+          console.log('[SGP] Fatura cancelada excluída:', t.id, t.status);
+          return false;
+        }
+        
+        // Verificar data de vencimento
+        const dueDate = t.dataVencimento || t.vencimento || t.vencimento_original || '';
+        if (!dueDate) {
+          console.log('[SGP] Fatura sem data excluída:', t.id);
+          return false;
+        }
+        
+        const invDateStr = dueDate.split('T')[0]; // Pega apenas a data (YYYY-MM-DD)
+        const isPaid = rawStatus.includes('pago') || rawStatus.includes('liquidado');
+        const isOpen = rawStatus.includes('aberto');
+        const isOverdue = rawStatus.includes('vencido') || rawStatus.includes('atrasado');
+        
+        // Excluir futuras:
+        // - Pagas: podem ter qualquer data (sempre mostrar as 2 últimas)
+        // - Abertas: podem ser futuras (mostrar se houver)
+        // - Vencidas: nunca futuras (devem ter data <= hoje)
+        if (isOverdue && invDateStr > todayStr) {
+          console.log('[SGP] Fatura vencida futura excluída:', t.id, t.status, invDateStr, '>', todayStr);
+          return false;
+        }
+        
+        // Log para debug de faturas abertas
+        if (isOpen) {
+          console.log('[SGP] Fatura aberta encontrada:', t.id, 'Vencimento:', invDateStr, 'Hoje:', todayStr);
+        }
+        
+        // Apenas status: pago, aberto ou vencido
+        if (!rawStatus.includes('pago') && 
+            !rawStatus.includes('liquidado') && 
+            !rawStatus.includes('aberto') && 
+            !rawStatus.includes('vencido') && 
+            !rawStatus.includes('atrasado')) {
+          console.log('[SGP] Fatura com status inválido excluída:', t.id, t.status);
+          return false;
+        }
+        
+        console.log('[SGP] Fatura válida:', t.id, t.status, invDateStr);
+        return true;
       });
       
-      paidInvoices.forEach(inv => {
-        mergedMap.set(inv.id, inv);
+      // 4. Mapear apenas as válidas
+      const mappedValid = this.mapInvoices(validRawInvoices, undefined);
+      
+      // 5. Separar por status
+      const paidInvoices = mappedValid.filter(inv => inv.status === 'paid');
+      const overdueInvoices = mappedValid.filter(inv => inv.status === 'overdue');
+      const openInvoices = mappedValid.filter(inv => inv.status === 'pending');
+      
+      console.log('[SGP] Faturas separadas:', {
+        pagas: paidInvoices.length,
+        atrasadas: overdueInvoices.length,
+        abertas: openInvoices.length,
+        total: mappedValid.length
       });
-
-      // Adiciona/Sobrescreve com dados da 2ª via (que costumam ter PIX e Linha Digitável mais atualizados)
-      invoices2via.forEach(inv => {
-        const existing = mergedMap.get(inv.id);
-        if (existing) {
-          mergedMap.set(inv.id, { ...existing, ...inv });
-        } else {
-          mergedMap.set(inv.id, inv);
-        }
-      });
-
-      return Array.from(mergedMap.values()).sort((a, b) => 
+      
+      // 6. Selecionar faturas conforme regra:
+      // - Sempre as 2 últimas pagas (mais recentes)
+      // - Se houver atrasadas, a mais antiga (prioridade sobre abertas)
+      // - Se não houver atrasadas mas houver abertas, a mais antiga
+      const selectedInvoices: Invoice[] = [];
+      
+      // Ordenar pagas por data de vencimento (mais recente primeiro) - pegar as 2 mais recentes
+      const sortedPaid = paidInvoices.sort((a, b) => 
         new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
       );
+      
+      // Ordenar atrasadas por data de vencimento (mais antiga primeiro) - pegar a mais antiga
+      const sortedOverdue = overdueInvoices.sort((a, b) => 
+        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      );
+      
+      // Ordenar abertas: priorizar não-futuras, depois futuras (mais antiga primeiro em cada grupo)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const openNotFuture = openInvoices.filter(inv => {
+        const invDate = new Date(inv.dueDate);
+        invDate.setHours(0, 0, 0, 0);
+        return invDate <= today;
+      });
+      const openFuture = openInvoices.filter(inv => {
+        const invDate = new Date(inv.dueDate);
+        invDate.setHours(0, 0, 0, 0);
+        return invDate > today;
+      });
+      
+      const sortedOpenNotFuture = openNotFuture.sort((a, b) => 
+        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      );
+      const sortedOpenFuture = openFuture.sort((a, b) => 
+        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      );
+      
+      // Adicionar as 2 últimas pagas (mais recentes)
+      selectedInvoices.push(...sortedPaid.slice(0, 2));
+      
+      // Adicionar a mais antiga atrasada (se houver)
+      if (sortedOverdue.length > 0) {
+        selectedInvoices.push(sortedOverdue[0]);
+      } else if (sortedOpenNotFuture.length > 0) {
+        // Se não houver atrasadas, adicionar a mais antiga aberta não-futura
+        selectedInvoices.push(sortedOpenNotFuture[0]);
+      } else if (sortedOpenFuture.length > 0) {
+        // Se não houver abertas não-futuras, adicionar a mais antiga aberta futura
+        selectedInvoices.push(sortedOpenFuture[0]);
+      }
+      
+      // Remover duplicatas (caso uma fatura apareça em múltiplos grupos)
+      const uniqueInvoices = Array.from(
+        new Map(selectedInvoices.map(inv => [inv.id, inv])).values()
+      );
+      
+      // Ordenar resultado final por data de vencimento (mais recente primeiro)
+      const finalInvoices = uniqueInvoices.sort((a, b) => 
+        new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+      );
+      
+      console.log('[SGP] consultaFaturas retornando:', finalInvoices.length, 'faturas');
+      finalInvoices.forEach(inv => {
+        console.log('[SGP] Fatura retornada:', inv.id, inv.status, inv.dueDate, 'Contrato:', inv.contractId);
+      });
+      
+      return finalInvoices;
     } catch (error) {
       return [];
     }
@@ -166,13 +275,27 @@ class SGPService {
       let status: 'paid' | 'pending' | 'overdue' = 'pending';
 
       const rawStatus = (t.status || t.status_display || '').toLowerCase();
+      const todayStr = new Date().toISOString().split('T')[0];
+      const dueDate = (t.dataVencimento || t.vencimento || t.vencimento_original || '').split('T')[0];
 
       if (rawStatus.includes('pago') || rawStatus.includes('liquidado')) {
         status = 'paid';
       } else if (rawStatus.includes('vencido') || rawStatus.includes('atrasado')) {
         status = 'overdue';
+      } else if (rawStatus.includes('aberto')) {
+        // Fatura aberta: verificar se está vencida
+        if (dueDate && dueDate < todayStr) {
+          status = 'overdue'; // Aberta mas vencida = vencida
+        } else {
+          status = 'pending'; // Aberta e não vencida = pendente
+        }
       } else {
-        status = 'pending';
+        // Para outros status, verificar se está vencida pela data
+        if (dueDate && dueDate < todayStr) {
+          status = 'overdue';
+        } else {
+          status = 'pending';
+        }
       }
 
       // Captura da chave PIX (Múltiplas fontes possíveis)
@@ -269,78 +392,198 @@ class SGPService {
   /**
    * Consulta cliente por CPF/CNPJ
    */
-  async consultaCliente(cpfCnpj: string): Promise<User | null> {
+  async consultaCliente(cpfCnpj: string, contractId?: string): Promise<User | null> {
+    const cacheKey = `${cpfCnpj}_${contractId || 'all'}`;
+    
+    if (this.pendingConsultas.has(cacheKey)) {
+      return this.pendingConsultas.get(cacheKey)!;
+    }
+
+    const consultaPromise = (async () => {
+      try {
+        const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
+        
+        const formData = new FormData();
+        const payloadParams: any = { cpfcnpj: cleanCpfCnpj };
+        if (contractId) {
+          payloadParams.contrato = contractId;
+        }
+
+        const payload = this.getSGPPayload(payloadParams);
+        Object.keys(payload).forEach(key => {
+          formData.append(key, payload[key]);
+        });
+
+        const response = await this.getApi().post<SGPClientResponse>('api/ura/consultacliente/', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        const data = response.data as any;
+        
+        if (!data) return null;
+
+        // 1. Buscar faturas de forma unificada (2ª via + Histórico)
+        const invoices = await this.consultaFaturas(cleanCpfCnpj);
+        
+        // 2. Capturar senha da central para buscar lista completa de contratos se necessário
+        let centralPassword = '';
+        if (data.contratoCentralSenha) {
+          centralPassword = data.contratoCentralSenha;
+        } else if (data.contratos && data.contratos.length > 0) {
+          centralPassword = data.contratos[0].contratoCentralSenha || '';
+        }
+
+        let extraContracts: any[] = [];
+        if (centralPassword) {
+          extraContracts = await this.consultarMeusContratos(cleanCpfCnpj, centralPassword);
+        }
+
+        // 3. Montar lista final de contratos
+        let finalContracts: Contract[] = [];
+
+        if (data.contratos && data.contratos.length > 0) {
+          let contractsData = data.contratos;
+          
+          if (extraContracts.length > 0) {
+              // Criar mapa dos contratos originais para merge de dados
+              const originalContractsMap = new Map();
+              contractsData.forEach((oc: any) => {
+                  const id = (oc.contratoId || oc.id || oc.contrato || '').toString();
+                  if (id) originalContractsMap.set(id, oc);
+              });
+
+              // Criar mapa dos contratos extras para evitar duplicatas
+              const extraContractsMap = new Map();
+              extraContracts.forEach((ec: any) => {
+                  const ecId = (ec.contratoId || ec.id || ec.contrato || '').toString();
+                  if (ecId) {
+                      const original = originalContractsMap.get(ecId);
+                      // Merge: usar dados extras, mas preservar campos do original se não existirem no extra
+                      if (original) {
+                          if (!ec.dataCadastro && original.dataCadastro) ec.dataCadastro = original.dataCadastro;
+                          if (!ec.data_cadastro && original.data_cadastro) ec.data_cadastro = original.data_cadastro;
+                          if (!ec.dataAtivacao && original.dataAtivacao) ec.dataAtivacao = original.dataAtivacao;
+                      }
+                      extraContractsMap.set(ecId, ec);
+                  }
+              });
+
+              // Combinar: usar contratos extras (mais completos) + contratos originais que não estão nos extras
+              const combinedContracts: any[] = [];
+              
+              // Adicionar todos os contratos extras
+              extraContractsMap.forEach((contract) => {
+                  combinedContracts.push(contract);
+              });
+              
+              // Adicionar contratos originais que não estão nos extras
+              contractsData.forEach((oc: any) => {
+                  const id = (oc.contratoId || oc.id || oc.contrato || '').toString();
+                  if (id && !extraContractsMap.has(id)) {
+                      combinedContracts.push(oc);
+                  }
+              });
+
+              contractsData = combinedContracts;
+          }
+
+          finalContracts = contractsData.map((c: any) => {
+            const contractIdStr = (c.contrato || c.contratoId || c.id || '').toString();
+            const contractInvoices = invoices.filter((inv) => inv.contractId === contractIdStr);
+            console.log('[SGP] Contrato:', contractIdStr, 'Faturas associadas:', contractInvoices.length, 
+              'Abertas:', contractInvoices.filter(i => i.status === 'pending').length,
+              'Atrasadas:', contractInvoices.filter(i => i.status === 'overdue').length,
+              'Pagas:', contractInvoices.filter(i => i.status === 'paid').length);
+            if (!c.contratoCentralSenha && centralPassword) c.contratoCentralSenha = centralPassword;
+            return this.mapSGPContract(c, contractInvoices);
+          });
+        } 
+        else if (data.contratoId || extraContracts.length > 0) {
+          if (extraContracts.length > 0) {
+               finalContracts = extraContracts.map((c: any) => {
+                  const contractIdStr = (c.contrato || c.contratoId || c.id || '').toString();
+                  const contractInvoices = invoices.filter((inv) => inv.contractId === contractIdStr);
+                  if (!c.contratoCentralSenha && centralPassword) c.contratoCentralSenha = centralPassword;
+                  return this.mapSGPContract(c, contractInvoices);
+               });
+          } else {
+              const targetContractId = (data.contratoId || '').toString();
+              const filteredInvoices = invoices.filter(inv => !inv.contractId || inv.contractId.trim() === '' || inv.contractId === targetContractId);
+              const contract: Contract = this.mapSGPContract({
+                  contratoId: data.contratoId,
+                  razaoSocial: data.razaoSocial || '',
+                  contratoStatusDisplay: 'Ativo',
+                  contratoCentralSenha: centralPassword,
+                  dataCadastro: data.dataCadastro || data.data_cadastro
+              }, filteredInvoices);
+              finalContracts = [contract];
+          }
+        }
+
+        // Remover duplicatas baseado no ID do contrato
+        const uniqueContractsMap = new Map<string, Contract>();
+        finalContracts.forEach((contract) => {
+          if (contract.id && !uniqueContractsMap.has(contract.id)) {
+            uniqueContractsMap.set(contract.id, contract);
+          }
+        });
+        finalContracts = Array.from(uniqueContractsMap.values());
+
+        const clientName = finalContracts.length > 0 ? finalContracts[0].clientName : (data.razaoSocial || '');
+        const customerId = finalContracts.length > 0 ? finalContracts[0].id : undefined;
+
+        return { 
+          cpfCnpj: cleanCpfCnpj, 
+          name: clientName, 
+          customerId, 
+          contracts: finalContracts 
+        };
+      } catch (error) {
+        throw error;
+      } finally {
+        this.pendingConsultas.delete(cacheKey);
+      }
+    })();
+
+    this.pendingConsultas.set(cacheKey, consultaPromise);
+    return consultaPromise;
+  }
+
+  /**
+   * Listar todos os contratos do cliente na central
+   */
+  async consultarMeusContratos(cpfCnpj: string, senhaCentral: string): Promise<any[]> {
     try {
       const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
-      console.log('[SGP] Consultando cliente para:', cleanCpfCnpj);
-      
       const formData = new FormData();
-      const payload = this.getSGPPayload({ cpfcnpj: cleanCpfCnpj });
+      const payload = this.getSGPPayload({
+        cpfcnpj: cleanCpfCnpj,
+        senha: senhaCentral,
+      });
       Object.keys(payload).forEach(key => {
         formData.append(key, payload[key]);
       });
 
-      const response = await this.getApi().post<SGPClientResponse>('api/ura/consultacliente/', formData, {
+      const response = await this.getApi().post('api/central/contratos/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      const data = response.data as any;
-      console.log('[SGP] Resposta cliente recebida.');
-
-      if (!data) return null;
-
-      // Buscar faturas (pode vir no 'links' do consultacliente ou chamamos faturas/)
-      let invoices: Invoice[] = [];
-      console.log('[SGP] Verificando data.links:', data.links ? 'existe' : 'não existe', Array.isArray(data.links) ? 'é array' : 'não é array');
-      if (data.links && Array.isArray(data.links) && data.links.length > 0) {
-        console.log('[SGP] Usando faturas vindas do campo links do consultacliente. Total de links:', data.links.length);
-        invoices = this.mapInvoices(data.links, data.contratoId?.toString());
-      } else {
-        console.log('[SGP] data.links não encontrado, chamando consultaFaturas');
-        invoices = await this.consultaFaturas(cleanCpfCnpj);
+      const data = response.data;
+      // A API retorna { auth: true, contratos: [...] }
+      if (data && data.contratos && Array.isArray(data.contratos)) {
+        return data.contratos;
       }
-
-      // Caso 1: Formato com lista de contratos
-      if (data.contratos && data.contratos.length > 0) {
-        const clientName = data.contratos[0].razaoSocial || data.razaoSocial;
-        const customerId = data.contratos[0].clienteId ? String(data.contratos[0].clienteId) : undefined;
-        
-        const contracts: Contract[] = data.contratos.map((c: any) => {
-          const contractInvoices = invoices.filter(
-            (inv) => inv.contractId === (c.contratoId || c.id || '').toString()
-          );
-          return this.mapSGPContract(c, contractInvoices);
-        });
-
-        return {
-          cpfCnpj: cleanCpfCnpj,
-          name: clientName,
-          customerId,
-          contracts,
-        };
-      } 
-      // Caso 2: Formato direto com contratoId e links
-      else if (data.contratoId) {
-        const clientName = data.razaoSocial || '';
-        const contract: Contract = this.mapSGPContract({
-          contratoId: data.contratoId,
-          razaoSocial: clientName,
-          contratoStatusDisplay: 'Ativo',
-        }, invoices);
-
-        return {
-          cpfCnpj: cleanCpfCnpj,
-          name: clientName,
-          contracts: [contract],
-        };
+      // Fallback para formato antigo (array direto)
+      if (Array.isArray(data)) {
+        return data;
       }
-
-      return null;
+      return [];
     } catch (error: any) {
-      console.error('Error in consultaCliente:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -404,8 +647,12 @@ class SGPService {
 
     const speed = extractSpeed(c.servico_plano || c.planointernet || '');
 
+    // Extrair ID do contrato - tentar múltiplos campos possíveis
+    const contractId = (c.contrato || c.contratoId || c.id || '').toString();
+    
     let status: 'active' | 'inactive' | 'pending' | 'suspended' = 'inactive';
-    const statusDisplay = (c.contratoStatusDisplay || '').toLowerCase();
+    // A API pode retornar status em diferentes campos
+    const statusDisplay = (c.contratoStatusDisplay || c.status || '').toString().trim().toLowerCase();
     
     if (statusDisplay.includes('ativo') || statusDisplay.includes('liberado')) {
       status = 'active';
@@ -416,11 +663,11 @@ class SGPService {
     }
 
     return {
-      id: (c.contratoId || c.id || '').toString(),
-      number: (c.contratoId || c.id || '').toString(),
-      clientName: c.razaoSocial,
+      id: contractId,
+      number: contractId,
+      clientName: c.razaoSocial || c.razaosocial,
       plan: {
-        id: (c.contratoId || c.id || '').toString(),
+        id: contractId,
         name: c.servico_plano || c.planointernet || 'Plano Internet',
         type: 'FIBRA' as const,
         downloadSpeed: speed,
@@ -428,7 +675,7 @@ class SGPService {
         price: 0,
       },
       status: status,
-      statusDisplay: c.contratoStatusDisplay,
+      statusDisplay: (c.contratoStatusDisplay || c.status || '').toString().trim(),
       serviceLogin: c.servico_login,
       servicePassword: c.servico_senha,
       centralPassword: c.contratoCentralSenha,
