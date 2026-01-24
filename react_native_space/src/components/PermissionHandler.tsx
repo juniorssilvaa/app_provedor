@@ -1,51 +1,68 @@
 import React, { useEffect } from 'react';
-import { PermissionsAndroid, Platform, Alert } from 'react-native';
+import { PermissionsAndroid, Platform, AppState } from 'react-native';
 
 export const PermissionHandler: React.FC = () => {
-  useEffect(() => {
-    const requestPermissions = async () => {
-      if (Platform.OS === 'android') {
-        try {
-          // Lista de permissões que queremos solicitar
-          // POST_NOTIFICATIONS é necessário para Android 13+
-          // READ_PHONE_STATE é o que geralmente aparece como "Permissão de Telefone"
-          // ACCESS_FINE_LOCATION muitas vezes é necessário para ler informações de Wi-Fi
-          
-          const permissionsToRequest = [];
-          
-          // Adiciona permissões baseadas na versão do Android ou necessidade
-          if (Platform.OS === 'android' && typeof Platform.Version === 'number' && Platform.Version >= 33) {
-            // Usa type assertion ou verificação segura se a propriedade não existir nos tipos
-            const postNotification = (PermissionsAndroid.PERMISSIONS as any).POST_NOTIFICATIONS || 'android.permission.POST_NOTIFICATIONS';
-            permissionsToRequest.push(postNotification);
+  const requestPermissions = React.useCallback(async () => {
+    if (Platform.OS === 'android') {
+      try {
+        // Verifica permissões existentes primeiro
+        const permissionsToRequest = [];
+        const permissionsToCheck = [];
+        
+        // Adiciona permissões baseadas na versão do Android ou necessidade
+        if (Platform.OS === 'android' && typeof Platform.Version === 'number' && Platform.Version >= 33) {
+          const postNotification = (PermissionsAndroid.PERMISSIONS as any).POST_NOTIFICATIONS || 'android.permission.POST_NOTIFICATIONS';
+          permissionsToCheck.push(postNotification);
+        }
+        
+        permissionsToCheck.push(PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE);
+        permissionsToCheck.push(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+
+        // Verifica quais permissões já foram concedidas
+        for (const permission of permissionsToCheck) {
+          const hasPermission = await PermissionsAndroid.check(permission);
+          if (!hasPermission) {
+            permissionsToRequest.push(permission);
           }
-          
-          permissionsToRequest.push(PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE);
-          // Permissão OBRIGATÓRIA para obter informações do WiFi (SSID, IP, etc)
-          permissionsToRequest.push(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+        }
 
+        // Só solicita se houver permissões pendentes
+        if (permissionsToRequest.length > 0) {
           const result = await PermissionsAndroid.requestMultiple(permissionsToRequest);
-
-          console.log('Permissões solicitadas:', result);
           
           // Verificar se permissões críticas foram negadas
           if (result['android.permission.READ_PHONE_STATE'] === 'denied') {
-             console.log('Permissão de telefone negada');
+            // Permissão negada, mas não bloqueia o app
           }
           
           // Permissão de localização é OBRIGATÓRIA para WiFi
           if (result['android.permission.ACCESS_FINE_LOCATION'] === 'denied') {
-             console.warn('⚠️ Permissão de localização negada - WiFi não funcionará corretamente');
+            // Permissão negada, mas não bloqueia o app
           }
-
-        } catch (err) {
-          console.warn('Erro ao solicitar permissões:', err);
         }
-      }
-    };
 
-    requestPermissions();
+      } catch (err) {
+        // Erro ao solicitar permissões, mas não bloqueia o app
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    // Solicita permissões na primeira vez
+    requestPermissions();
+    
+    // Listener para quando o app voltar ao foco (após conceder permissão nas configurações)
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        // Verifica novamente quando o app volta ao foco
+        requestPermissions();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [requestPermissions]);
 
   return null; // Esse componente não renderiza nada visualmente
 };

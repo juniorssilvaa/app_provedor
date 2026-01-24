@@ -280,12 +280,12 @@ const createStyles = (colors: any) => StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 40,
     paddingBottom: 32,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 32,
   },
   logoImage: {
     width: 450,

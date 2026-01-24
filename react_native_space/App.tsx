@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, Platform, Linking, Text, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, Platform, Linking, Text, TouchableOpacity, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { Provider as PaperProvider, MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,6 +14,24 @@ const NotificationPermissionGate: React.FC<{ children: React.ReactNode }> = ({ c
   const { colors } = useTheme();
   const [status, setStatus] = React.useState<'checking' | 'granted' | 'denied'>('checking');
   const [requesting, setRequesting] = React.useState(false);
+
+  const checkPermission = React.useCallback(async () => {
+    if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
+      setStatus('granted');
+      return;
+    }
+
+    try {
+      const existing = await Notifications.getPermissionsAsync();
+      if (existing.status === 'granted') {
+        setStatus('granted');
+      } else {
+        setStatus('denied');
+      }
+    } catch (err) {
+      setStatus('denied');
+    }
+  }, []);
 
   const ensurePermission = React.useCallback(async () => {
     if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
@@ -40,8 +58,20 @@ const NotificationPermissionGate: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   React.useEffect(() => {
-    ensurePermission();
-  }, [ensurePermission]);
+    checkPermission();
+    
+    // Listener para quando o app voltar ao foco (após conceder permissão)
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        // Verifica novamente quando o app volta ao foco
+        checkPermission();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [checkPermission]);
 
   if (status === 'granted') {
     return <>{children}</>;
