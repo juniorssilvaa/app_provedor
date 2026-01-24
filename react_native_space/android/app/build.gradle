@@ -98,6 +98,11 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace 'com.nanet.telecom'
+    
+    buildFeatures {
+        buildConfig true
+    }
+    
     defaultConfig {
         applicationId 'com.nanet.telecom'
         minSdkVersion rootProject.ext.minSdkVersion
