@@ -183,7 +183,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={styles.logoContainer}>
           <Image
-            source={require('../../assets/icon.png')}
+            source={require('../../assets/logo-nanet.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />
@@ -288,8 +288,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginBottom: 48,
   },
   logoImage: {
-    width: 320,
-    height: 220,
+    width: 450,
+    height: 310,
   },
   formContainer: {
     flex: 1,

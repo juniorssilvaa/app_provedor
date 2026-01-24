@@ -16,6 +16,9 @@ export interface Contract {
   servicePassword?: string;
   centralPassword?: string;
   address?: string;
+  enderecoLogradouro?: string;
+  enderecoBairro?: string;
+  enderecoCidade?: string;
   wifiSSID?: string;
   wifiPassword?: string;
   wifiSSID5?: string;

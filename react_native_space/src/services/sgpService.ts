@@ -114,7 +114,7 @@ class SGPService {
       // 2. Consulta 2ª Via (complementar)
       try {
         const response2via = await this.getApi().post<any>('api/ura/fatura2via/', this.getSGPPayload({
-          cpfcnpj: cleanCpfCnpj,
+        cpfcnpj: cleanCpfCnpj,
         }));
         if (response2via.data?.links) {
           response2via.data.links.forEach((t: any) => {
@@ -292,9 +292,9 @@ class SGPService {
       } else {
         // Para outros status, verificar se está vencida pela data
         if (dueDate && dueDate < todayStr) {
-          status = 'overdue';
-        } else {
-          status = 'pending';
+        status = 'overdue';
+      } else {
+        status = 'pending';
         }
       }
 
@@ -400,10 +400,10 @@ class SGPService {
     }
 
     const consultaPromise = (async () => {
-      try {
-        const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
-        
-        const formData = new FormData();
+    try {
+      const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
+      
+      const formData = new FormData();
         const payloadParams: any = { cpfcnpj: cleanCpfCnpj };
         if (contractId) {
           payloadParams.contrato = contractId;
@@ -415,14 +415,14 @@ class SGPService {
         });
 
         const response = await this.getApi().post<SGPClientResponse>('api/ura/consultacliente/', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-        const data = response.data as any;
-        
-        if (!data) return null;
+      const data = response.data as any;
+
+      if (!data) return null;
 
         // 1. Buscar faturas de forma unificada (2ª via + Histórico)
         const invoices = await this.consultaFaturas(cleanCpfCnpj);
@@ -438,12 +438,12 @@ class SGPService {
         let extraContracts: any[] = [];
         if (centralPassword) {
           extraContracts = await this.consultarMeusContratos(cleanCpfCnpj, centralPassword);
-        }
+      }
 
         // 3. Montar lista final de contratos
         let finalContracts: Contract[] = [];
 
-        if (data.contratos && data.contratos.length > 0) {
+      if (data.contratos && data.contratos.length > 0) {
           let contractsData = data.contratos;
           
           if (extraContracts.length > 0) {
@@ -465,6 +465,11 @@ class SGPService {
                           if (!ec.dataCadastro && original.dataCadastro) ec.dataCadastro = original.dataCadastro;
                           if (!ec.data_cadastro && original.data_cadastro) ec.data_cadastro = original.data_cadastro;
                           if (!ec.dataAtivacao && original.dataAtivacao) ec.dataAtivacao = original.dataAtivacao;
+                          // Preservar campos de endereço do original se não existirem no extra
+                          if (!ec.endereco_logradouro && original.endereco_logradouro) ec.endereco_logradouro = original.endereco_logradouro;
+                          if (!ec.endereco_bairro && original.endereco_bairro) ec.endereco_bairro = original.endereco_bairro;
+                          if (!ec.endereco_cidade && original.endereco_cidade) ec.endereco_cidade = original.endereco_cidade;
+                          if (!ec.endereco_numero && original.endereco_numero) ec.endereco_numero = original.endereco_numero;
                       }
                       extraContractsMap.set(ecId, ec);
                   }
@@ -492,10 +497,6 @@ class SGPService {
           finalContracts = contractsData.map((c: any) => {
             const contractIdStr = (c.contrato || c.contratoId || c.id || '').toString();
             const contractInvoices = invoices.filter((inv) => inv.contractId === contractIdStr);
-            console.log('[SGP] Contrato:', contractIdStr, 'Faturas associadas:', contractInvoices.length, 
-              'Abertas:', contractInvoices.filter(i => i.status === 'pending').length,
-              'Atrasadas:', contractInvoices.filter(i => i.status === 'overdue').length,
-              'Pagas:', contractInvoices.filter(i => i.status === 'paid').length);
             if (!c.contratoCentralSenha && centralPassword) c.contratoCentralSenha = centralPassword;
             return this.mapSGPContract(c, contractInvoices);
           });
@@ -506,8 +507,8 @@ class SGPService {
                   const contractIdStr = (c.contrato || c.contratoId || c.id || '').toString();
                   const contractInvoices = invoices.filter((inv) => inv.contractId === contractIdStr);
                   if (!c.contratoCentralSenha && centralPassword) c.contratoCentralSenha = centralPassword;
-                  return this.mapSGPContract(c, contractInvoices);
-               });
+          return this.mapSGPContract(c, contractInvoices);
+        });
           } else {
               const targetContractId = (data.contratoId || '').toString();
               const filteredInvoices = invoices.filter(inv => !inv.contractId || inv.contractId.trim() === '' || inv.contractId === targetContractId);
@@ -534,10 +535,10 @@ class SGPService {
         const clientName = finalContracts.length > 0 ? finalContracts[0].clientName : (data.razaoSocial || '');
         const customerId = finalContracts.length > 0 ? finalContracts[0].id : undefined;
 
-        return { 
-          cpfCnpj: cleanCpfCnpj, 
-          name: clientName, 
-          customerId, 
+        return {
+          cpfCnpj: cleanCpfCnpj,
+          name: clientName,
+          customerId,
           contracts: finalContracts 
         };
       } catch (error) {
@@ -649,7 +650,7 @@ class SGPService {
 
     // Extrair ID do contrato - tentar múltiplos campos possíveis
     const contractId = (c.contrato || c.contratoId || c.id || '').toString();
-    
+
     let status: 'active' | 'inactive' | 'pending' | 'suspended' = 'inactive';
     // A API pode retornar status em diferentes campos
     const statusDisplay = (c.contratoStatusDisplay || c.status || '').toString().trim().toLowerCase();
@@ -683,7 +684,10 @@ class SGPService {
       wifiSSID5: c.servico_wifi_ssid_5,
       wifiPassword: c.servico_wifi_password,
       wifiPassword5: c.servico_wifi_password_5,
-      address: c.endereco_logradouro ? `${c.endereco_logradouro}, ${c.endereco_numero} - ${c.endereco_bairro}` : undefined,
+      address: c.endereco_logradouro ? `${c.endereco_logradouro}, ${c.endereco_numero || ''} - ${c.endereco_bairro || ''}` : undefined,
+      enderecoLogradouro: c.endereco_logradouro || c.enderecoLogradouro,
+      enderecoBairro: c.endereco_bairro || c.enderecoBairro,
+      enderecoCidade: c.endereco_cidade || c.enderecoCidade,
       invoices: invoices,
       dataCadastro: c.dataCadastro,
     };
@@ -720,11 +724,11 @@ class SGPService {
         });
 
         const response = await this.getApi().post<SGPCpeResponse>('api/ura/cpemanage/', form, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
         console.log('[SGP] Resposta CPE (POST):', JSON.stringify(response.data, null, 2));
-        return response.data;
+      return response.data;
       }
     } catch (error) {
       console.error('Error fetching CPE data:', error);

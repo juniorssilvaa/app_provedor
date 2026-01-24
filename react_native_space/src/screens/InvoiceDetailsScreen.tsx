@@ -31,7 +31,18 @@ export const InvoiceDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    // Handle "DD/MM/YYYY HH:mm:ss" or "DD/MM/YYYY" format directly
+    if (dateString.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+      return dateString.split(' ')[0];
+    }
+    // Handle ISO format (YYYY-MM-DD) - parse manually to avoid timezone issues
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}/)) {
+      const [year, month, day] = dateString.split('T')[0].split('-');
+      return `${day}/${month}/${year}`;
+    }
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
     return date.toLocaleDateString('pt-BR');
   };
 

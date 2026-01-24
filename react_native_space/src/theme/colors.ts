@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme } from '@react-navigation/native';
 
 export const darkColors = {
-  primary: '#E60000', // Nanet Red
+  primary: '#E60000', // NANET Red
   darkBackground: '#121212', // Neutral Dark (Black-ish)
   white: '#FFFFFF',
   textSecondary: '#B0B0B0', // Lighter grey for better contrast on dark
@@ -16,7 +16,7 @@ export const darkColors = {
 };
 
 export const lightColors = {
-  primary: '#E60000', // Nanet Red
+  primary: '#E60000', // NANET Red
   darkBackground: '#F5F5F5', // Light Grey Background (keeping variable name for compatibility but value is light)
   white: '#000000', // Inverted for text
   textSecondary: '#666666', // Darker grey for contrast on light

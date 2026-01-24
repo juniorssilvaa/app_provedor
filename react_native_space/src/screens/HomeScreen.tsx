@@ -121,6 +121,95 @@ const MarqueeText = ({ text, style }: { text: string; style?: any }) => {
   );
 };
 
+const AnimatedAddress = ({ 
+  logradouro, 
+  bairro, 
+  cidade, 
+  style 
+}: { 
+  logradouro?: string; 
+  bairro?: string; 
+  cidade?: string; 
+  style?: any;
+}) => {
+  const { colors } = useTheme();
+  const [textWidth, setTextWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  // Combina os três campos
+  const addressParts = [];
+  if (logradouro) addressParts.push(logradouro);
+  if (bairro) addressParts.push(bairro);
+  if (cidade) addressParts.push(cidade);
+  const fullAddress = addressParts.join(' - ') || 'Endereço não disponível';
+
+  const handleTextLayout = (e: LayoutChangeEvent) => {
+    setTextWidth(e.nativeEvent.layout.width);
+  };
+
+  const handleContainerLayout = (e: LayoutChangeEvent) => {
+    setContainerWidth(e.nativeEvent.layout.width);
+  };
+
+  useEffect(() => {
+    if (containerWidth > 0 && textWidth > 0) {
+      // Animação de marquee contínuo - sempre ocorre, mesmo se o texto for pequeno
+      // Fase 1: Entra da direita (containerWidth) e vai até sair completamente pela esquerda (-textWidth)
+      // Fase 2: Renasce na esquerda (-textWidth) e vai para a direita até sair (containerWidth)
+      // Loop infinito
+      const createAnimation = () => {
+        // Fase 1: Direita -> Esquerda (entra da direita e sai completamente pela esquerda)
+        const phase1 = Animated.timing(animatedValue, {
+          toValue: -textWidth,
+          duration: (textWidth + containerWidth) * 15, // Velocidade baseada no tamanho
+          easing: Easing.linear,
+          useNativeDriver: true,
+        });
+
+        // Fase 2: Esquerda -> Direita (renasce na esquerda e vai para a direita até sair)
+        const phase2 = Animated.timing(animatedValue, {
+          toValue: containerWidth,
+          duration: (textWidth + containerWidth) * 15,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        });
+
+        // Sequência: fase1 -> fase2 -> loop
+        Animated.sequence([phase1, phase2]).start(() => {
+          // Reinicia o loop (volta para a direita para começar de novo)
+          animatedValue.setValue(containerWidth);
+          createAnimation();
+        });
+      };
+
+      // Inicia a animação começando da direita
+      animatedValue.setValue(containerWidth);
+      createAnimation();
+    }
+  }, [textWidth, containerWidth, animatedValue]);
+
+  return (
+    <View 
+      style={{ flex: 1, overflow: 'hidden' }} 
+      onLayout={handleContainerLayout}
+    >
+      <Animated.Text
+        style={[
+          style,
+          {
+            transform: [{ translateX: animatedValue }],
+          },
+        ]}
+        numberOfLines={1}
+        onLayout={handleTextLayout}
+      >
+        {fullAddress}
+      </Animated.Text>
+    </View>
+  );
+};
+
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { user, activeContract, updateUser } = useAuth();
   const { colors } = useTheme();
@@ -289,6 +378,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     if (dateString.match(/^\d{2}\/\d{2}\/\d{4}/)) {
       return dateString.split(' ')[0];
     }
+    // Handle ISO format (YYYY-MM-DD) - parse manually to avoid timezone issues
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}/)) {
+      const [year, month, day] = dateString.split('T')[0].split('-');
+      return `${day}/${month}/${year}`;
+    }
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
     return date.toLocaleDateString('pt-BR');
@@ -417,8 +511,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={() => (navigation as any).openDrawer?.()}>
           <Image
-            source={require('../../assets/icon.png')}
-            style={{ width: 600, height: 170, marginLeft: 80 }}
+            source={require('../../assets/logo-nanet.png')}
+            style={{ width: 1000, height: 285, marginLeft: 120 }}
             resizeMode="contain"
           />
         </TouchableOpacity>
@@ -484,8 +578,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               </Text>
             </View>
             <View style={styles.addressContainer}>
-              <MarqueeText
-                text={activeContract?.address || 'RUA MANOEL MARQUES DA CUNHA, 339 - MAR...'}
+              <AnimatedAddress
+                logradouro={activeContract?.enderecoLogradouro}
+                bairro={activeContract?.enderecoBairro}
+                cidade={activeContract?.enderecoCidade}
                 style={styles.addressText}
               />
               <MaterialCommunityIcons name="chevron-down" size={20} color={colors.textSecondary} />
@@ -514,13 +610,13 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.pixActionText}>Pagar com PIX</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.iconButton, { backgroundColor: '#FF0000' }]}
+                style={[styles.iconButton, { backgroundColor: colors.primary }]}
                 onPress={handleBarcodeCopy}
               >
                 <MaterialCommunityIcons name="barcode" size={24} color="#FFFFFF" />
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.iconButton, { backgroundColor: '#FF0000', marginLeft: 12 }]}
+                style={[styles.iconButton, { backgroundColor: colors.primary, marginLeft: 12 }]}
                 onPress={() => navigation.navigate('InvoiceDetails', { invoice: lastInvoice })}
               >
                 <MaterialCommunityIcons name="credit-card-outline" size={24} color="#FFFFFF" />
@@ -926,7 +1022,7 @@ const createStyles = (colors: any) =>
       marginTop: 20,
     },
     pixActionButton: {
-      backgroundColor: '#FF0000',
+      backgroundColor: colors.primary,
       flexShrink: 1,
       flexGrow: 1,
       flexDirection: 'row',
@@ -937,7 +1033,7 @@ const createStyles = (colors: any) =>
       paddingHorizontal: 16,
       marginRight: 12,
       elevation: 4,
-      shadowColor: '#FF0000',
+      shadowColor: colors.primary,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.3,
       shadowRadius: 4,
@@ -1059,7 +1155,7 @@ const createStyles = (colors: any) =>
     checkStatusButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#FF0000',
+      backgroundColor: colors.primary,
       paddingHorizontal: 16,
       paddingVertical: 8,
       borderRadius: 12,

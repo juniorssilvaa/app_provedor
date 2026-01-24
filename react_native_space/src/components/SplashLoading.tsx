@@ -8,7 +8,7 @@ export const SplashLoading: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Image
-        source={require('../../assets/logo_home.png')}
+        source={require('../../assets/logo-nanet.png')}
         style={styles.logo}
         resizeMode="contain"
       />
