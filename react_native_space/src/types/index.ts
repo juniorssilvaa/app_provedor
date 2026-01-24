@@ -26,6 +26,8 @@ export interface Contract {
   serviceLogin?: string;
   statusDisplay?: string; // Also seen in sgpService
   dataCadastro?: string;
+  /** Dia do mês de vencimento das faturas (ex.: 15, 30) - vindo do SGP */
+  vencimento?: number;
 }
 
 export interface Plan {

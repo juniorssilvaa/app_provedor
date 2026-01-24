@@ -172,6 +172,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -280,19 +281,24 @@ const createStyles = (colors: any) => StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 10,
     paddingBottom: 32,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 10,
+    height: 150, // Altura reduzida para cortar o espaço em branco
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   logoImage: {
-    width: 450,
-    height: 310,
+    width: 380,
+    height: 280, // Imagem maior que o container
+    marginTop: -40, // Puxa a imagem para cima para centralizar o corte
   },
   formContainer: {
     flex: 1,
+    marginTop: 30, // Pushes form down
   },
   title: {
     fontSize: 28,
@@ -303,7 +309,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 32,
+    marginBottom: 16,
   },
   input: {
     marginBottom: 16,
@@ -344,7 +350,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: -20, // Pulls footer up more
+    marginBottom: 20, // Add bottom margin
   },
   footerButton: {
     paddingHorizontal: 12,

@@ -41,7 +41,7 @@ class SGPService {
       timeout: 15000,
     });
     
-    console.log('[SGP] Credenciais configuradas:', { url: baseUrl, token: token.substring(0, 10) + '...', app });
+    // console.log('[SGP] Credenciais configuradas:', { url: baseUrl, token: token.substring(0, 10) + '...', app });
   }
 
   /**
@@ -135,14 +135,14 @@ class SGPService {
         
         // Excluir canceladas
         if (rawStatus.includes('cancelado')) {
-          console.log('[SGP] Fatura cancelada excluída:', t.id, t.status);
+          // console.log('[SGP] Fatura cancelada excluída:', t.id, t.status);
           return false;
         }
         
         // Verificar data de vencimento
         const dueDate = t.dataVencimento || t.vencimento || t.vencimento_original || '';
         if (!dueDate) {
-          console.log('[SGP] Fatura sem data excluída:', t.id);
+          // console.log('[SGP] Fatura sem data excluída:', t.id);
           return false;
         }
         
@@ -156,13 +156,13 @@ class SGPService {
         // - Abertas: podem ser futuras (mostrar se houver)
         // - Vencidas: nunca futuras (devem ter data <= hoje)
         if (isOverdue && invDateStr > todayStr) {
-          console.log('[SGP] Fatura vencida futura excluída:', t.id, t.status, invDateStr, '>', todayStr);
+          // console.log('[SGP] Fatura vencida futura excluída:', t.id, t.status, invDateStr, '>', todayStr);
           return false;
         }
         
         // Log para debug de faturas abertas
         if (isOpen) {
-          console.log('[SGP] Fatura aberta encontrada:', t.id, 'Vencimento:', invDateStr, 'Hoje:', todayStr);
+          // console.log('[SGP] Fatura aberta encontrada:', t.id, 'Vencimento:', invDateStr, 'Hoje:', todayStr);
         }
         
         // Apenas status: pago, aberto ou vencido
@@ -171,11 +171,11 @@ class SGPService {
             !rawStatus.includes('aberto') && 
             !rawStatus.includes('vencido') && 
             !rawStatus.includes('atrasado')) {
-          console.log('[SGP] Fatura com status inválido excluída:', t.id, t.status);
+          // console.log('[SGP] Fatura com status inválido excluída:', t.id, t.status);
           return false;
         }
         
-        console.log('[SGP] Fatura válida:', t.id, t.status, invDateStr);
+        // console.log('[SGP] Fatura válida:', t.id, t.status, invDateStr);
         return true;
       });
       
@@ -187,12 +187,14 @@ class SGPService {
       const overdueInvoices = mappedValid.filter(inv => inv.status === 'overdue');
       const openInvoices = mappedValid.filter(inv => inv.status === 'pending');
       
+      /*
       console.log('[SGP] Faturas separadas:', {
         pagas: paidInvoices.length,
         atrasadas: overdueInvoices.length,
         abertas: openInvoices.length,
         total: mappedValid.length
       });
+      */
       
       // 6. Selecionar faturas conforme regra:
       // - Sempre as 2 últimas pagas (mais recentes)
@@ -255,9 +257,9 @@ class SGPService {
         new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
       );
       
-      console.log('[SGP] consultaFaturas retornando:', finalInvoices.length, 'faturas');
+      // console.log('[SGP] consultaFaturas retornando:', finalInvoices.length, 'faturas');
       finalInvoices.forEach(inv => {
-        console.log('[SGP] Fatura retornada:', inv.id, inv.status, inv.dueDate, 'Contrato:', inv.contractId);
+        // console.log('[SGP] Fatura retornada:', inv.id, inv.status, inv.dueDate, 'Contrato:', inv.contractId);
       });
       
       return finalInvoices;
@@ -269,7 +271,7 @@ class SGPService {
   private mapInvoices(rawInvoices: any[], defaultContractId?: string): Invoice[] {
     if (!rawInvoices || !Array.isArray(rawInvoices)) return [];
 
-    console.log('[SGP] mapInvoices recebeu:', JSON.stringify(rawInvoices, null, 2));
+    // console.log('[SGP] mapInvoices recebeu:', JSON.stringify(rawInvoices, null, 2));
 
     return rawInvoices.map((t: any) => {
       let status: 'paid' | 'pending' | 'overdue' = 'pending';
@@ -300,7 +302,7 @@ class SGPService {
 
       // Captura da chave PIX (Múltiplas fontes possíveis)
       // Prioridade: codigopix direto (como vem da API SGP em links)
-      console.log('[SGP] mapInvoices - Item fatura recebido:', { id: t.id || t.fatura, codigopix: t.codigopix, codigoPix: t.codigoPix });
+      // console.log('[SGP] mapInvoices - Item fatura recebido:', { id: t.id || t.fatura, codigopix: t.codigopix, codigoPix: t.codigoPix });
       
       const pixKeyRaw =
         t.codigopix ||  // Primeiro tenta codigopix direto (minúscula como vem da API SGP)
@@ -313,7 +315,7 @@ class SGPService {
         '';
       
       const pixKey = typeof pixKeyRaw === 'string' ? pixKeyRaw.trim() : '';
-      console.log('[SGP] mapInvoices - Chave PIX extraída:', pixKey ? 'ENCONTRADA' : 'NÃO ENCONTRADA', pixKey ? pixKey.substring(0, 20) + '...' : '');
+      // console.log('[SGP] mapInvoices - Chave PIX extraída:', pixKey ? 'ENCONTRADA' : 'NÃO ENCONTRADA', pixKey ? pixKey.substring(0, 20) + '...' : '');
 
       return {
         id: (t.id || t.fatura || '').toString(),
@@ -494,6 +496,17 @@ class SGPService {
               contractsData = combinedContracts;
           }
 
+          // Contratos unificados: usar data_cadastro de qualquer contrato quando outro não tiver
+          const fallbackDataCadastro = (() => {
+            const found = contractsData.find((c: any) => c.data_cadastro || c.dataCadastro);
+            return found ? (found.data_cadastro || found.dataCadastro) : undefined;
+          })();
+          contractsData.forEach((c: any) => {
+            if (!c.data_cadastro && !c.dataCadastro && fallbackDataCadastro) {
+              c.data_cadastro = fallbackDataCadastro;
+            }
+          });
+
           finalContracts = contractsData.map((c: any) => {
             const contractIdStr = (c.contrato || c.contratoId || c.id || '').toString();
             const contractInvoices = invoices.filter((inv) => inv.contractId === contractIdStr);
@@ -503,12 +516,21 @@ class SGPService {
         } 
         else if (data.contratoId || extraContracts.length > 0) {
           if (extraContracts.length > 0) {
-               finalContracts = extraContracts.map((c: any) => {
+              const fallbackDataCadastroExtra = (() => {
+                const found = extraContracts.find((c: any) => c.data_cadastro || c.dataCadastro);
+                return found ? (found.data_cadastro || found.dataCadastro) : undefined;
+              })();
+              extraContracts.forEach((c: any) => {
+                if (!c.data_cadastro && !c.dataCadastro && fallbackDataCadastroExtra) {
+                  c.data_cadastro = fallbackDataCadastroExtra;
+                }
+              });
+              finalContracts = extraContracts.map((c: any) => {
                   const contractIdStr = (c.contrato || c.contratoId || c.id || '').toString();
                   const contractInvoices = invoices.filter((inv) => inv.contractId === contractIdStr);
                   if (!c.contratoCentralSenha && centralPassword) c.contratoCentralSenha = centralPassword;
-          return this.mapSGPContract(c, contractInvoices);
-        });
+                  return this.mapSGPContract(c, contractInvoices);
+              });
           } else {
               const targetContractId = (data.contratoId || '').toString();
               const filteredInvoices = invoices.filter(inv => !inv.contractId || inv.contractId.trim() === '' || inv.contractId === targetContractId);
@@ -663,6 +685,16 @@ class SGPService {
       status = 'pending';
     }
 
+    const inst = c.endereco_instalacao;
+    const cobr = c.endereco_cobranca;
+    const logradouro = c.endereco_logradouro ?? c.enderecoLogradouro ?? inst?.logradouro ?? cobr?.logradouro;
+    const bairro = c.endereco_bairro ?? c.enderecoBairro ?? inst?.bairro ?? cobr?.bairro;
+    const cidade = c.endereco_cidade ?? c.enderecoCidade ?? inst?.cidade ?? cobr?.cidade;
+    const numero = c.endereco_numero ?? inst?.numero ?? cobr?.numero;
+    const addressStr = logradouro
+      ? `${logradouro}${numero != null && numero !== '' ? ', ' + numero : ''}${bairro ? ' - ' + bairro : ''}`
+      : undefined;
+
     return {
       id: contractId,
       number: contractId,
@@ -684,12 +716,13 @@ class SGPService {
       wifiSSID5: c.servico_wifi_ssid_5,
       wifiPassword: c.servico_wifi_password,
       wifiPassword5: c.servico_wifi_password_5,
-      address: c.endereco_logradouro ? `${c.endereco_logradouro}, ${c.endereco_numero || ''} - ${c.endereco_bairro || ''}` : undefined,
-      enderecoLogradouro: c.endereco_logradouro || c.enderecoLogradouro,
-      enderecoBairro: c.endereco_bairro || c.enderecoBairro,
-      enderecoCidade: c.endereco_cidade || c.enderecoCidade,
+      address: addressStr,
+      enderecoLogradouro: logradouro,
+      enderecoBairro: bairro,
+      enderecoCidade: cidade,
+      vencimento: c.vencimento != null ? Number(c.vencimento) : undefined,
       invoices: invoices,
-      dataCadastro: c.dataCadastro,
+      dataCadastro: c.dataCadastro || c.data_cadastro,
     };
   }
 
@@ -698,8 +731,8 @@ class SGPService {
    */
   async consultarCpe(contratoId: string, servicoId?: number): Promise<SGPCpeResponse | null> {
     try {
-      console.log('[SGP] Consultando CPE para contrato:', contratoId);
-      console.log('[SGP] Endpoint:', 'api/ura/cpemanage/');
+      // console.log('[SGP] Consultando CPE para contrato:', contratoId);
+      // console.log('[SGP] Endpoint:', 'api/ura/cpemanage/');
 
       // Para consulta, usa GET com query params (não envia parâmetros de alteração)
       const payload: any = this.getSGPPayload({ contrato: contratoId });
@@ -713,11 +746,11 @@ class SGPService {
           params: payload,
         });
 
-        console.log('[SGP] Resposta CPE (GET):', JSON.stringify(response.data, null, 2));
+        // console.log('[SGP] Resposta CPE (GET):', JSON.stringify(response.data, null, 2));
         return response.data;
       } catch (getError: any) {
         // Se GET falhar, tenta POST (fallback)
-        console.log('[SGP] GET falhou, tentando POST como fallback');
+        // console.log('[SGP] GET falhou, tentando POST como fallback');
         const form = new FormData();
         Object.keys(payload).forEach(key => {
           form.append(key, payload[key]);
@@ -727,7 +760,7 @@ class SGPService {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-        console.log('[SGP] Resposta CPE (POST):', JSON.stringify(response.data, null, 2));
+        // console.log('[SGP] Resposta CPE (POST):', JSON.stringify(response.data, null, 2));
       return response.data;
       }
     } catch (error) {
@@ -913,7 +946,7 @@ class SGPService {
    */
   async listarNotasFiscais(cpfCnpj: string, contratoId: string, senha: string): Promise<NotaFiscal[]> {
     try {
-      console.log('[SGP] Listando notas fiscais para:', cpfCnpj);
+      // console.log('[SGP] Listando notas fiscais para:', cpfCnpj);
       console.log('[SGP] Contrato ID:', contratoId);
       console.log('[SGP] Endpoint:', 'api/central/notafiscal/list/');
 
@@ -928,6 +961,7 @@ class SGPService {
         senha: senha,
       });
       
+      /*
       console.log('[SGP] Payload notas fiscais:', {
         cpfcnpj: formattedCpfCnpj,
         contrato: contratoId,
@@ -935,6 +969,7 @@ class SGPService {
         token: payload.token ? 'existe' : 'não existe',
         app: payload.app,
       });
+      */
       
       Object.keys(payload).forEach(key => {
         form.append(key, payload[key]);

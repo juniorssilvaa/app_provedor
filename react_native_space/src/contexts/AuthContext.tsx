@@ -98,13 +98,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // BUSCAR TUDO: Atualiza os dados do SGP em background para garantir que faturas/contratos estejam em dia
         console.log('Atualizando dados do cliente em background...');
-        sgpService.consultaCliente(parsed.cpfCnpj).then(updatedUser => {
-            if (updatedUser) {
-                setUser(updatedUser);
-                AsyncStorage.setItem(STORAGE_USER_KEY, JSON.stringify(updatedUser));
-                console.log('Dados do cliente atualizados com sucesso.');
-            }
-        }).catch(err => console.warn('Falha ao atualizar dados em background:', err));
+        if (parsed.cpfCnpj) {
+            sgpService.consultaCliente(parsed.cpfCnpj)
+                .then(updatedUser => {
+                    if (updatedUser) {
+                        setUser(updatedUser);
+                        AsyncStorage.setItem(STORAGE_USER_KEY, JSON.stringify(updatedUser)).catch(e => console.error('Erro ao salvar user atualizado:', e));
+                        console.log('Dados do cliente atualizados com sucesso.');
+                    }
+                })
+                .catch(err => {
+                    console.warn('Falha ao atualizar dados em background (não fatal):', err);
+                });
+        }
 
         let nextActiveContractId: string | null = null;
         if (parsed.contracts?.length === 1) {

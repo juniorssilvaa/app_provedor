@@ -132,81 +132,16 @@ const AnimatedAddress = ({
   cidade?: string; 
   style?: any;
 }) => {
-  const { colors } = useTheme();
-  const [textWidth, setTextWidth] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const animatedValue = useRef(new Animated.Value(0)).current;
-
-  // Combina os três campos
-  const addressParts = [];
+  const addressParts: string[] = [];
   if (logradouro) addressParts.push(logradouro);
   if (bairro) addressParts.push(bairro);
   if (cidade) addressParts.push(cidade);
   const fullAddress = addressParts.join(' - ') || 'Endereço não disponível';
 
-  const handleTextLayout = (e: LayoutChangeEvent) => {
-    setTextWidth(e.nativeEvent.layout.width);
-  };
-
-  const handleContainerLayout = (e: LayoutChangeEvent) => {
-    setContainerWidth(e.nativeEvent.layout.width);
-  };
-
-  useEffect(() => {
-    if (containerWidth > 0 && textWidth > 0) {
-      // Animação de marquee contínuo - sempre ocorre, mesmo se o texto for pequeno
-      // Fase 1: Entra da direita (containerWidth) e vai até sair completamente pela esquerda (-textWidth)
-      // Fase 2: Renasce na esquerda (-textWidth) e vai para a direita até sair (containerWidth)
-      // Loop infinito
-      const createAnimation = () => {
-        // Fase 1: Direita -> Esquerda (entra da direita e sai completamente pela esquerda)
-        const phase1 = Animated.timing(animatedValue, {
-          toValue: -textWidth,
-          duration: (textWidth + containerWidth) * 15, // Velocidade baseada no tamanho
-          easing: Easing.linear,
-          useNativeDriver: true,
-        });
-
-        // Fase 2: Esquerda -> Direita (renasce na esquerda e vai para a direita até sair)
-        const phase2 = Animated.timing(animatedValue, {
-          toValue: containerWidth,
-          duration: (textWidth + containerWidth) * 15,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        });
-
-        // Sequência: fase1 -> fase2 -> loop
-        Animated.sequence([phase1, phase2]).start(() => {
-          // Reinicia o loop (volta para a direita para começar de novo)
-          animatedValue.setValue(containerWidth);
-          createAnimation();
-        });
-      };
-
-      // Inicia a animação começando da direita
-      animatedValue.setValue(containerWidth);
-      createAnimation();
-    }
-  }, [textWidth, containerWidth, animatedValue]);
-
   return (
-    <View 
-      style={{ flex: 1, overflow: 'hidden' }} 
-      onLayout={handleContainerLayout}
-    >
-      <Animated.Text
-        style={[
-          style,
-          {
-            transform: [{ translateX: animatedValue }],
-          },
-        ]}
-        numberOfLines={1}
-        onLayout={handleTextLayout}
-      >
-        {fullAddress}
-      </Animated.Text>
-    </View>
+    <Text style={[style, { flex: 1, marginRight: 8 }]} numberOfLines={1}>
+      {fullAddress}
+    </Text>
   );
 };
 
@@ -321,12 +256,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const lastInvoice = useMemo(() => {
     if (!activeContract?.invoices || activeContract.invoices.length === 0) {
-      console.log('[Home] Nenhuma fatura encontrada no contrato');
       return null;
     }
-    
-    console.log('[Home] Total de faturas no contrato:', activeContract.invoices.length);
-    console.log('[Home] Faturas:', activeContract.invoices.map(inv => ({ id: inv.id, status: inv.status, dueDate: inv.dueDate })));
     
     // Buscar faturas abertas ou vencidas (não pagas)
     // Mostrar mesmo que sejam futuras ou planos gratuitos
@@ -347,21 +278,15 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         return dateA - dateB; // Mais antiga primeiro
       });
 
-    console.log('[Home] Faturas vencidas:', overdueInvoices.length);
-    console.log('[Home] Faturas abertas:', openInvoices.length);
-
     // Priorizar vencidas sobre abertas
     if (overdueInvoices.length > 0) {
-      console.log('[Home] Retornando fatura vencida:', overdueInvoices[0].id);
       return overdueInvoices[0];
     }
     
     if (openInvoices.length > 0) {
-      console.log('[Home] Retornando fatura aberta:', openInvoices[0].id);
       return openInvoices[0];
     }
     
-    console.log('[Home] Nenhuma fatura aberta ou vencida encontrada');
     return null;
   }, [activeContract]);
 
@@ -565,17 +490,28 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
           <View style={styles.planInfoContainer}>
             <View style={styles.planInfoRow}>
-              <Text style={styles.planInfoText}>
-                {activeContract?.plan?.name?.replace('FIBRA ', '') || 'PREMIUM 300MB'}
-              </Text>
-              <View style={styles.divider} />
-              <Text style={styles.planInfoText}>
-                VENC. {activeContract?.invoices?.[0] ? getDayFromDate(activeContract.invoices[0]?.dueDate) : '15'}
-              </Text>
-              <View style={styles.divider} />
-              <Text style={styles.planInfoText}>
-                {activeContract?.dataCadastro ? formatDate(activeContract.dataCadastro) : ''}
-              </Text>
+              <View style={[styles.planInfoSegment, styles.planInfoSegmentLeft]}>
+                <Text style={styles.planInfoText} numberOfLines={1}>
+                  Plano: {activeContract?.plan?.name?.replace('FIBRA ', '') || 'PREMIUM 300MB'}
+                </Text>
+                <Text style={styles.planInfoDivider}> | </Text>
+              </View>
+              <View style={[styles.planInfoSegment, styles.planInfoSegmentLeft]}>
+                <Text style={styles.planInfoText} numberOfLines={1}>
+                  VENCIMENTO:{' '}
+                  {activeContract?.vencimento != null
+                    ? String(activeContract.vencimento).padStart(2, '0')
+                    : activeContract?.invoices?.[0]
+                      ? getDayFromDate(activeContract.invoices[0]?.dueDate)
+                      : '15'}
+                </Text>
+                <Text style={styles.planInfoDivider}> | </Text>
+              </View>
+              <View style={styles.planInfoSegment}>
+                <Text style={styles.planInfoText} numberOfLines={1}>
+                  CADASTRO: {activeContract?.dataCadastro ? formatDate(activeContract.dataCadastro) : ''}
+                </Text>
+              </View>
             </View>
             <View style={styles.addressContainer}>
               <AnimatedAddress
@@ -950,23 +886,36 @@ const createStyles = (colors: any) =>
     },
     planInfoRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      flexWrap: 'nowrap',
+      justifyContent: 'flex-start',
       alignItems: 'center',
       marginBottom: 8,
       paddingBottom: 8,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
+    planInfoSegment: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+    },
+    planInfoSegmentLeft: {
+      justifyContent: 'flex-start',
+      paddingLeft: 4,
+      marginRight: 16,
+    },
     planInfoText: {
       color: colors.text,
-      fontSize: 12,
+      fontSize: 9,
       fontWeight: '600',
       textTransform: 'uppercase',
     },
-    divider: {
-      width: 1,
-      height: 12,
-      backgroundColor: colors.textSecondary,
+    planInfoDivider: {
+      color: colors.textSecondary,
+      fontSize: 10,
+      fontWeight: '600',
+      marginLeft: 10,
+      marginRight: 4,
     },
     marqueeContainer: {
       flex: 1,

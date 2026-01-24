@@ -1,16 +1,21 @@
+/** URL base da API em desenvolvimento (Android emulador: 10.0.2.2, iOS: localhost) */
+const DEV_API_URL = 'http://10.0.2.2:8000/api/';
+
+/** URL base da API em produção */
+const PROD_API_URL = 'https://apis.niochat.com.br/api/';
+
+/** Token do provedor. Definir EXPO_PUBLIC_API_TOKEN no .env (não commitar). */
+const API_TOKEN = typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_TOKEN
+  ? process.env.EXPO_PUBLIC_API_TOKEN
+  : '';
+
 export const config = {
-  // Configuração do Backend Niochat (Dinamismo Total)
-  // O app agora se identifica apenas pelo apiToken. 
-  // O Backend resolve a URL e o Token do SGP específicos de cada provedor.
-  
-  // Se estiver testando localmente (NoxPlayer/Emulador), use o IP real da máquina (192.168.100.55) ou http://10.0.2.2:8000/api/
-  // Se estiver em produção, use https://apis.niochat.com.br/api/
-  apiBaseUrl: 'https://apis.niochat.com.br/api/', // URL de produção 
-  
-  providerId: 2, // ID do provedor NANET
-  apiToken: 'sk_live_' + '274423e0ffc0834655177e693e07a1b1682dafca75a3fd17', // Token de integração do provedor NANET
-  
-  // Customização Visual do App (Estes dados também podem ser carregados dinamicamente via /api/public/config/)
+  // Backend Niochat: o app se identifica pelo apiToken; o backend resolve URL e token SGP do provedor.
+  apiBaseUrl: __DEV__ ? DEV_API_URL : PROD_API_URL,
+
+  providerId: 2,
+  apiToken: API_TOKEN,
+
   clientName: 'NANET',
-  primaryColor: '#E60000', // Vermelho da logo NANET
+  primaryColor: '#E60000',
 };
