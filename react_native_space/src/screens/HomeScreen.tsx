@@ -27,6 +27,7 @@ import { InAppWarnings, PixIconRed } from '../components';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useConfig } from '../contexts/ConfigContext';
+import { config } from '../config';
 import { ensureLocationPermission, getNetworkInfo, NetworkInfo } from '../utils/networkUtils';
 import { sgpService } from '../services/sgpService';
 import packageJson from '../../package.json';
@@ -423,11 +424,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       : 'FATURA PAGA';
 
   const handleWhatsApp = () => {
-    Linking.openURL('whatsapp://send?phone=558182337720');
+    Linking.openURL(`whatsapp://send?phone=${config.providerPhone}`);
   };
 
   const handlePhone = () => {
-    Linking.openURL('tel:+558182337720');
+    Linking.openURL(`tel:+${config.providerPhone}`);
   };
 
   return (
@@ -492,13 +493,13 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.planInfoRow}>
               <View style={[styles.planInfoSegment, styles.planInfoSegmentLeft]}>
                 <Text style={styles.planInfoText} numberOfLines={1}>
-                  Plano: {activeContract?.plan?.name?.replace('FIBRA ', '') || 'PREMIUM 300MB'}
+                  PLANO: {activeContract?.plan?.name?.replace('FIBRA ', '') || 'PREMIUM 300MB'}
                 </Text>
                 <Text style={styles.planInfoDivider}> | </Text>
               </View>
               <View style={[styles.planInfoSegment, styles.planInfoSegmentLeft]}>
                 <Text style={styles.planInfoText} numberOfLines={1}>
-                  VENCIMENTO:{' '}
+                  VENC:{' '}
                   {activeContract?.vencimento != null
                     ? String(activeContract.vencimento).padStart(2, '0')
                     : activeContract?.invoices?.[0]
@@ -626,7 +627,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.downdetectorButtonsRow}>
               <TouchableOpacity
                 style={styles.checkStatusButton}
-                onPress={() => navigation.navigate('AIChat')}
+                onPress={handleWhatsApp}
               >
                 <MaterialCommunityIcons name="chat-processing" size={24} color="#FFFFFF" />
                 <Text style={styles.checkStatusButtonText}>Falar com Assistente</Text>
@@ -886,7 +887,7 @@ const createStyles = (colors: any) =>
     },
     planInfoRow: {
       flexDirection: 'row',
-      flexWrap: 'nowrap',
+      flexWrap: 'wrap',
       justifyContent: 'flex-start',
       alignItems: 'center',
       marginBottom: 8,
@@ -898,11 +899,12 @@ const createStyles = (colors: any) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-start',
+      marginVertical: 2,
     },
     planInfoSegmentLeft: {
       justifyContent: 'flex-start',
-      paddingLeft: 4,
-      marginRight: 16,
+      paddingLeft: 0,
+      marginRight: 0,
     },
     planInfoText: {
       color: colors.text,
@@ -914,8 +916,8 @@ const createStyles = (colors: any) =>
       color: colors.textSecondary,
       fontSize: 10,
       fontWeight: '600',
-      marginLeft: 10,
-      marginRight: 4,
+      marginLeft: 2,
+      marginRight: 2,
     },
     marqueeContainer: {
       flex: 1,

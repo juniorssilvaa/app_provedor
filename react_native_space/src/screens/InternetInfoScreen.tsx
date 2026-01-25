@@ -20,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { sgpService } from '../services/sgpService';
 import { SGPCpeResponse } from '../types';
 import { getNetworkInfo, NetworkInfo } from '../utils/networkUtils';
+import { config } from '../config';
 
 export const InternetInfoScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -268,27 +269,49 @@ export const InternetInfoScreen: React.FC = () => {
   // Uptime - wan_up_time está em dias, não segundos
   const formatUptime = (days?: number): string => {
     if (!days || days <= 0) {
-      // Tenta calcular a partir do lastboot_date se disponível
-      if (cpeInfo?.lastboot_date) {
-        try {
-          const bootDate = new Date(cpeInfo.lastboot_date);
-          const now = new Date();
-          const diffMs = now.getTime() - bootDate.getTime();
-          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-          if (diffDays > 0) {
-            return `Conectado há ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`;
-          }
-        } catch (e) {
-          console.error('Erro ao calcular uptime:', e);
-        }
-      }
       return '---';
     }
     
     return `Conectado há ${days} ${days === 1 ? 'dia' : 'dias'}`;
   };
   
-  const uptime = formatUptime(cpeInfo?.wan_up_time);
+  // Prioriza wan_up_time (tempo WAN conectado em dias), se não disponível tenta sys_up_time (mas valida se é positivo)
+  // sys_up_time pode vir em segundos, então converte para dias se necessário
+  const getUptimeDays = (): number | undefined => {
+    // Prioridade 1: wan_up_time (já está em dias)
+    if (cpeInfo?.wan_up_time != null && cpeInfo.wan_up_time > 0) {
+      return cpeInfo.wan_up_time;
+    }
+    
+    // Prioridade 2: sys_up_time (pode estar em segundos, converte para dias)
+    if (cpeInfo?.sys_up_time != null && cpeInfo.sys_up_time > 0) {
+      // Se sys_up_time for muito grande (> 1000), provavelmente está em segundos
+      if (cpeInfo.sys_up_time > 1000) {
+        return Math.floor(cpeInfo.sys_up_time / (60 * 60 * 24));
+      }
+      // Se for pequeno (< 1000), assume que já está em dias
+      return Math.floor(cpeInfo.sys_up_time);
+    }
+    
+    // Prioridade 3: calcular a partir do lastboot_date
+    if (cpeInfo?.lastboot_date) {
+      try {
+        const bootDate = new Date(cpeInfo.lastboot_date);
+        const now = new Date();
+        const diffMs = now.getTime() - bootDate.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) {
+          return diffDays;
+        }
+      } catch (e) {
+        console.error('Erro ao calcular uptime:', e);
+      }
+    }
+    
+    return undefined;
+  };
+  
+  const uptime = formatUptime(getUptimeDays());
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -505,11 +528,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
+    backgroundColor: config.primaryColor || '#E60000',
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text,
+    color: '#FFFFFF',
   },
   content: {
     flex: 1,

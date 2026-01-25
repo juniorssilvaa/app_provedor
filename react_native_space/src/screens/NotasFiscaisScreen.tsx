@@ -8,6 +8,7 @@ import { RootStackParamList, NotaFiscal } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { sgpService } from '../services/sgpService';
+import { config } from '../config';
 
 type NotasFiscaisScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'NotasFiscais'>;
 
@@ -123,7 +124,7 @@ export const NotasFiscaisScreen: React.FC<Props> = ({ navigation }) => {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notas Fiscais</Text>
           <View style={{ width: 40 }} />
@@ -137,8 +138,8 @@ export const NotasFiscaisScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.emptyState}>
             <MaterialCommunityIcons
               name="file-document-outline"
-              size={64}
-              color={colors.textSecondary}
+              size={80}
+              color={config.primaryColor || '#E60000'}
             />
             <Text style={styles.emptyTitle}>Sem notas fiscais</Text>
             <Text style={styles.emptyMessage}>
@@ -154,7 +155,7 @@ export const NotasFiscaisScreen: React.FC<Props> = ({ navigation }) => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notas Fiscais</Text>
         <View style={{ width: 40 }} />
@@ -238,7 +239,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: config.primaryColor || '#E60000',
   },
   backButton: {
     width: 40,
@@ -249,7 +250,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
+    color: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,

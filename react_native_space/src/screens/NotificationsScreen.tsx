@@ -122,7 +122,7 @@ export const NotificationsScreen = () => {
         {item.whatsapp_btn && (
           <TouchableOpacity
             style={[styles.button, { backgroundColor: color }]}
-            onPress={() => Linking.openURL(`whatsapp://send?phone=${item.whatsapp_btn}`)}
+            onPress={() => Linking.openURL(`whatsapp://send?phone=${config.providerPhone}`)}
           >
             <MaterialCommunityIcons name="whatsapp" size={20} color="#FFF" style={{ marginRight: 8 }} />
             <Text style={styles.buttonText}>Falar no WhatsApp</Text>

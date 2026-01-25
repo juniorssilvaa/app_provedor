@@ -7,6 +7,7 @@ import { RootStackParamList, Plan } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import { CustomHeader, PlanCard } from '../components';
 import { sgpService } from '../services/sgpService';
+import { config } from '../config';
 
 type PlansScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Plans'>;
 
@@ -20,7 +21,6 @@ export const PlansScreen: React.FC<Props> = ({ navigation }) => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [providerPhone, setProviderPhone] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -29,14 +29,8 @@ export const PlansScreen: React.FC<Props> = ({ navigation }) => {
   const loadData = async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
-      const [plansData, configData] = await Promise.all([
-        sgpService.getPlans(),
-        sgpService.getAppConfig()
-      ]);
+      const plansData = await sgpService.getPlans();
       setPlans(plansData);
-      if (configData && configData.provider_phone) {
-        setProviderPhone(configData.provider_phone);
-      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -51,30 +45,25 @@ export const PlansScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   const handleSelectPlan = (plan: Plan) => {
-    if (providerPhone) {
-      const cleanPhone = providerPhone.replace(/\D/g, '');
-      const message = `Olá! Tenho interesse no plano ${plan.name} de R$ ${plan.price.toFixed(2).replace('.', ',')}. Poderia me ajudar?`;
-      const url = `whatsapp://send?phone=55${cleanPhone}&text=${encodeURIComponent(message)}`;
-      
-      Linking.canOpenURL(url).then(supported => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          // Fallback para link web se o app não estiver instalado
-          Linking.openURL(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`);
-        }
-      });
-    } else {
-      console.log('Provider phone not found');
-    }
+    const message = `Olá! Tenho interesse no plano ${plan.name} de R$ ${plan.price.toFixed(2).replace('.', ',')}. Poderia me ajudar?`;
+    Linking.canOpenURL(`whatsapp://send?phone=${config.providerPhone}&text=${encodeURIComponent(message)}`).then(supported => {
+      if (supported) {
+        Linking.openURL(`whatsapp://send?phone=${config.providerPhone}&text=${encodeURIComponent(message)}`);
+      } else {
+        Linking.openURL(`https://wa.me/${config.providerPhone}?text=${encodeURIComponent(message)}`);
+      }
+    });
   };
 
   const handleContactSupport = () => {
-    if (providerPhone) {
-      const cleanPhone = providerPhone.replace(/\D/g, '');
-      const message = 'Olá! Gostaria de tirar algumas dúvidas sobre os planos de internet.';
-      Linking.openURL(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`);
-    }
+    const message = 'Olá! Gostaria de tirar algumas dúvidas sobre os planos de internet.';
+    Linking.canOpenURL(`whatsapp://send?phone=${config.providerPhone}&text=${encodeURIComponent(message)}`).then(supported => {
+      if (supported) {
+        Linking.openURL(`whatsapp://send?phone=${config.providerPhone}&text=${encodeURIComponent(message)}`);
+      } else {
+        Linking.openURL(`https://wa.me/${config.providerPhone}?text=${encodeURIComponent(message)}`);
+      }
+    });
   };
 
   return (

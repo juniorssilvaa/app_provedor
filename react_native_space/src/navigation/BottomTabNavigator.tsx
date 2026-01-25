@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabsParamList, RootStackParamList } from '../types';
 import { colors } from '../theme/colors';
 import { HomeScreen, InvoicesScreen, ProfileScreen, SupportListScreen } from '../screens';
@@ -17,11 +18,16 @@ const EmptyComponent = () => null;
 export const BottomTabNavigator: React.FC = () => {
   const { activeContract } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
 
   const isSuspended = activeContract?.status === 'suspended' || activeContract?.status === 'inactive'; // Adjust status check as needed
   
   // Per user request: Green if active, Red if suspended
   const buttonColor = isSuspended ? colors.error : colors.success;
+
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 0);
+  const tabBarPaddingBottom = (Platform.OS === 'ios' ? 30 : 20) + bottomInset;
+  const tabBarHeight = (Platform.OS === 'ios' ? 100 : 85) + bottomInset;
 
   const handleMiddleButtonPress = () => {
     if (activeContract?.status === 'active') {
@@ -43,8 +49,8 @@ export const BottomTabNavigator: React.FC = () => {
           borderTopColor: 'rgba(255, 255, 255, 0.1)',
           borderTopWidth: 1,
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 30 : 20,
-          height: Platform.OS === 'ios' ? 100 : 85,
+          paddingBottom: tabBarPaddingBottom,
+          height: tabBarHeight,
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: {

@@ -20,6 +20,7 @@ import { sgpService } from '../services/sgpService';
 import { validateCPForCNPJ, maskCPForCNPJ } from '../utils/validation';
 import { LoadingOverlay } from '../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { config } from '../config';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -103,24 +104,14 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleHelp = () => {
-    if (providerPhone) {
-      const cleanPhone = providerPhone.replace(/\D/g, '');
-      const message = 'Olá, preciso de ajuda com o acesso ao aplicativo.';
-      const url = `whatsapp://send?phone=55${cleanPhone}&text=${encodeURIComponent(message)}`;
-      
-      Linking.canOpenURL(url).then(supported => {
-        if (supported) {
-          return Linking.openURL(url);
-        } else {
-          return Linking.openURL(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`);
-        }
-      });
-    } else {
-      // Fallback para o número fixo se não conseguir carregar o config
-      const phoneNumber = '558182337720';
-      const message = 'Olá, preciso de ajuda com o acesso ao aplicativo.';
-      Linking.openURL(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`);
-    }
+    const message = 'Olá, preciso de ajuda com o acesso ao aplicativo.';
+    Linking.canOpenURL(`whatsapp://send?phone=${config.providerPhone}&text=${encodeURIComponent(message)}`).then(supported => {
+      if (supported) {
+        Linking.openURL(`whatsapp://send?phone=${config.providerPhone}&text=${encodeURIComponent(message)}`);
+      } else {
+        Linking.openURL(`https://wa.me/${config.providerPhone}?text=${encodeURIComponent(message)}`);
+      }
+    });
   };
 
   const handleLogin = async () => {

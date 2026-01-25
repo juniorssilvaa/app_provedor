@@ -9,6 +9,7 @@ import { RootStackParamList, TermoAceite } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { sgpService } from '../services/sgpService';
+import { config } from '../config';
 
 type TermsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Terms'>;
 
@@ -92,7 +93,7 @@ export const TermsScreen: React.FC<Props> = ({ navigation }) => {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Termo de Adesão</Text>
           <View style={{ width: 40 }} />
@@ -110,7 +111,7 @@ export const TermsScreen: React.FC<Props> = ({ navigation }) => {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Termo de Adesão</Text>
           <View style={{ width: 40 }} />
@@ -156,7 +157,7 @@ export const TermsScreen: React.FC<Props> = ({ navigation }) => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Termo de Adesão</Text>
         <View style={{ width: 40 }} />
@@ -207,7 +208,7 @@ export const TermsScreen: React.FC<Props> = ({ navigation }) => {
             mode="contained"
             onPress={handleAccept}
             style={styles.acceptButton}
-            buttonColor={colors.primary}
+            buttonColor={config.primaryColor || '#E60000'}
             textColor="#FFFFFF"
             labelStyle={styles.acceptButtonText}
             loading={accepting}
@@ -234,7 +235,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: config.primaryColor || '#E60000',
   },
   backButton: {
     width: 40,
@@ -245,7 +246,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
+    color: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
@@ -332,6 +333,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   acceptButton: {
     marginTop: 8,
+    backgroundColor: config.primaryColor || '#E60000',
   },
   acceptButtonText: {
     color: '#FFFFFF',
