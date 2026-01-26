@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -30,6 +30,26 @@ interface Props {
 
 const STORAGE_CPF_KEY = '@NANET:savedCpf';
 
+// Função de formatação movida para fora do componente para evitar recriação
+const formatCpfCnpj = (value: string) => {
+  const cleaned = value.replace(/\D/g, '');
+  
+  if (cleaned.length <= 11) {
+    // Format as CPF
+    return cleaned
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  } else {
+    // Format as CNPJ
+    return cleaned
+      .replace(/(\d{2})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1/$2')
+      .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+  }
+};
+
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -39,8 +59,10 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
   const [providerPhone, setProviderPhone] = useState<string | null>(null);
+  
+  // Ref para controlar o input sem causar re-renders
+  const inputRef = useRef<any>(null);
 
   useEffect(() => {
     loadSavedCpf();
@@ -79,31 +101,14 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const formatCpfCnpj = (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
-    
-    if (cleaned.length <= 11) {
-      // Format as CPF
-      return cleaned
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-    } else {
-      // Format as CNPJ
-      return cleaned
-        .replace(/(\d{2})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1/$2')
-        .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
-    }
-  };
-
-  const handleCpfCnpjChange = (text: string) => {
+  // Memoizar callback para evitar recriação
+  const handleCpfCnpjChange = useCallback((text: string) => {
     const formatted = formatCpfCnpj(text);
     setCpfCnpj(formatted);
-  };
+  }, []);
 
-  const handleHelp = () => {
+  // Memoizar callback para evitar recriação
+  const handleHelp = useCallback(() => {
     const message = 'Olá, preciso de ajuda com o acesso ao aplicativo.';
     Linking.canOpenURL(`whatsapp://send?phone=${config.providerPhone}&text=${encodeURIComponent(message)}`).then(supported => {
       if (supported) {
@@ -112,7 +117,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         Linking.openURL(`https://wa.me/${config.providerPhone}?text=${encodeURIComponent(message)}`);
       }
     });
-  };
+  }, []);
 
   const handleLogin = async () => {
     try {
@@ -154,15 +159,18 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  // Memoizar valor formatado para exibição
+  const displayedValue = useMemo(() => {
+    return cpfCnpj || '';
+  }, [cpfCnpj]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -188,18 +196,21 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
           {/* Input fields */}
           <TextInput
+            ref={inputRef}
             mode="outlined"
             label="CPF/CNPJ"
-            value={isFocused ? cpfCnpj : (cpfCnpj ? maskCPForCNPJ(cpfCnpj) : '')}
+            value={displayedValue}
             onChangeText={handleCpfCnpjChange}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
             keyboardType="number-pad"
             maxLength={18}
             style={styles.input}
             outlineColor="rgba(255, 255, 255, 0.3)"
             activeOutlineColor={colors.primary}
             textColor={colors.white}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="done"
+            blurOnSubmit={true}
             theme={{
               colors: {
                 onSurfaceVariant: colors.textSecondary,
@@ -258,7 +269,6 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       >
         <Text style={{ color: '#FFFFFF' }}>{error}</Text>
       </Snackbar>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

@@ -1,0 +1,5 @@
+URL do Ngrok: https://3fcc7c8f4f27.ngrok-free.app
+URL da API: https://3fcc7c8f4f27.ngrok-free.app/api/
+
+Use esta URL para configurar o app:
+$env:EXPO_PUBLIC_DEV_API_URL="https://3fcc7c8f4f27.ngrok-free.app/api/"
