@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,17 +8,17 @@ import {
   TouchableOpacity,
   Image,
   Linking,
-  RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text, TextInput, Button, Checkbox, Snackbar, ActivityIndicator } from 'react-native-paper';
+import { Text, Snackbar } from 'react-native-paper';
 import MaskInput, { Masks } from 'react-native-mask-input';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { sgpService } from '../services/sgpService';
-import { validateCPForCNPJ, maskCPForCNPJ } from '../utils/validation';
+import { validateCPForCNPJ } from '../utils/validation';
 import { LoadingOverlay } from '../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { config } from '../config';
@@ -35,39 +35,14 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { login } = useAuth();
-  const [cpfCnpj, setCpfCnpj] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
-  const [providerPhone, setProviderPhone] = useState<string | null>(null);
   
-  // Ref para controlar o input sem causar re-renders
-  const inputRef = useRef<any>(null);
+  const [cpfCnpj, setCpfCnpj] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     loadSavedCpf();
-    loadAppConfig();
-  }, []);
-
-  const loadAppConfig = async (isRefresh = false) => {
-    try {
-      if (!isRefresh) setLoading(true);
-      const configData = await sgpService.getAppConfig();
-      if (configData && configData.provider_phone) {
-        setProviderPhone(configData.provider_phone);
-      }
-    } catch (err) {
-      console.error('Error loading app config:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    loadAppConfig(true);
   }, []);
 
   const loadSavedCpf = async () => {
@@ -82,40 +57,22 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  // Memoizar callback para evitar recriação
-  const handleCpfCnpjChange = useCallback((masked: string) => {
-    setCpfCnpj(masked);
-  }, []);
-
-  // Memoizar callback para evitar recriação
-  const handleHelp = useCallback(() => {
-    const message = 'Olá, preciso de ajuda com o acesso ao aplicativo.';
-    Linking.canOpenURL(`whatsapp://send?phone=${config.providerPhone}&text=${encodeURIComponent(message)}`).then(supported => {
-      if (supported) {
-        Linking.openURL(`whatsapp://send?phone=${config.providerPhone}&text=${encodeURIComponent(message)}`);
-      } else {
-        Linking.openURL(`https://wa.me/${config.providerPhone}?text=${encodeURIComponent(message)}`);
-      }
-    });
-  }, []);
-
   const handleLogin = async () => {
+    if (!validateCPForCNPJ(cpfCnpj)) {
+      setError('Informe um CPF ou CNPJ válido');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
     try {
-      setError('');
-
-      // Validate CPF/CNPJ
-      if (!validateCPForCNPJ(cpfCnpj)) {
-        setError('CPF/CNPJ inválido');
-        return;
-      }
-
-      setLoading(true);
-
       // Buscar dados reais da API
       const user = await sgpService.consultaCliente(cpfCnpj);
 
       if (!user) {
         setError('Cliente não encontrado');
+        setLoading(false);
         return;
       }
 
@@ -128,9 +85,6 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
       // Login user
       await login(user, rememberMe);
-
-      // Navigate to main app - handled automatically by AuthContext
-      // navigation.replace('MainTabs');
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Erro ao fazer login. Tente novamente.');
@@ -139,6 +93,20 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleHelp = useCallback(() => {
+    const message = 'Olá, preciso de ajuda com o acesso ao aplicativo.';
+    const phone = config.providerPhone;
+    Linking.canOpenURL(`whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`).then(supported => {
+      if (supported) {
+        Linking.openURL(`whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`);
+      } else {
+        Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`);
+      }
+    });
+  }, []);
+
+  const isCpf = cpfCnpj.replace(/\D/g, '').length <= 11;
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
@@ -146,102 +114,70 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         style={{ flex: 1 }}
       >
         <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../assets/logo-nanet.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-        </View>
-
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Acesse sua conta</Text>
-          <Text style={styles.subtitle}>
-            Informe seu CPF ou CNPJ para começar
-          </Text>
-
-          {/* Input fields */}
-          <TextInput
-            ref={inputRef}
-            mode="outlined"
-            label="CPF/CNPJ"
-            value={cpfCnpj}
-            onChangeText={handleCpfCnpjChange}
-            render={(props) => (
-              <MaskInput
-                {...props}
-                mask={cpfCnpj.replace(/\D/g, '').length <= 11 ? Masks.BRL_CPF : Masks.BRL_CNPJ}
-              />
-            )}
-            keyboardType="number-pad"
-            style={styles.input}
-            outlineColor="rgba(255, 255, 255, 0.3)"
-            activeOutlineColor={colors.primary}
-            textColor={colors.white}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="done"
-            blurOnSubmit={true}
-            theme={{
-              colors: {
-                onSurfaceVariant: colors.textSecondary,
-              },
-            }}
-          />
-
-          {/* Remember me checkbox */}
-          <View style={styles.checkboxContainer}>
-            <Checkbox
-              status={rememberMe ? 'checked' : 'unchecked'}
-              onPress={() => setRememberMe(!rememberMe)}
-              color={colors.primary}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../assets/logo-nanet.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
             />
-            <Text style={styles.checkboxLabel}>Lembrar meu CPF/CNPJ neste dispositivo</Text>
           </View>
 
-          {/* Login button */}
-          <Button
-            mode="contained"
-            onPress={handleLogin}
-            style={styles.loginButton}
-            buttonColor={colors.primary}
-            textColor="#FFFFFF"
-            contentStyle={styles.loginButtonContent}
-            labelStyle={styles.loginButtonLabel}
-            disabled={loading}
-          >
-            ENTRAR
-          </Button>
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Acesse sua conta</Text>
+            <Text style={styles.subtitle}>
+              Informe seu CPF ou CNPJ para começar
+            </Text>
 
-          {/* Help link */}
-          <TouchableOpacity style={styles.helpButton} onPress={handleHelp}>
-            <Text style={styles.helpText}>Precisa de ajuda?</Text>
-          </TouchableOpacity>
-        </View>
+            <MaskInput
+              value={cpfCnpj}
+              onChangeText={(masked) => setCpfCnpj(masked)}
+              mask={isCpf ? Masks.BRL_CPF : Masks.BRL_CNPJ}
+              keyboardType="numeric"
+              placeholder="CPF/CNPJ"
+              placeholderTextColor="#888"
+              style={styles.input}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
 
-        {/* Footer links */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Plans')}
-            style={styles.footerButton}
-          >
-            <Text style={styles.footerText}>Ver planos</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => setRememberMe(!rememberMe)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]} />
+              <Text style={styles.checkboxText}>
+                Lembrar meu CPF/CNPJ neste dispositivo
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.loginButton, loading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.loginButtonText}>
+                {loading ? 'ENTRANDO...' : 'ENTRAR'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.helpButton} onPress={handleHelp}>
+              <Text style={styles.helpText}>Precisa de ajuda?</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.footerButton}
+              onPress={() => navigation.navigate('Plans')}
+            >
+              <Text style={styles.footerText}>Ver planos</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
 
       {loading && <LoadingOverlay message="Fazendo login..." />}
@@ -261,96 +197,107 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#0A0A0A',
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 10,
+    justifyContent: 'center',
     paddingBottom: 32,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 10,
-    height: 150, // Altura reduzida para cortar o espaço em branco
+    marginBottom: 20,
+    height: 120,
     justifyContent: 'center',
     overflow: 'hidden',
   },
   logoImage: {
-    width: 380,
-    height: 280, // Imagem maior que o container
-    marginTop: -40, // Puxa a imagem para cima para centralizar o corte
+    width: 300,
+    height: 200,
   },
   formContainer: {
-    flex: 1,
-    marginTop: 30, // Pushes form down
+    width: '100%',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 8,
+    color: '#FFFFFF',
+    fontSize: 26,
+    fontWeight: '700',
+    marginBottom: 6,
   },
   subtitle: {
+    color: '#B0B0B0',
     fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   input: {
+    height: 56,
+    borderWidth: 1,
+    borderColor: '#2C2C2C',
+    borderRadius: 6,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: '#FFFFFF',
+    backgroundColor: '#141414',
     marginBottom: 16,
-    backgroundColor: colors.cardBackground,
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
   },
-  checkboxLabel: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text,
-    marginLeft: 8,
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: '#666666',
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: '#D60000',
+    borderColor: '#D60000',
+  },
+  checkboxText: {
+    color: '#CCCCCC',
+    fontSize: 13,
   },
   loginButton: {
-    marginBottom: 16,
+    height: 50,
+    backgroundColor: '#D60000',
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
-  loginButtonContent: {
-    paddingVertical: 8,
+  buttonDisabled: {
+    opacity: 0.7,
   },
-  loginButtonLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  loginButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   helpButton: {
     alignItems: 'center',
     paddingVertical: 12,
   },
   helpText: {
-    fontSize: 14,
-    color: colors.primary,
-    textDecorationLine: 'underline',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: -20, // Pulls footer up more
-    marginBottom: 20, // Add bottom margin
+    color: '#D60000',
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 8,
   },
   footerButton: {
-    paddingHorizontal: 12,
+    alignItems: 'center',
+    marginTop: 20,
   },
   footerText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  footerSeparator: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginHorizontal: 8,
+    color: '#9A9A9A',
+    fontSize: 13,
+    textAlign: 'center',
   },
   snackbar: {
-    backgroundColor: colors.error,
+    backgroundColor: colors.error || '#D60000',
   },
 });
