@@ -17,33 +17,25 @@ interface Props {
 }
 
 export const InvoicesScreen: React.FC<Props> = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user, activeContract } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const allInvoices = useMemo(() => {
-    if (!user?.contracts) return [];
+    // Usar apenas as faturas do contrato ativo
+    if (!activeContract?.invoices) return [];
     
-    // Coletar todas as faturas de todos os contratos
-    // As faturas já vêm filtradas do serviço com a lógica correta
-    const invoices: Invoice[] = [];
-    user.contracts.forEach(contract => {
-      if (contract.invoices) {
-        invoices.push(...contract.invoices);
-      }
-    });
-
-    // As faturas já vêm do serviço com a lógica correta aplicada:
+    // As faturas já vêm filtradas do serviço com a lógica correta aplicada:
     // - 2 últimas pagas (mais recentes)
     // - 1 mais antiga atrasada (se houver)
     // - OU 1 mais antiga aberta (se não houver atrasadas)
     // - Sempre sem futuras ou canceladas
     
     // Apenas ordenar por data de vencimento (mais recente primeiro) para exibição
-    return invoices.sort((a, b) => 
+    return [...activeContract.invoices].sort((a, b) => 
       new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
     );
-  }, [user]);
+  }, [activeContract]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

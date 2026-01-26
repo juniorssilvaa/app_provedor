@@ -25,7 +25,7 @@ export const RootNavigator: React.FC = () => {
 
   if (!user) {
     initialRouteName = 'Login';
-  } else if (user.contracts.length > 1 && !activeContractId) {
+  } else if (user.contracts && user.contracts.length > 1 && !activeContractId) {
     initialRouteName = 'Contracts';
   }
 
@@ -44,7 +44,7 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Plans" component={PlansScreen} />
           </>
-        ) : user.contracts.length > 1 && !activeContractId ? (
+        ) : user.contracts && user.contracts.length > 1 && !activeContractId ? (
           <>
             <Stack.Screen name="Contracts" component={ContractsScreen} />
             <Stack.Screen name="MainTabs" component={BottomTabNavigator} />

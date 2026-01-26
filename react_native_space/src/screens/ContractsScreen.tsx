@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Text } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,19 +18,43 @@ interface Props {
 export const ContractsScreen: React.FC<Props> = ({ navigation }) => {
   const { user, selectContract, logout } = useAuth();
   const { colors } = useTheme();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   const styles = React.useMemo(() => createStyles(colors), [colors]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
+    // Prevenir múltiplos cliques e múltiplos alerts
+    if (isLoggingOut) return;
+    
+    setIsLoggingOut(true);
     Alert.alert(
       'Sair',
       'Deseja sair do app?',
       [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sair', style: 'destructive', onPress: logout }
-      ]
+        { 
+          text: 'Cancelar', 
+          style: 'cancel',
+          onPress: () => setIsLoggingOut(false),
+        },
+        { 
+          text: 'Sair', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              console.error('Erro ao fazer logout:', error);
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ],
+      {
+        cancelable: true,
+        onDismiss: () => setIsLoggingOut(false),
+      }
     );
-  };
+  }, [isLoggingOut, logout]);
 
   const canGoBack = navigation.canGoBack();
 

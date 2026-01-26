@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Text, Switch } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -25,17 +25,22 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { logout, user, activeContract } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
   const clientName = activeContract?.clientName || user?.name || 'Cliente';
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const hasMultipleContracts = user?.contracts && user.contracts.length > 1;
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
+    // Prevenir múltiplos cliques
+    if (isLoggingOut) return;
+    
     if (hasMultipleContracts) {
       // Navigate to contract selection
       navigation.navigate('Contracts');
     } else {
       // Normal logout
+      setIsLoggingOut(true);
       Alert.alert(
         'Sair',
         'Tem certeza que deseja sair?',
@@ -43,19 +48,28 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           {
             text: 'Cancelar',
             style: 'cancel',
+            onPress: () => setIsLoggingOut(false),
           },
           {
             text: 'Sair',
             style: 'destructive',
             onPress: async () => {
-              await logout();
+              try {
+                await logout();
+              } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+                setIsLoggingOut(false);
+              }
             },
           },
         ],
-        { cancelable: true }
+        { 
+          cancelable: true,
+          onDismiss: () => setIsLoggingOut(false),
+        }
       );
     }
-  };
+  }, [hasMultipleContracts, isLoggingOut, logout, navigation]);
 
   const menuItems = [
     {

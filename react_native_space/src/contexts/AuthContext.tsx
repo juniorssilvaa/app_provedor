@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -196,17 +196,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = async () => {
     try {
       const shouldRemember = rememberCpf;
-      setUser(null);
-      setActiveContractId(null);
-
-      await AsyncStorage.removeItem(STORAGE_USER_KEY);
-      await AsyncStorage.removeItem(STORAGE_ACTIVE_CONTRACT_ID_KEY);
       
-      if (!shouldRemember) {
-        await AsyncStorage.removeItem(STORAGE_REMEMBER_KEY);
-      }
+      // Limpar estado de forma segura
+      setActiveContractId(null);
+      setUser(null);
+
+      // Limpar storage de forma assíncrona e segura
+      await Promise.all([
+        AsyncStorage.removeItem(STORAGE_USER_KEY).catch(() => {}),
+        AsyncStorage.removeItem(STORAGE_ACTIVE_CONTRACT_ID_KEY).catch(() => {}),
+        !shouldRemember ? AsyncStorage.removeItem(STORAGE_REMEMBER_KEY).catch(() => {}) : Promise.resolve(),
+      ]);
     } catch (error) {
       console.error('Error logging out:', error);
+      // Garantir que o estado seja limpo mesmo em caso de erro
+      setActiveContractId(null);
+      setUser(null);
     }
   };
 

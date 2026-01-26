@@ -375,6 +375,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const frequencyLabel = getFrequencyLabel(networkInfo.frequency || null);
 
   const onRefresh = useCallback(() => {
+    // Prevenir refresh se não houver usuário
+    if (!user?.cpfCnpj) {
+      return;
+    }
+    
     setRefreshing(true);
     setRefreshTrigger(prev => prev + 1);
     
@@ -398,13 +403,20 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     refreshData();
-  }, [user, updateUser, refreshConfig]);
+  }, [user?.cpfCnpj, updateUser, refreshConfig]);
 
   React.useEffect(() => {
     const loadServiceAccess = async () => {
       if (activeContract?.id) {
-        const info = await sgpService.verificaAcesso(activeContract.id);
-        setServiceAccess(info);
+        try {
+          const info = await sgpService.verificaAcesso(activeContract.id);
+          setServiceAccess(info);
+        } catch (error) {
+          console.error('Erro ao verificar acesso:', error);
+          setServiceAccess(null);
+        }
+      } else {
+        setServiceAccess(null);
       }
     };
     loadServiceAccess();
