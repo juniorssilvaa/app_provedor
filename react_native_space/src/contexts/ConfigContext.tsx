@@ -41,7 +41,19 @@ export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     try {
       setIsLoading(true);
       const url = `${config.apiBaseUrl}public/config/?provider_token=${config.apiToken}`;
-      const response = await fetch(url);
+      
+      // Timeout para evitar travamentos
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+      
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
@@ -63,7 +75,13 @@ export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         console.error('Failed to fetch app config', response.status, message);
       }
     } catch (error: any) {
-      const message = error?.message || 'Falha de rede ao carregar a configuração.';
+      // Tratamento mais robusto de erros
+      let message = 'Falha de rede ao carregar a configuração.';
+      if (error.name === 'AbortError') {
+        message = 'Timeout ao carregar configuração.';
+      } else if (error?.message) {
+        message = error.message;
+      }
       setConfigError({ status: 0, message });
       setAppConfig(null);
       console.error('Error fetching app config:', error);
@@ -78,7 +96,7 @@ export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   return (
     <ConfigContext.Provider value={{ appConfig, isLoading, configError, refreshConfig: fetchConfig }}>
-      {configError ? (
+      {configError && !isLoading ? (
         <ConfigErrorView
           error={configError}
           isLoading={isLoading}

@@ -167,9 +167,13 @@ export const InternetInfoScreen: React.FC = () => {
   useEffect(() => {
     if (isFocused) {
       const interval = setInterval(async () => {
-        const netInfo = await getNetworkInfo({ requestLocationPermission: false });
+        // Passa skipLatency: true para evitar sobrecarga de requisições fetch
+        const netInfo = await getNetworkInfo({ 
+          requestLocationPermission: false,
+          skipLatency: true 
+        });
         setNetworkInfo(netInfo);
-      }, 2000);
+      }, 5000); // Aumentado para 5 segundos para reduzir processamento
 
       return () => clearInterval(interval);
     }

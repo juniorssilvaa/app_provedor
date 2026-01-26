@@ -6,7 +6,7 @@ import { User } from '../types';
 import { config } from '../config';
 import axios from 'axios';
 import { registerForPushNotificationsAsync } from '../services/notificationService';
-import { useConfig } from './ConfigContext'; 
+// Removido useConfig - será chamado via evento ou prop se necessário 
 import { sgpService } from '../services/sgpService'; // Adicionado para buscar dados atualizados
 
 interface AuthContextData {
@@ -140,13 +140,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await AsyncStorage.setItem(STORAGE_ACTIVE_CONTRACT_ID_KEY, contractId);
   };
 
-  const { refreshConfig } = useConfig(); // Importar do contexto
-
   const login = async (userData: User, remember: boolean) => {
     try {
-      // Atualiza configuração ao logar para garantir atalhos novos
-      refreshConfig();
-      
       setUser(userData);
       setRememberCpf(remember);
 
@@ -215,10 +210,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const activeContract =
-    user?.contracts?.find((c) => c.id === activeContractId) ??
-    (user?.contracts?.length === 1 ? user.contracts[0] : null) ??
-    null;
+  const activeContract = useMemo(() => {
+    if (!user || !user.contracts || user.contracts.length === 0) {
+      return null;
+    }
+    return (
+      user.contracts.find((c) => c.id === activeContractId) ??
+      (user.contracts.length === 1 ? user.contracts[0] : null) ??
+      null
+    );
+  }, [user, activeContractId]);
 
   return (
     <AuthContext.Provider

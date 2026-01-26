@@ -84,23 +84,28 @@ const MarqueeText = ({ text, style }: { text: string; style?: any }) => {
   };
 
   useEffect(() => {
+    let animation: Animated.CompositeAnimation | null = null;
     if (textWidth > containerWidth && containerWidth > 0) {
       const duration = textWidth * 20; // Adjust speed here (higher = slower)
       const startAnimation = () => {
         animatedValue.setValue(containerWidth);
-        Animated.loop(
+        animation = Animated.loop(
           Animated.timing(animatedValue, {
             toValue: -textWidth,
             duration: duration,
             easing: Easing.linear,
             useNativeDriver: false,
           })
-        ).start();
+        );
+        animation.start();
       };
       startAnimation();
     } else {
       animatedValue.setValue(0);
     }
+    return () => {
+      if (animation) animation.stop();
+    };
   }, [textWidth, containerWidth, animatedValue]);
 
   return (
@@ -190,7 +195,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [serviceAccess, setServiceAccess] = useState<ServiceAccess | null>(null);
 
-  const fetchNetworkInfo = useCallback(async () => {
+  const fetchNetworkInfo = useCallback(async (options?: { skipLatency?: boolean }) => {
     // Sempre solicita permissão de localização obrigatoriamente para WiFi
     const status = await ensureLocationPermission();
     if (status !== 'granted' && !didShowLocationPermissionAlert.current) {
@@ -206,7 +211,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               // Tenta solicitar novamente após abrir configurações
               setTimeout(async () => {
                 await ensureLocationPermission(true);
-                fetchNetworkInfo();
+                fetchNetworkInfo(options);
               }, 1000);
             },
             style: 'default'
@@ -217,25 +222,34 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       return; // Não busca informações se não tiver permissão
     }
     // Busca informações do WiFi com permissão garantida
-    const info = await getNetworkInfo({ requestLocationPermission: true });
+    const info = await getNetworkInfo({ 
+      requestLocationPermission: true,
+      skipLatency: options?.skipLatency ?? false
+    });
     setNetworkInfo(info);
   }, []);
 
   useEffect(() => {
-    fetchNetworkInfo();
-    // Poll for signal strength updates every 2 seconds to make the bar dynamic
+    // Busca inicial completa (com latência)
+    fetchNetworkInfo({ skipLatency: false });
+    
+    // Poll for signal strength updates every 10 seconds (increased from 2s to avoid overhead)
+    // Pass skipLatency: true to avoid heavy fetch calls in the background loop
     const intervalId = setInterval(() => {
-      fetchNetworkInfo();
-    }, 2000);
-    // Subscribe to network state updates for real-time signal changes
+      fetchNetworkInfo({ skipLatency: true });
+    }, 10000);
+
+    // Subscribe to network state updates
     const unsubscribeNetInfo = NetInfo.addEventListener(() => {
-      fetchNetworkInfo();
+      fetchNetworkInfo({ skipLatency: true });
     });
+
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'active') {
-        fetchNetworkInfo();
+        fetchNetworkInfo({ skipLatency: false }); // Medição completa ao voltar para o app
       }
     });
+
     return () => {
       clearInterval(intervalId);
       subscription.remove();

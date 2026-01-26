@@ -92,7 +92,7 @@ export const ensureLocationPermission = async (forceRequest: boolean = false): P
 };
 
 export const getNetworkInfo = async (
-  options?: { requestLocationPermission?: boolean }
+  options?: { requestLocationPermission?: boolean; skipLatency?: boolean }
 ): Promise<NetworkInfo> => {
   try {
     // Sempre solicita permissão de localização no Android para obter informações do WiFi
@@ -125,7 +125,10 @@ export const getNetworkInfo = async (
 
     if (ssid === 'Wi-Fi' || ssid === '<unknown ssid>') ssid = null;
 
-    const quality = await measureLatency();
+    // Apenas mede latência se não for explicitamente pulado
+    const quality = options?.skipLatency 
+      ? { latency: null, jitter: null, loss: null }
+      : await measureLatency();
 
     return {
       ssid,

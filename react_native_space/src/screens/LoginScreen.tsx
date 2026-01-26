@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, TextInput, Button, Checkbox, Snackbar, ActivityIndicator } from 'react-native-paper';
+import MaskInput, { Masks } from 'react-native-mask-input';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
@@ -29,26 +30,6 @@ interface Props {
 }
 
 const STORAGE_CPF_KEY = '@NANET:savedCpf';
-
-// Função de formatação movida para fora do componente para evitar recriação
-const formatCpfCnpj = (value: string) => {
-  const cleaned = value.replace(/\D/g, '');
-  
-  if (cleaned.length <= 11) {
-    // Format as CPF
-    return cleaned
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-  } else {
-    // Format as CNPJ
-    return cleaned
-      .replace(/(\d{2})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1/$2')
-      .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
-  }
-};
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { colors } = useTheme();
@@ -102,9 +83,8 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   // Memoizar callback para evitar recriação
-  const handleCpfCnpjChange = useCallback((text: string) => {
-    const formatted = formatCpfCnpj(text);
-    setCpfCnpj(formatted);
+  const handleCpfCnpjChange = useCallback((masked: string) => {
+    setCpfCnpj(masked);
   }, []);
 
   // Memoizar callback para evitar recriação
@@ -159,14 +139,13 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  // Memoizar valor formatado para exibição
-  const displayedValue = useMemo(() => {
-    return cpfCnpj || '';
-  }, [cpfCnpj]);
-
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -199,10 +178,15 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             ref={inputRef}
             mode="outlined"
             label="CPF/CNPJ"
-            value={displayedValue}
+            value={cpfCnpj}
             onChangeText={handleCpfCnpjChange}
+            render={(props) => (
+              <MaskInput
+                {...props}
+                mask={cpfCnpj.replace(/\D/g, '').length <= 11 ? Masks.BRL_CPF : Masks.BRL_CNPJ}
+              />
+            )}
             keyboardType="number-pad"
-            maxLength={18}
             style={styles.input}
             outlineColor="rgba(255, 255, 255, 0.3)"
             activeOutlineColor={colors.primary}
@@ -258,6 +242,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {loading && <LoadingOverlay message="Fazendo login..." />}
 

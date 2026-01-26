@@ -58,6 +58,11 @@
       "eas": {
         "projectId": "d2fcbace-87b2-4e55-893a-38285024083f"
       }
+    },
+    "updates": {
+      "enabled": false,
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0
     }
   }
 }
