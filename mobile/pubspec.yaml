@@ -1,0 +1,42 @@
+name: nanet_app
+description: App Nanet - Aplicativo de gestão de internet.
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  provider: ^6.0.5
+  shared_preferences: ^2.2.1
+  http: ^1.1.0
+  intl: ^0.18.0
+  path_provider: ^2.1.1
+  permission_handler: ^11.0.1
+  connectivity_plus: ^5.0.1
+  flutter_local_notifications: ^18.0.0
+  firebase_core: ^2.24.0
+  firebase_messaging: ^14.7.0
+  google_sign_in: ^6.1.0
+  
+dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/app_incon.png"
+  min_sdk_android: 21
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/images/
+    - assets/icons/
