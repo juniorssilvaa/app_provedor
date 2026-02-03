@@ -19,12 +19,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia o arquivo de requisitos e instala as dependências
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir psycopg2-binary gunicorn uvicorn dj-database-url whitenoise
 
 # Copia o restante do código do projeto
-COPY . .
+COPY backend/ .
 
 # Cria os diretórios para arquivos estáticos e media
 RUN mkdir -p staticfiles media
