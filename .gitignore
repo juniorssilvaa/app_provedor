@@ -4,7 +4,31 @@ db.sqlite3
 media/
 .env
 .DS_Store
-react_native_space/android/app/.cxx/
-react_native_space/android/app/build/
-react_native_space/node_modules/
 *.log
+
+# Secrets
+*.jks
+*.keystore
+upload-keystore-base64.txt
+backend/service_account_key.json
+
+# Binaries & Tools
+*.exe
+ngrok.exe
+
+# Node / JS
+node_modules/
+mobile/node_modules/
+
+# Python
+venv/
+
+# Mobile / Flutter / Android
+.gradle_cache/
+mobile/.metadata
+mobile/android/app/build/
+mobile/build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
