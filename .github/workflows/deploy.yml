@@ -48,6 +48,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app_provedor_test
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          cd backend
           python manage.py migrate
           python manage.py test
 
