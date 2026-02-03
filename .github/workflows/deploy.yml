@@ -2,7 +2,7 @@ name: Deploy App Provedor to Production
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 env:
   REGISTRY: ghcr.io
