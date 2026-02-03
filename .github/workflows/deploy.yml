@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r backend/requirements.txt
           pip install dj-database-url psycopg2-binary
 
       - name: Run tests
