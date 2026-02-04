@@ -61,9 +61,6 @@ services:
         limits:
           cpus: '0.80'
           memory: 512M
-        reservations:
-          cpus: '0.40'
-          memory: 300M
     labels:
       - "traefik.enable=true"
       # Rota unificada para Painel, APIs e Webhooks
@@ -93,9 +90,6 @@ services:
         limits:
           cpus: '0.30'
           memory: 256M
-        reservations:
-          cpus: '0.10'
-          memory: 128M
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app-provedor-webhook.rule=Host(`webhooks.niochat.com.br`)"
