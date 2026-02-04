@@ -163,10 +163,13 @@ jobs:
             echo "✅ Rede 'appNet' já existe (ID: $NETWORK_EXISTS)"
           fi
 
-          # Atualiza o docker-compose.yml com as novas tags de imagem
-          COMPOSE=$(cat docker-compose.yml \
-            | sed "s|ghcr.io/juniorssilvaa/app_provedor-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}|g" \
-            | sed "s|ghcr.io/juniorssilvaa/app_provedor-webhook:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}|g")
+          # Atualiza o docker-compose.yml (mantendo latest conforme solicitado)
+          # COMPOSE=$(cat docker-compose.yml \
+          #   | sed "s|ghcr.io/juniorssilvaa/app_provedor-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}|g" \
+          #   | sed "s|ghcr.io/juniorssilvaa/app_provedor-webhook:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}|g")
+          
+          # Lê o arquivo original que já usa :latest
+          COMPOSE=$(cat docker-compose.yml)
           
           # Escapa o conteúdo do docker-compose para JSON
           ESCAPED=$(echo "$COMPOSE" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
