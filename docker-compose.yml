@@ -124,9 +124,6 @@ services:
         limits:
           cpus: '0.30'
           memory: 256M
-        reservations:
-          cpus: '0.10'
-          memory: 128M
     entrypoint: /bin/sh
     command: >
       -c "
