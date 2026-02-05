@@ -76,6 +76,9 @@ def dashboard(request):
     blocked = check_active(request)
     if blocked: return blocked
     
+    if request.user.is_superuser:
+        return redirect('super_admin_dashboard')
+        
     provider = request.user.provider
     if not provider:
         return render(request, 'base.html', {'segment': 'dashboard'})
@@ -642,14 +645,29 @@ def super_admin_users(request):
     blocked = check_active(request)
     if blocked:
         return blocked
-    return render(request, 'super_admin/users_react.html', {'segment': 'super_admin_users'})
+    
+    # Get all admins (non-superusers but staff members/provider admins)
+    admins = CustomUser.objects.filter(is_superuser=False).select_related('provider').order_by('-date_joined')
+    
+    return render(request, 'super_admin/users.html', {
+        'segment': 'super_admin_users',
+        'admins': admins
+    })
 
 @user_passes_test(is_superuser)
 def super_admin_providers(request):
     blocked = check_active(request)
     if blocked:
         return blocked
-    return render(request, 'super_admin/providers_react.html', {'segment': 'super_admin_providers'})
+        
+    providers_list = Provider.objects.annotate(
+        app_user_count=Count('app_users')
+    ).prefetch_related('customuser_set').order_by('-created_at')
+    
+    return render(request, 'super_admin/providers.html', {
+        'segment': 'super_admin_providers',
+        'providers': providers_list
+    })
 
 @user_passes_test(is_superuser)
 def super_admin_dashboard(request):
@@ -675,7 +693,7 @@ def super_admin_dashboard(request):
         p.user = p.customuser_set.first()
 
     context = {
-        'segment': 'super_admin_dashboard',
+        'segment': 'super_admin',
         'providers': providers_list,
         'total_providers': total_providers,
         'active_providers': active_providers,
@@ -690,39 +708,42 @@ def provider_create(request):
     blocked = check_active(request)
     if blocked:
         return blocked
+    
+    context = {
+        'name': '',
+        'username': '',
+        'cnpj': '',
+        'number': '',
+        'error': None
+    }
+    
     if request.method == 'POST':
         name = request.POST.get('name')
         cnpj = request.POST.get('cnpj')
         number = request.POST.get('number')
-        sgp_url = request.POST.get('sgp_url')
-        sgp_token = request.POST.get('sgp_token')
-        sgp_app_name = request.POST.get('sgp_app_name')
         username = request.POST.get('username')
         password = request.POST.get('password')
+        
+        # Update context with submitted values to preserve them on error
+        context.update({
+            'name': name,
+            'username': username,
+            'cnpj': cnpj,
+            'number': number
+        })
         
         if name and username and password and cnpj and number:
             try:
                 # Check if username already exists
                 if CustomUser.objects.filter(username=username).exists():
-                    return render(request, 'super_admin/provider_form.html', {
-                        'error': 'Nome de usuário já existe.',
-                        'name': name,
-                        'username': username,
-                        'cnpj': cnpj,
-                        'number': number,
-                        'sgp_url': sgp_url,
-                        'sgp_token': sgp_token,
-                        'sgp_app_name': sgp_app_name
-                    })
+                    context['error'] = 'Nome de usuário já existe.'
+                    return render(request, 'super_admin/provider_form.html', context)
 
                 # Create Provider
                 provider = Provider.objects.create(
                     name=name,
                     cnpj=cnpj,
-                    number=number,
-                    sgp_url=sgp_url,
-                    sgp_token=sgp_token,
-                    sgp_app_name=sgp_app_name
+                    number=number
                 )
                 
                 # Create User linked to Provider
@@ -730,17 +751,14 @@ def provider_create(request):
                 user.provider = provider
                 user.save()
                 
-                return redirect('super_admin_dashboard')
+                return redirect('super_admin_providers')
             except Exception as e:
-                return render(request, 'super_admin/provider_form.html', {
-                    'error': f'Erro ao criar provedor: {str(e)}',
-                    'name': name,
-                    'username': username,
-                    'cnpj': cnpj,
-                    'number': number
-                })
+                context['error'] = f'Erro ao criar provedor: {str(e)}'
+                return render(request, 'super_admin/provider_form.html', context)
+        else:
+            context['error'] = 'Todos os campos obrigatórios devem ser preenchidos.'
                 
-    return render(request, 'super_admin/provider_form.html')
+    return render(request, 'super_admin/provider_form.html', context)
 
 @user_passes_test(is_superuser)
 def provider_edit(request, pk):
@@ -748,16 +766,24 @@ def provider_edit(request, pk):
     if blocked:
         return blocked
     provider = get_object_or_404(Provider, pk=pk)
+    
+    context = {
+        'provider': provider,
+        'name': provider.name,
+        'cnpj': provider.cnpj,
+        'number': provider.number,
+        'username': '', # Not editable conventionally here
+        'error': None
+    }
+    
     if request.method == 'POST':
         provider.name = request.POST.get('name')
         provider.cnpj = request.POST.get('cnpj')
         provider.number = request.POST.get('number')
-        provider.sgp_url = request.POST.get('sgp_url')
-        provider.sgp_token = request.POST.get('sgp_token')
-        provider.sgp_app_name = request.POST.get('sgp_app_name')
         provider.save()
-        return redirect('super_admin_dashboard')
-    return render(request, 'super_admin/provider_form.html', {'provider': provider})
+        return redirect('super_admin_providers')
+        
+    return render(request, 'super_admin/provider_form.html', context)
 
 @user_passes_test(is_superuser)
 def provider_toggle_status(request, pk):
@@ -819,6 +845,27 @@ def provider_sgp_integrations(request):
         'provider': provider
     }
     return render(request, 'pages/provider/integrations_sgp.html', context)
+
+@login_required
+def provider_regenerate_token(request):
+    """Gera um novo token de integração para o provedor."""
+    blocked = check_active(request)
+    if blocked:
+        return blocked
+
+    if not hasattr(request.user, 'provider') or request.user.is_superuser:
+        return redirect('login')
+
+    provider = request.user.provider
+    try:
+        from .models import ProviderToken
+        provider.generate_new_token()
+        messages.success(request, 'Novo token de integração gerado com sucesso!')
+    except Exception as e:
+        messages.error(request, f'Erro ao gerar novo token: {str(e)}')
+    
+    return redirect('provider_sgp_integrations')
+
 
 @user_passes_test(is_superuser)
 def super_admin_ai_config(request):

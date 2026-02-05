@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:flutter/services.dart';
+import '../../provider.dart';
 
 class FaturaScreen extends StatefulWidget {
   const FaturaScreen({super.key});
@@ -11,7 +14,9 @@ class FaturaScreen extends StatefulWidget {
 class _FaturaScreenState extends State<FaturaScreen> {
   bool _isLoading = true;
   List<dynamic> _invoices = [];
-  String? _errorMessage;
+  
+  final Color primaryRed = const Color(0xFFFF0000);
+  final Color cardBg = const Color(0xFF111111);
 
   @override
   void initState() {
@@ -20,435 +25,219 @@ class _FaturaScreenState extends State<FaturaScreen> {
   }
 
   Future<void> _loadInvoices() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
+    setState(() => _isLoading = true);
     try {
-      // Ajuste URL para o backend local
-      final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/public/invoices/'), // TODO: Criar este endpoint no backend
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': 'Bearer ${appState.token}', // TODO: Implementar auth
-        },
-      );
-
-      if (response.statusCode == 200) {
-        // Parse JSON (simulando dados de faturas)
+      final provider = context.read<AppProvider>();
+      if (provider.cpf != null) {
+        final faturas = await provider.sgpService?.getInvoices(provider.cpf!);
         setState(() {
-          _invoices = [
-            {
-              'id': 1,
-              'amount': 129.90,
-              'dueDate': '15/01/2026',
-              'status': 'pending',
-            },
-            {
-              'id': 2,
-              'amount': 99.90,
-              'dueDate': '20/12/2025',
-              'status': 'overdue',
-            },
-            {
-              'id': 3,
-              'amount': 159.90,
-              'dueDate': '15/11/2025',
-              'status': 'paid',
-            },
-          ];
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Erro ao carregar faturas';
-          _isLoading = false;
+          _invoices = faturas ?? [];
         });
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Erro de conexão: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
-  }
-
-  String _formatCurrency(double value) {
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'overdue':
-        return Colors.red;
-      case 'pending':
-        return Colors.orange;
-      case 'paid':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'overdue':
-        return 'ATRASADA';
-      case 'pending':
-        return 'ABERTA';
-      case 'paid':
-        return 'PAGA';
-      default:
-        return status.toUpperCase();
+      debugPrint('Erro ao carregar faturas: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1F2E),
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Faturas',
-          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        backgroundColor: cardBg,
+        title: const Text('Minhas Faturas', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.blue))
-          : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadInvoices,
-                  child: ListView.separated(
-                    separatorBuilder: (context, index) => const Divider(color: Colors.white10),
-                    itemCount: _invoices.length,
-                    itemBuilder: (context, index) {
-                      final invoice = _invoices[index];
-                      final statusColor = _getStatusColor(invoice['status']);
-                      
-                      return Container(
-                        color: Colors.white.withOpacity(0.05),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: statusColor,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Fatura #${invoice['id']}',
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          invoice['dueDate'],
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: statusColor.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    _getStatusText(invoice['status']),
-                                    style: TextStyle(
-                                      color: statusColor,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            
-                            const SizedBox(height: 12),
-                            
-                            // Amount
-                            Text(
-                              _formatCurrency(invoice['amount']),
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 16),
-                            
-                            // Action Buttons
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      _showPaymentDialog(invoice);
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFF44336),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.qr_code_scanner, color: Colors.white, size: 20),
-                                        const SizedBox(width: 8),
-                                        const Text('PIX', style: TextStyle(fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                
-                                const SizedBox(width: 8),
-                                
-                                // Boleto Button
-                                Container(
-                                  height: 48,
-                                  width: 48,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF44336).withOpacity(0.8),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () {
-                                        _showPaymentDialog(invoice);
-                                      },
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: const Center(
-                                        child: Icon(Icons.barcode_reader, color: Colors.white, size: 24),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                
-                                const SizedBox(width: 8),
-                                
-                                // Card Button
-                                Container(
-                                  height: 48,
-                                  width: 48,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF44336).withOpacity(0.8),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () {
-                                        _showPaymentDialog(invoice);
-                                      },
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: const Center(
-                                        child: Icon(Icons.credit_card, color: Colors.white, size: 24),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+          ? Center(child: CircularProgressIndicator(color: primaryRed))
+          : _invoices.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _invoices.length,
+                  itemBuilder: (context, index) {
+                    final fatura = _invoices[index];
+                    return _buildInvoiceItem(fatura);
+                  },
                 ),
     );
   }
 
-  void _showPaymentDialog(Map<String, dynamic> invoice) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF252B3D),
-        title: const Text(
-          'Opções de Pagamento',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.qr_code_scanner, color: Colors.blue),
-              title: const Text('Pagar com PIX', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.of(context).pop();
-                _showPIXDialog(invoice);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt, color: Colors.blue),
-              title: const Text('Ver Boleto', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.of(context).pop();
-                // TODO: Implementar visualização de boleto
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.history, color: Colors.blue),
-              title: const Text('Ver Histórico', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.of(context).pop();
-                // TODO: Implementar histórico de pagamentos
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                );
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fechar', style: TextStyle(color: Colors.blue)),
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.receipt_long, size: 80, color: Colors.white24),
+          const SizedBox(height: 16),
+          const Text(
+            'Nenhuma fatura encontrada',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
         ],
       ),
     );
   }
 
-  void _showPIXDialog(Map<String, dynamic> invoice) {
-    final pixCode = '000201265800091234567890012345678901'; // Simulado
-    final qrCodeData = '00020126580009' + '12345678901' + '23456789012';
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF252B3D),
-        title: const Text(
-          'Pagamento PIX',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Valor: ${_formatCurrency(invoice['amount'])}',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+  Widget _buildInvoiceItem(Map<String, dynamic> fatura) {
+    final bool isPaid = fatura['status']?.toString().toUpperCase() == 'PAGO';
+    final String valor = fatura['valor'] ?? '0.00';
+    final String vencimento = fatura['data_vencimento'] ?? '--/--/----';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isPaid ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isPaid ? 'PAGO' : 'ABERTO',
+                  style: TextStyle(
+                    color: isPaid ? Colors.green : Colors.orange,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
               ),
+              Text(
+                'Venc. $vencimento',
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'R\$ $valor',
+            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          if (!isPaid)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showPaymentOptions(fatura),
+                    icon: const Icon(Icons.qr_code, size: 18),
+                    label: const Text('PAGAR AGORA', style: TextStyle(fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryRed,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 16),
+                SizedBox(width: 8),
+                Text('Fatura quitada', style: TextStyle(color: Colors.grey, fontSize: 13)),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showPaymentOptions(Map<String, dynamic> fatura) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cardBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Escolha como pagar',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            
+            _buildPaymentOption(
+              icon: Icons.qr_code_scanner,
+              title: 'PIX Copia e Cola',
+              subtitle: 'Pagamento instantâneo',
+              onTap: () {
+                final pix = fatura['pix_copia_e_cola'] ?? fatura['pix_code'] ?? '';
+                Clipboard.setData(ClipboardData(text: pix));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Código PIX copiado!')));
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildPaymentOption(
+              icon: Icons.barcode_reader,
+              title: 'Boleto Bancário',
+              subtitle: 'Compensação em até 48h',
+              onTap: () {
+                final barcode = fatura['linha_digitavel'] ?? fatura['barcode'] ?? '';
+                Clipboard.setData(ClipboardData(text: barcode));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Linha digitável copiada!')));
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentOption({required IconData icon, required String title, required String subtitle, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle),
+              child: Icon(icon, color: primaryRed),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    pixCode,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'QR Code PIX',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Icon(Icons.qr_code_2, size: 120, color: Colors.black),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Copie o código PIX para pagar',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               ),
             ),
+            const Icon(Icons.chevron_right, color: Colors.white24),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // TODO: Implementar cópia para área de transferência
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Código copiado para área de transferência')),
-              );
-            },
-            child: const Text('Copiar Código', style: TextStyle(color: Colors.blue)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-            ),
-            child: const Text('Fechar'),
-          ),
-        ],
       ),
     );
   }

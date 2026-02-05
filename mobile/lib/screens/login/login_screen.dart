@@ -1,9 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../main.dart';
+import '../../provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,284 +10,136 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _cpfController = TextEditingController();
-  bool _rememberMe = false;
-  
   bool _isLoading = false;
-  String? _errorMessage;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedCpf();
-  }
+  final Color primaryRed = const Color(0xFFFF0000);
 
-  Future<void> _loadSavedCpf() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedCpf = prefs.getString('saved_cpf');
-    if (savedCpf != null) {
-      setState(() {
-        _cpfController.text = savedCpf;
-        _rememberMe = true;
-      });
+  Future<void> _handleLogin() async {
+    final cpf = _cpfController.text.trim();
+    if (cpf.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, informe seu CPF/CNPJ')),
+      );
+      return;
     }
-  }
 
-  @override
-  void dispose() {
-    _cpfController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Ajuste para apontar para o backend local (10.0.2.2 para emulador Android)
-      final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/api/public/config/'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'cpf': _cpfController.text,
-        }),
+      final provider = context.read<AppProvider>();
+      
+      // Simulação de login - Na vida real, chamaria um endpoint de auth
+      // Aqui vamos usar o CPF para buscar o contrato no SGP via proxy
+      // Mas para o MVP, vamos apenas logar e ir para a Home
+      
+      await provider.login(
+        cpf: cpf,
+        token: 'mock_token',
+        providerToken: 'sk_live_mock_token', // Isso viria de uma config pública
+        userName: 'Cliente Nanet',
       );
 
-      if (response.statusCode == 200) {
-        // Salvar CPF se "Lembrar" estiver marcado
-        final prefs = await SharedPreferences.getInstance();
-        if (_rememberMe) {
-          await prefs.setString('saved_cpf', _cpfController.text);
-        } else {
-          await prefs.remove('saved_cpf');
-        }
-
-        // Obter provider_token da resposta (você precisará implementar um endpoint para isso)
-        if (!mounted) return;
-        final appState = context.read<AppState>();
-        await appState.login(
-          _cpfController.text,
-          'simulated_token',
-          'simulated_provider_token',
-        );
-
-        if (!mounted) return;
+      if (mounted) {
         Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        setState(() {
-          _errorMessage = 'Credenciais inválidas. Tente novamente.';
-        });
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Erro ao conectar com o servidor. Verifique sua conexão.';
-        _isLoading = false;
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao entrar: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F), // Darker background to match image
-      resizeToAvoidBottomInset: false, // Prevent resizing when keyboard opens
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Spacer(flex: 2), // Espaço flexível no topo
-                
-                // Logo
-                Center(
-                  child: Image.asset(
-                    'assets/login_logo.png',
-                    height: 300, // Reduzido para evitar overflow
-                    errorBuilder: (context, error, stackTrace) {
-                      return Column(
-                        children: [
-                          Icon(Icons.wifi, size: 50, color: Colors.red),
-                          Text('NANET', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                
-                const Spacer(flex: 1), // Espaço flexível entre logo e título
-                
-                // Título
-                const Text(
-                  'Acesse sua conta',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                const Text(
-                  'Informe seu CPF ou CNPJ para começar',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white60,
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Campo CPF/CNPJ
-                TextFormField(
-                  controller: _cpfController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color(0xFF1E1E1E),
-                    labelText: 'CPF/CNPJ',
-                    labelStyle: const TextStyle(color: Colors.white60),
-                    floatingLabelBehavior: FloatingLabelBehavior.always,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.red),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.red),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.red, width: 2),
-                    ),
-                    errorStyle: const TextStyle(color: Colors.redAccent),
-                  ),
-                  style: const TextStyle(color: Colors.white),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Informe seu CPF ou CNPJ';
-                    }
-                    return null;
-                  },
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Checkbox Lembrar
-                Row(
-                  children: [
-                    SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: Checkbox(
-                        value: _rememberMe,
-                        onChanged: (value) {
-                          setState(() {
-                            _rememberMe = value ?? false;
-                          });
-                        },
-                        activeColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Lembrar meu CPF/CNPJ neste dispositivo',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Botão Entrar
-                SizedBox(
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE50914), // Red color
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'ENTRAR',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                  ),
-                ),
-                
-                if (_errorMessage != null) ...[
-                  const SizedBox(height: 16),
+      backgroundColor: Colors.black,
+      body: SingleChildScrollView(
+        child: Container(
+          height: MediaQuery.of(context).size.height,
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 50),
+              // Logo Placeholder
+              Column(
+                children: [
                   Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 14),
-                    textAlign: TextAlign.center,
+                    'NANET',
+                    style: TextStyle(
+                      color: primaryRed,
+                      fontSize: 48,
+                      fontWeight: FontWeight.black,
+                      letterSpacing: -2,
+                    ),
+                  ),
+                  const Text(
+                    'TELECOM',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4,
+                    ),
                   ),
                 ],
-                
-                const Spacer(flex: 1),
-                
-                // Link Preciso de ajuda
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-                      // TODO: Implementar ajuda
-                    },
-                    child: const Text(
-                      'Preciso de ajuda?',
-                      style: TextStyle(
-                        color: Color(0xFFE50914),
-                        decoration: TextDecoration.underline,
-                        decorationColor: Color(0xFFE50914),
-                      ),
-                    ),
+              ),
+              const SizedBox(height: 80),
+              const Text(
+                'Bem-vindo!',
+                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Acesse sua conta com CPF ou CNPJ',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              TextField(
+                controller: _cpfController,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'CPF / CNPJ',
+                  labelStyle: const TextStyle(color: Colors.grey),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.white10),
                   ),
-                ),
-                
-                // Ver planos
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/planos');
-                    },
-                    child: const Text(
-                      'Ver planos',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                      ),
-                    ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryRed),
                   ),
+                  prefixIcon: const Icon(Icons.person_outline, color: Colors.grey),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _handleLogin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryRed,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('ENTRAR', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+              const Spacer(),
+              const Text(
+                'NIOCHAT SERVIÇOS TECNOLÓGICOS',
+                style: TextStyle(color: Colors.white24, fontSize: 10),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),

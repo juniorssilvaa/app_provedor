@@ -1,6 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'services/sgp_service.dart';
+import 'services/ai_service.dart';
+import 'services/telemetry_service.dart';
 
 class AppProvider with ChangeNotifier {
+  // Config
+  static const String apiBaseUrl = 'http://127.0.0.1:8000/api/'; // Update for prod
+
   // Estado de Autenticação
   bool _isLoggedIn = false;
   String? _cpf;
@@ -10,6 +18,11 @@ class AppProvider with ChangeNotifier {
   Map<String, dynamic> _userContract = {};
   Map<String, dynamic> _userInfo = {};
 
+  // Services
+  SGPService? _sgpService;
+  AIService? _aiService;
+  final TelemetryService _telemetryService = TelemetryService();
+
   // Getters
   bool get isLoggedIn => _isLoggedIn;
   String? get cpf => _cpf;
@@ -18,6 +31,9 @@ class AppProvider with ChangeNotifier {
   String? get userName => _userName;
   Map<String, dynamic> get userContract => _userContract;
   Map<String, dynamic> get userInfo => _userInfo;
+  SGPService? get sgpService => _sgpService;
+  AIService? get aiService => _aiService;
+  TelemetryService get telemetryService => _telemetryService;
 
   AppProvider() {
     _loadSettings();
@@ -32,13 +48,17 @@ class AppProvider with ChangeNotifier {
     _providerToken = prefs.getString('providerToken');
     _userName = prefs.getString('userName');
     
+    if (_providerToken != null) {
+      _initServices(_providerToken!);
+    }
+
     if (prefs.containsKey('userContract')) {
       final contractJson = prefs.getString('userContract');
       if (contractJson != null) {
         try {
           _userContract = Map<String, dynamic>.from(jsonDecode(contractJson));
         } catch (e) {
-          print('Erro ao carregar contrato: $e');
+          debugPrint('Erro ao carregar contrato: $e');
         }
       }
     }
@@ -49,10 +69,16 @@ class AppProvider with ChangeNotifier {
         try {
           _userInfo = Map<String, dynamic>.from(jsonDecode(infoJson));
         } catch (e) {
-          print('Erro ao carregar info do usuário: $e');
+          debugPrint('Erro ao carregar info do usuário: $e');
         }
       }
     }
+    notifyListeners();
+  }
+
+  void _initServices(String provToken) {
+    _sgpService = SGPService(apiBaseUrl: apiBaseUrl, providerToken: provToken);
+    _aiService = AIService(apiBaseUrl: apiBaseUrl, providerToken: provToken);
   }
 
   // Login
@@ -88,6 +114,8 @@ class AppProvider with ChangeNotifier {
     _userContract = contract ?? {};
     _userInfo = info ?? {};
     
+    _initServices(providerToken);
+    
     notifyListeners();
   }
 
@@ -103,6 +131,8 @@ class AppProvider with ChangeNotifier {
     _userName = null;
     _userContract = {};
     _userInfo = {};
+    _sgpService = null;
+    _aiService = null;
     
     notifyListeners();
   }

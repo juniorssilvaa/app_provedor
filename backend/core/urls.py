@@ -34,6 +34,7 @@ urlpatterns = [
     # Provider Panel
     path('panel/dashboard/', views.dashboard, name='provider_dashboard'), # Assuming 'dashboard' is the provider dashboard
     path('panel/integrations/sgp/', views.provider_sgp_integrations, name='provider_sgp_integrations'),
+    path('panel/integrations/sgp/regenerate-token/', views.provider_regenerate_token, name='provider_regenerate_token'),
     path('panel/plans/', views.provider_plans, name='provider_plans'),
     path('panel/plans/<int:pk>/delete/', views.delete_plan, name='delete_plan'),
 ]

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/services.dart';
-import '../../services.dart';
+import '../../provider.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -14,7 +16,28 @@ class _AIChatScreenState extends State<AIChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
-  bool _isTyping = false;
+  
+  final Color primaryRed = const Color(0xFFFF0000);
+  final Color cardBg = const Color(0xFF111111);
+
+  @override
+  void initState() {
+    super.initState();
+    // Mensagem de boas-vindas inicial
+    _messages.add(ChatMessage(
+      role: 'assistant',
+      content: 'Olá! Sou seu assistente Nanet. Como posso ajudar com sua conexão ou faturas hoje?',
+      timestamp: DateTime.now(),
+    ));
+    
+    // Coletar telemetria ao abrir o chat se necessário
+    WidgetsBinding.instance.addPostFrameCallback((_) => _collectInitialTelemetry());
+  }
+
+  Future<void> _collectInitialTelemetry() async {
+    final provider = context.read<AppProvider>();
+    await provider.telemetryService.collectTelemetry();
+  }
 
   @override
   void dispose() {
@@ -24,233 +47,155 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Future<void> _sendMessage() async {
-    final message = _messageController.text.trim();
-    if (message.isEmpty) return;
+    final messageText = _messageController.text.trim();
+    if (messageText.isEmpty) return;
 
+    final provider = context.read<AppProvider>();
+    
     setState(() {
       _messages.add(ChatMessage(
         role: 'user',
-        content: message,
+        content: messageText,
         timestamp: DateTime.now(),
       ));
       _isLoading = true;
       _messageController.clear();
     });
 
-    // Scroll para o final
     _scrollToBottom();
 
     try {
-      final response = await ApiService.postWithToken('/ai/chat/', {
-        'message': message,
-      });
+      // Coletar telemetria se a mensagem parecer técnica
+      Map<String, dynamic>? telemetry;
+      if (messageText.toLowerCase().contains('analis') || messageText.toLowerCase().contains('lento')) {
+        telemetry = await provider.telemetryService.collectTelemetry();
+      }
 
-      setState(() {
-        _isLoading = false;
-        if (response.containsKey('response')) {
+      final response = await provider.aiService?.sendMessage(
+        message: messageText,
+        cpf: provider.cpf ?? '',
+        telemetry: telemetry,
+      );
+
+      if (response != null && response.containsKey('response')) {
+        setState(() {
           _messages.add(ChatMessage(
             role: 'assistant',
             content: response['response'],
             timestamp: DateTime.now(),
             paymentData: response['payment_data'],
           ));
-        } else {
+        });
+      } else {
+        setState(() {
           _messages.add(ChatMessage(
-            role: 'system',
-            content: response['error'] ?? 'Desculpe, ocorreu um erro.',
+            role: 'assistant',
+            content: 'Desculpe, não consegui processar sua solicitação agora.',
             timestamp: DateTime.now(),
           ));
-        }
-      });
-
-      _scrollToBottom();
+        });
+      }
     } catch (e) {
       setState(() {
-        _isLoading = false;
         _messages.add(ChatMessage(
-          role: 'system',
-          content: 'Erro ao conectar com a IA. Verifique sua conexão.',
+          role: 'assistant',
+          content: 'Erro de conexão. Tente novamente mais tarde.',
           timestamp: DateTime.now(),
         ));
       });
-
+    } finally {
+      setState(() => _isLoading = false);
       _scrollToBottom();
     }
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1F2E),
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: cardBg,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Assistente IA',
-          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Assistente Nanet', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
       ),
       body: Column(
         children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.withOpacity(0.8), Colors.blue.withOpacity(0.4)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.smart_toy, color: Colors.blue, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Assistente Inteligente',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Posso ajudar com problemas de internet, faturas e muito mais!',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Messages List
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
-                final message = _messages[index];
-                return _buildMessageBubble(message);
+                return _buildMessageBubble(_messages[index]);
               },
             ),
           ),
+          if (_isLoading)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: LinearProgressIndicator(color: primaryRed, backgroundColor: Colors.white10),
+            ),
+          _buildInputArea(),
+        ],
+      ),
+    );
+  }
 
-          // Typing Indicator
-          if (_isTyping)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  const SizedBox(width: 16),
-                  Container(
-                    width: 20,
-                    height: 20,
-                    margin: const EdgeInsets.only(right: 4),
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
-                    ),
-                  ),
-                  const Text(
-                    'A IA está digitando...',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
+  Widget _buildInputArea() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: TextField(
+                controller: _messageController,
+                maxLines: null,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Como posso ajudar?',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  border: InputBorder.none,
+                ),
+                onSubmitted: (_) => _sendMessage(),
               ),
             ),
-
-          // Input Area
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-            ),
-            child: Column(
-              children: [
-                if (_isLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Center(child: CircularProgressIndicator(color: Colors.blue)),
-                  ),
-                
-                // Message Input
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: TextField(
-                    controller: _messageController,
-                    maxLines: 4,
-                    enabled: !_isLoading,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Digite sua mensagem...',
-                      hintStyle: const TextStyle(color: Colors.white54),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.all(16),
-                    ),
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Send Button
-                SizedBox(
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _sendMessage,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                    ),
-                    child: const Text(
-                      'Enviar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _sendMessage,
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(color: primaryRed, shape: BoxShape.circle),
+              child: const Icon(Icons.send, color: Colors.white),
             ),
           ),
         ],
@@ -259,98 +204,40 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    final isUser = message.role == 'user';
-    final hasPaymentData = message.paymentData != null;
-
+    final bool isUser = message.role == 'user';
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          if (message.timestamp != null) ...[
-            Text(
-              _formatTime(message.timestamp!),
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 10,
-              ),
-            ),
-            const SizedBox(height: 4),
-          ],
-          
           Row(
+            mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar
-              if (!isUser)
-                Container(
-                  width: 36,
-                  height: 36,
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.smart_toy, size: 20, color: Colors.blue),
-                ),
-              
-              // Message Bubble
+              if (!isUser) _buildAssistantIcon(),
+              const SizedBox(width: 8),
               Flexible(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 280),
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isUser ? Colors.blue : Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
+                    color: isUser ? primaryRed : cardBg,
+                    borderRadius: BorderRadius.circular(20).copyWith(
+                      bottomLeft: isUser ? null : const Radius.circular(0),
+                      bottomRight: isUser ? const Radius.circular(0) : null,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         message.content,
-                        style: TextStyle(
-                          color: isUser ? Colors.white : Colors.black87,
-                          fontSize: 15,
-                        ),
+                        style: const TextStyle(color: Colors.white, fontSize: 15),
                       ),
-                      
-                      // Payment Data Display
-                      if (hasPaymentData)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '📋 Dados de Pagamento:',
-                                style: TextStyle(
-                                  color: isUser ? Colors.white70 : Colors.black87,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _buildPaymentInfo(message.paymentData!, isUser),
-                            ],
-                          ),
-                        ),
+                      if (message.paymentData != null) _buildPaymentCard(message.paymentData!),
                     ],
                   ),
                 ),
               ),
-              
-              // Avatar (for user messages)
-              if (isUser)
-                Container(
-                  width: 36,
-                  height: 36,
-                  margin: const EdgeInsets.only(left: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.person, size: 20, color: Colors.blue),
-                ),
             ],
           ),
         ],
@@ -358,150 +245,92 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _buildPaymentInfo(Map<String, dynamic> paymentData, bool isUser) {
-    final pixCode = paymentData['codigoPix'] ?? '';
-    final linhaDigitavel = paymentData['linhaDigitavel'] ?? '';
-    
+  Widget _buildAssistantIcon() {
     return Container(
+      width: 40,
+      height: 40,
+      decoration: const BoxDecoration(color: Color(0xFF222222), shape: BoxShape.circle),
+      child: Icon(Icons.smart_toy, color: primaryRed, size: 24),
+    );
+  }
+
+  Widget _buildPaymentCard(Map<String, dynamic> data) {
+    final String? pixCode = data['pix_code'] ?? data['pix_copia_e_cola'] ?? data['codigoPix'];
+    final String? barcode = data['barcode'] ?? data['linha_digitavel'] ?? data['linhaDigitavel'];
+
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isUser ? Colors.blue.withOpacity(0.1) : Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // QR Code
-          if (pixCode.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                // TODO: Implementar cópia do código PIX
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Código PIX copiado para área de transferência')),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.qr_code_2, color: Colors.green, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'PIX Code',
-                            style: const TextStyle(
-                              color: Colors.green,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            pixCode,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Icon(Icons.copy, color: Colors.green, size: 16),
-                    ),
-                  ],
-                ),
+          if (pixCode != null && pixCode.isNotEmpty) ...[
+            const Text('Pagar com PIX', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            const SizedBox(height: 8),
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(8),
+              child: QrImageView(
+                data: pixCode,
+                version: QrVersions.auto,
+                size: 150.0,
               ),
             ),
-          
-          // Linha Digitável
-          if (linhaDigitavel.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                // TODO: Implementar cópia da linha digitável
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Linha digitável copiada para área de transferência')),
-                );
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: pixCode));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Código PIX copiado!')));
               },
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.barcode_reader, color: Colors.orange, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Boleto',
-                            style: const TextStyle(
-                              color: Colors.orange,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            linhaDigitavel,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Icon(Icons.copy, color: Colors.orange, size: 16),
-                    ),
-                  ],
-                ),
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('Copiar PIX'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryRed,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
+          ],
+          if (barcode != null && barcode.isNotEmpty) ...[
+            if (pixCode != null && pixCode.isNotEmpty) const Divider(color: Colors.white10),
+            const Text('Linha Digitável', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            const SizedBox(height: 4),
+            Text(barcode, style: const TextStyle(color: Colors.grey, fontSize: 10), textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: barcode));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Boleto copiado!')));
+              },
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('Copiar Boleto'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryRed,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
-
-  String _formatTime(DateTime timestamp) {
-    return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-  }
 }
 
 class ChatMessage {
-  final String role; // 'user', 'assistant', 'system'
+  final String role;
   final String content;
-  final DateTime? timestamp;
+  final DateTime timestamp;
   final Map<String, dynamic>? paymentData;
 
   ChatMessage({
     required this.role,
     required this.content,
-    this.timestamp,
+    required this.timestamp,
     this.paymentData,
   });
 }

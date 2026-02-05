@@ -1,283 +1,150 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../../provider.dart';
 
-class PerfilScreen extends StatefulWidget {
+class PerfilScreen extends StatelessWidget {
   const PerfilScreen({super.key});
 
-  @override
-  State<PerfilScreen> createState() => _PerfilScreenState();
-}
-
-class _PerfilScreenState extends State<PerfilScreen> {
-  String? _name;
-  String? _cpf;
-  String? _email;
-  String? _phone;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfileData();
-  }
-
-  Future<void> _loadProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _name = prefs.getString('userName');
-      _cpf = prefs.getString('cpf');
-      _email = prefs.getString('userEmail');
-      _phone = prefs.getString('userPhone');
-    });
-  }
-
-  Future<void> _saveProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userName', _name ?? '');
-    await prefs.setString('userEmail', _email ?? '');
-    await prefs.setString('userPhone', _phone ?? '');
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Dados salvos com sucesso!')),
-    );
-  }
+  final Color primaryRed = const Color(0xFFFF0000);
+  final Color cardBg = const Color(0xFF111111);
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AppProvider>();
+    final userInfo = provider.userInfo;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1F2E),
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Meu Perfil',
-          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        backgroundColor: cardBg,
+        title: const Text('Meu Perfil', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 16),
-            
-            // Avatar
             Center(
-              child: Column(
+              child: Stack(
                 children: [
                   Container(
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: cardBg,
                       shape: BoxShape.circle,
+                      border: Border.all(color: primaryRed, width: 2),
                     ),
-                    child: const Icon(Icons.account_circle, size: 60, color: Colors.blue),
+                    child: const Icon(Icons.person, color: Colors.white, size: 60),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Foto do Perfil',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: primaryRed, shape: BoxShape.circle),
+                      child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                    ),
                   ),
                 ],
               ),
             ),
-            
+            const SizedBox(height: 16),
+            Text(
+              provider.userName ?? 'Usuário Nanet',
+              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              provider.cpf ?? '',
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+            const SizedBox(height: 40),
+            _buildInfoSection('Dados Pessoais', [
+              _buildInfoItem(Icons.email_outlined, 'E-mail', userInfo['email'] ?? 'A completar'),
+              _buildInfoItem(Icons.phone_outlined, 'Telefone', userInfo['telefone'] ?? 'A completar'),
+              _buildInfoItem(Icons.location_on_outlined, 'Endereço', provider.userContract['address'] ?? 'Consulte sua fatura'),
+            ]),
             const SizedBox(height: 24),
-            
-            // Form Fields
-            TextFormField(
-              controller: TextEditingController(text: _name),
-              decoration: _buildInputDecoration('Nome Completo'),
-              style: const TextStyle(color: Colors.white),
-              onChanged: (value) => setState(() => _name = value),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            TextFormField(
-              controller: TextEditingController(text: _cpf),
-              keyboardType: TextInputType.number,
-              decoration: _buildInputDecoration('CPF'),
-              style: const TextStyle(color: Colors.white),
-              onChanged: (value) => setState(() => _cpf = value),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            TextFormField(
-              controller: TextEditingController(text: _email),
-              keyboardType: TextInputType.emailAddress,
-              decoration: _buildInputDecoration('E-mail'),
-              style: const TextStyle(color: Colors.white),
-              onChanged: (value) => setState(() => _email = value),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            TextFormField(
-              controller: TextEditingController(text: _phone),
-              keyboardType: TextInputType.phone,
-              decoration: _buildInputDecoration('Telefone'),
-              style: const TextStyle(color: Colors.white),
-              onChanged: (value) => setState(() => _phone = value),
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Save Button
+            _buildInfoSection('Configurações', [
+              _buildActionItem(Icons.notifications_none, 'Notificações', () {}),
+              _buildActionItem(Icons.lock_outline, 'Segurança', () {}),
+              _buildActionItem(Icons.help_outline, 'Ajuda e Suporte', () {}),
+            ]),
+            const SizedBox(height: 40),
             SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  'SALVAR ALTERAÇÕES',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Info Cards
-            _buildInfoCard(
-              'Endereço de Instalação',
-              'RUA MANOEL MARQUES DA CUNHA, 339 - CENTRO, MARABÁ - PA',
-              Icons.location_on,
-            ),
-            
-            const SizedBox(height: 16),
-            
-            _buildInfoCard(
-              'Contrato Principal',
-              '12345',
-              Icons.description,
-            ),
-            
-            const SizedBox(height: 16),
-            
-            _buildInfoCard(
-              'Data de Cadastro',
-              '01/01/2024',
-              Icons.calendar_today,
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Logout Button
-            SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () async {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.clear();
-                  if (context.mounted) {
-                    Navigator.of(context).pushReplacementNamed('/login');
-                  }
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  provider.logout();
+                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.withOpacity(0.8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                icon: const Icon(Icons.logout),
+                label: const Text('SAIR DA CONTA'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: primaryRed,
+                  side: BorderSide(color: primaryRed),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  'SAIR DA CONTA',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
                 ),
               ),
             ),
-            
-            const SizedBox(height: 80),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  InputDecoration _buildInputDecoration(String label) {
-    return InputDecoration(
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.1),
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.white70),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.white10),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.blue, width: 2),
+  Widget _buildInfoSection(String title, List<Widget> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        ),
+        Container(
+          decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
+          child: Column(children: items),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoItem(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.grey, size: 20),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoCard(String title, String value, IconData icon) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: Colors.blue, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-            ],
-          ),
+  Widget _buildActionItem(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.grey, size: 20),
+            const SizedBox(width: 16),
+            Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: Colors.white24),
+          ],
         ),
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 }
