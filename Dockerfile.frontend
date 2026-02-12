@@ -6,6 +6,7 @@ WORKDIR /app
 # Instala dependências
 COPY mobile/package*.json ./
 RUN npm install --legacy-peer-deps
+RUN npm install expo-notifications --legacy-peer-deps
 
 # Copia o código e exporta para web
 COPY mobile/ .
