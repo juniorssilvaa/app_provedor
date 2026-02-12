@@ -69,133 +69,64 @@ jobs:
       - name: Setup Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login GHCR
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & push BACKEND
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./backend/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
+            ghcr.io/juniorssilvaa/app_provedor-backend:latest
+            ghcr.io/juniorssilvaa/app_provedor-backend:${{ github.sha }}
 
       - name: Build & push WEBHOOK
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./backend/Dockerfile.webhook
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}
+            ghcr.io/juniorssilvaa/app_provedor-webhook:latest
+            ghcr.io/juniorssilvaa/app_provedor-webhook:${{ github.sha }}
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code (to get docker-compose.yml)
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Deploy to Portainer
         env:
           PORTAINER_URL: https://app-provedor.niochat.com.br
           PORTAINER_API_KEY: ${{ secrets.PORTAINER_API_KEY }}
-          IMAGE_TAG: ${{ github.sha }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🔍 Verificando conexão com Portainer..."
-          echo "Fetching stacks from $PORTAINER_URL/api/stacks..."
-          STACKS=$(curl -s -H "X-API-Key: $PORTAINER_API_KEY" "$PORTAINER_URL/api/stacks")
+          STACK_ID=1
+          ESCAPED=$(cat docker-compose.yml | jq -Rs .)
           
-          # Debug: Mostrar a resposta crua para entender o erro
-          echo "DEBUG: Portainer Response Body:"
-          echo "$STACKS"
-          
-          # Verifica se a resposta é um array JSON (começa com [)
-          if [[ ! "$STACKS" =~ ^\[ ]]; then
-             echo "❌ Erro: A resposta do Portainer não é uma lista de stacks válida."
-             echo "Verifique se a PORTAINER_API_KEY está correta e tem permissões."
-             exit 1
-          fi
-
-          STACK_ID=$(echo "$STACKS" | jq -r '.[] | select(.Name=="app_provedor") | .Id')
-          
-          # Se a stack não existir, você pode precisar criar ou apenas logar o erro
-          if [ "$STACK_ID" == "null" ] || [ -z "$STACK_ID" ]; then
-            echo "❌ Stack 'app_provedor' não encontrada no Portainer!"
-            exit 1
-          fi
-          
-          echo "✅ Stack encontrada: ID=$STACK_ID"
-          
-          # Verificar se a rede appNet existe, se não, criar
-          echo "🔍 Verificando se a rede 'appNet' existe..."
-          NETWORKS=$(curl -s -H "X-API-Key: $PORTAINER_API_KEY" "$PORTAINER_URL/api/endpoints/1/docker/networks")
-          NETWORK_EXISTS=$(echo "$NETWORKS" | jq -r '.[] | select(.Name=="appNet") | .Id')
-          
-          if [ -z "$NETWORK_EXISTS" ] || [ "$NETWORK_EXISTS" == "null" ]; then
-            echo "📡 Rede 'appNet' não encontrada. Criando rede..."
-            CREATE_NETWORK_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-              -H "X-API-Key: $PORTAINER_API_KEY" \
-              -H "Content-Type: application/json" \
-              --data '{"Name":"appNet","Driver":"overlay","Attachable":true,"Scope":"swarm"}' \
-              "$PORTAINER_URL/api/endpoints/1/docker/networks/create")
-            
-            CREATE_NETWORK_CODE=$(echo "$CREATE_NETWORK_RESPONSE" | tail -n1)
-            if [ "$CREATE_NETWORK_CODE" -eq 201 ] || [ "$CREATE_NETWORK_CODE" -eq 200 ]; then
-              echo "✅ Rede 'appNet' criada com sucesso!"
-            else
-              echo "⚠️  Aviso: Não foi possível criar a rede 'appNet'. HTTP Code: $CREATE_NETWORK_CODE"
-              echo "   A rede pode já existir ou você precisa criá-la manualmente no Portainer."
-            fi
-          else
-            echo "✅ Rede 'appNet' já existe (ID: $NETWORK_EXISTS)"
-          fi
-
-          # Lê o arquivo original que já usa ${IMAGE_TAG:-latest}
-          COMPOSE=$(cat docker-compose.yml)
-          
-          # Escapa o conteúdo do docker-compose para JSON
-          ESCAPED=$(echo "$COMPOSE" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-          
-          echo "🔄 Atualizando stack no Portainer..."
-          echo "📦 IMAGE_TAG: $IMAGE_TAG"
-          
-          # Faz a atualização da stack no Portainer
-          # Enviamos o IMAGE_TAG via variável de ambiente da stack para o Portainer usar no pull
-          echo "🔄 Atualizando stack no Portainer (Stack ID: $STACK_ID, Endpoint ID: 1)..."
+          # Deploy usando Stack API do Portainer com as variáveis necessárias
           RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
             -H "X-API-Key: $PORTAINER_API_KEY" \
             -H "Content-Type: application/json" \
-            --data "{\"StackFileContent\":\"$ESCAPED\",\"Env\":[{\"name\":\"IMAGE_TAG\",\"value\":\"$IMAGE_TAG\"}],\"PullImage\":true,\"ForceRecreate\":true}" \
+            --data "{\"StackFileContent\":$ESCAPED,\"Env\":[{\"name\":\"GHCR_TOKEN\",\"value\":\"$GHCR_TOKEN\"}],\"PullImage\":true,\"ForceRecreate\":true}" \
             "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=1")
-          
+
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
-          
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 204 ]; then
-            echo "✅ Deploy finalizado com sucesso na stack $STACK_ID"
-            echo "📋 Resposta do Portainer: $BODY"
-            echo ""
-            echo "⚠️  NOTA: Se o Portainer não puxar as novas imagens automaticamente,"
-            echo "   verifique se há um registry configurado para ghcr.io no Portainer:"
-            echo "   Settings > Registries > Add registry"
-            echo "   Type: Docker Hub"
-            echo "   URL: ghcr.io"
-            echo "   Username: juniorssilvaa"
-            echo "   Password: [use o GHCR_TOKEN]"
-          else
-            echo "❌ Erro ao atualizar stack no Portainer. HTTP Code: $HTTP_CODE"
-            echo "📋 Resposta: $BODY"
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Erro no deploy! Status: $HTTP_CODE"
+            echo "Resposta: $BODY"
             exit 1
           fi
+          echo "Deploy realizado com sucesso!"
