@@ -61,13 +61,33 @@ services:
           memory: 512M
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app-provedor-backend.rule=Host(`api.niochat.com.br`)"
+      - "traefik.http.routers.app-provedor-backend.rule=Host(`api.niochat.com.br`) || Host(`painel.niochat.com.br`) || Host(`apis.niochat.com.br`)"
       - "traefik.http.routers.app-provedor-backend.entrypoints=websecure"
       - "traefik.http.routers.app-provedor-backend.tls.certresolver=letsencryptresolver"
       - "traefik.http.services.app-provedor-backend.loadbalancer.server.port=8000"
 
   # ===============================
-  # � WEBHOOK (FastAPI)
+  # 🎨 FRONTEND (Expo Web)
+  # ===============================
+  app-provedor-frontend:
+    image: ghcr.io/juniorssilvaa/app_provedor-frontend:latest
+    networks:
+      - appNet
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 256M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app-provedor-frontend.rule=Host(`app.niochat.com.br`) || Host(`central.niochat.com.br`)"
+      - "traefik.http.routers.app-provedor-frontend.entrypoints=websecure"
+      - "traefik.http.routers.app-provedor-frontend.tls.certresolver=letsencryptresolver"
+      - "traefik.http.services.app-provedor-frontend.loadbalancer.server.port=80"
+
+  # ===============================
+  # 🔗 WEBHOOK (FastAPI)
   # ===============================
   app-provedor-webhook:
     image: ghcr.io/juniorssilvaa/app_provedor-webhook:latest
@@ -86,7 +106,7 @@ services:
           memory: 256M
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app-provedor-webhook.rule=Host(`webhook.niochat.com.br`)"
+      - "traefik.http.routers.app-provedor-webhook.rule=Host(`webhook.niochat.com.br`) || Host(`webhooks.niochat.com.br`) || Host(`webook.niochat.com.br`)"
       - "traefik.http.routers.app-provedor-webhook.entrypoints=websecure"
       - "traefik.http.routers.app-provedor-webhook.tls.certresolver=letsencryptresolver"
       - "traefik.http.services.app-provedor-webhook.loadbalancer.server.port=8001"
