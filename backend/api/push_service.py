@@ -1,6 +1,8 @@
 from firebase_admin import messaging
-from core.models import Device, NotificationLog, Provider
+from core.models import Device, NotificationLog, Provider, InAppWarning
 from django.db.models import Q
+from django.utils import timezone
+from datetime import timedelta
 import re
 
 def send_push_notification_core(provider_id, title, message, data=None, source='system', target_customer_id=None, segment_type='all', segment_tags=None, segment_search=None):
@@ -158,6 +160,56 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
         )
     except Exception as e:
         # print(f"CRÍTICO: Falha ao salvar log de notificação: {e}")
+        pass
+
+    # 4. Criar InAppWarning para persistência no App ("Sininho")
+    try:
+        # Evita duplicidade se a fonte já for o próprio sistema de avisos (hipotético)
+        if source != 'in_app_warning_system':
+            target_cpfs_str = None
+            
+            # Se não for broadcast total (segment_type != 'all' ou tiver filtros), precisamos listar os destinatários
+            is_broadcast = (segment_type == 'all' and not target_customer_id and not segment_tags and not segment_search)
+            
+            if not is_broadcast:
+                # Recupera CPFs dos dispositivos alvo (distinct)
+                target_cpfs_list = list(devices.values_list('user__cpf', flat=True).distinct())
+                # Filtra nulos e vazios
+                target_cpfs_list = [c for c in target_cpfs_list if c]
+                
+                if target_cpfs_list:
+                    target_cpfs_str = ','.join(target_cpfs_list)
+                    
+            # Cria o aviso se for broadcast ou se tiver destinatários identificados
+            if is_broadcast or target_cpfs_str:
+                InAppWarning.objects.create(
+                    provider_id=provider_id,
+                    title=title,
+                    message=message,
+                    type='info',
+                    target_cpfs=target_cpfs_str,
+                    active=True,
+                    sticky=False,
+                    show_home=False
+                )
+                print(f"DEBUG: InAppWarning criado com sucesso. CPFs: {target_cpfs_str or 'ALL'}")
+
+                # Cleanup: Remover histórico antigo (Push Notifications persistidos) com mais de 30 dias
+                # Apenas remove avisos direcionados (target_cpfs preenchido), preservando broadcasts manuais
+                try:
+                    limit_date = timezone.now() - timedelta(days=30)
+                    InAppWarning.objects.filter(
+                        provider_id=provider_id,
+                        created_at__lt=limit_date
+                    ).exclude(target_cpfs__isnull=True).exclude(target_cpfs='').delete()
+                except Exception as cleanup_e:
+                    print(f"DEBUG: Erro no cleanup de InAppWarning: {cleanup_e}")
+
+            else:
+                print(f"DEBUG: InAppWarning NÃO criado. is_broadcast={is_broadcast}, target_cpfs_str={target_cpfs_str}")
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO ao criar InAppWarning: {e}")
         pass
 
     return {

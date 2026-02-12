@@ -21,6 +21,11 @@ class Provider(models.Model):
     sgp_token_created_at = models.DateTimeField(blank=True, null=True, help_text="Data de criação do token SGP.")
     webhook_url = models.URLField(max_length=500, blank=True, null=True, help_text="URL customizada do webhook para integração SGP")
 
+    # Campos para Integração GenieACS
+    genieacs_url = models.URLField(max_length=255, blank=True, null=True, help_text="URL base do GenieACS (ex: http://tr069.asnetfibra.net.br:7557)")
+    genieacs_user = models.CharField(max_length=255, blank=True, null=True, help_text="Usuário do GenieACS NBI")
+    genieacs_password = models.CharField(max_length=255, blank=True, null=True, help_text="Senha do GenieACS NBI")
+
     def __str__(self):
         return self.name
 
@@ -150,6 +155,24 @@ class AppUser(models.Model):
     cpf = models.CharField(max_length=14)
     external_id = models.CharField(max_length=100, blank=True, null=True)
     customer_id = models.CharField(max_length=50, blank=True, null=True, db_index=True, help_text="ID do cliente no SGP")
+    pppoe_login = models.CharField(max_length=100, blank=True, null=True, db_index=True, help_text="Login PPPoE do cliente")
+    
+    # GenieACS Integration
+    genieacs_device_id = models.CharField(max_length=255, blank=True, null=True, help_text="ID do dispositivo no GenieACS (cache)")
+    
+    # Wi-Fi Credentials Storage
+    wifi_ssid_2g = models.CharField(max_length=100, blank=True, null=True)
+    wifi_password_2g = models.CharField(max_length=100, blank=True, null=True)
+    wifi_ssid_5g = models.CharField(max_length=100, blank=True, null=True)
+    wifi_password_5g = models.CharField(max_length=100, blank=True, null=True)
+
+    # Modem Info Cache (GenieACS)
+    modem_manufacturer = models.CharField(max_length=255, blank=True, null=True)
+    modem_model = models.CharField(max_length=255, blank=True, null=True)
+    modem_external_ip = models.CharField(max_length=64, blank=True, null=True)
+    modem_uptime_seconds = models.BigIntegerField(blank=True, null=True)
+    modem_last_sync_at = models.DateTimeField(blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     tags = models.CharField(max_length=255, blank=True, null=True)
     active = models.BooleanField(default=True)
@@ -162,10 +185,29 @@ class AppUser(models.Model):
 
 class AppConfig(models.Model):
     provider = models.OneToOneField(Provider, on_delete=models.CASCADE, related_name='app_config')
-    active_shortcuts = models.JSONField(default=list, blank=True)
-    active_tools = models.JSONField(default=list, blank=True)
+    active_shortcuts = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text="Lista de atalhos ativos na Home (Ex: ['FATURAS', 'PLANOS'])"
+    )
+    
+    active_tools = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Lista de ferramentas ativas no Hub (Ex: ['MEU WI-FI', 'FAST TEST'])"
+    )
     social_links = models.JSONField(default=list, blank=True)
     update_warning_active = models.BooleanField(default=False)
+
+    tool_faturas = models.BooleanField(default=True, verbose_name="Ferramenta Faturas")
+    tool_connected_devices = models.BooleanField(default=True, verbose_name="Ferramenta Dispositivos Conectados")
+    tool_speed_test = models.BooleanField(default=True, verbose_name="Ferramenta Speed Test")
+    tool_auto_unlock = models.BooleanField(default=True, verbose_name="Ferramenta Desbloqueio")
+    tool_wifi = models.BooleanField(default=True, verbose_name="Ferramenta Meu Wi-Fi")
+    tool_cameras = models.BooleanField(default=False, verbose_name="Ferramenta Câmeras")
+    
+    # Atalhos rápidos
+    shortcut_wifi = models.BooleanField(default=True, verbose_name="Atalho Wi-Fi")
 
     def __str__(self):
         return f"Config for {self.provider.name}"

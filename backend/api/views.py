@@ -446,7 +446,14 @@ def get_app_configuration(request):
             'primary_color': provider.primary_color,
             'logo_url': request.build_absolute_uri(provider.logo.url) if provider.logo else None,
             'active_shortcuts': app_config.active_shortcuts,
-            'active_tools': app_config.active_tools,
+            'active_tools': {
+                'speed_test': app_config.tool_speed_test,
+                'auto_unlock': app_config.tool_auto_unlock,
+                'faturas': app_config.tool_faturas,
+                'connected_devices': app_config.tool_connected_devices,
+                'wifi': app_config.tool_wifi,
+                'cameras': app_config.tool_cameras,
+            },
             'social_links': app_config.social_links,
             'update_warning_active': app_config.update_warning_active,
             'is_active': provider.is_active,
@@ -476,6 +483,7 @@ def get_app_configuration(request):
             'device_model': serializers.CharField(required=False),
             'device_os': serializers.CharField(required=False),
             'push_token': serializers.CharField(required=False, help_text="Token para notificações Push"),
+            'pppoe_login': serializers.CharField(required=False, help_text="Login PPPoE do cliente"),
         }
     )
 )
@@ -492,6 +500,7 @@ def register_app_user(request):
         cpf = data.get('cpf')
         name = data.get('name')
         email = data.get('email')
+        pppoe_login = data.get('pppoe_login') or data.get('login')
         
         if not provider_token or not cpf:
             return Response({'error': 'provider_token e CPF obrigatórios'}, status=400)
@@ -513,15 +522,51 @@ def register_app_user(request):
         import re
         cpf_limpo = re.sub(r'\D', '', str(cpf))
         
+        user_defaults = {
+            'name': name,
+            'email': email,
+            'active': True,
+            'customer_id': data.get('customer_id') or data.get('external_id') or data.get('contract_id') # Salva ID SGP
+        }
+        
+        if pppoe_login:
+            user_defaults['pppoe_login'] = pppoe_login
+        elif provider.sgp_url and provider.sgp_token:
+            # Tenta buscar no SGP se não veio no request
+            try:
+                import requests
+                url = f"{provider.sgp_url.rstrip('/')}/api/ura/consultacliente"
+                payload = {
+                    'token': provider.sgp_token,
+                    'app': provider.sgp_app_name or 'webchat',
+                    'cpf_cnpj': cpf_limpo
+                }
+                # Timeout curto para não travar o app
+                resp = requests.post(url, json=payload, timeout=5)
+                if resp.status_code == 200:
+                    data_sgp = resp.json()
+                    # Tenta extrair login de várias formas comuns
+                    found_login = data_sgp.get('login') or data_sgp.get('pppoe_login')
+                    
+                    if not found_login and 'contratos' in data_sgp:
+                        contratos = data_sgp['contratos']
+                        if isinstance(contratos, list) and len(contratos) > 0:
+                            # Prioriza o contrato ativo ou o primeiro
+                            for c in contratos:
+                                if c.get('login'):
+                                    found_login = c.get('login')
+                                    break
+                    
+                    if found_login:
+                        user_defaults['pppoe_login'] = found_login
+                        print(f"DEBUG: Login recuperado do SGP para {cpf_limpo}: {found_login}")
+            except Exception as e:
+                print(f"ERRO: Falha ao buscar login no SGP: {e}")
+
         user, created = AppUser.objects.update_or_create(
             provider=provider,
             cpf=cpf_limpo,
-            defaults={
-                'name': name,
-                'email': email,
-                'active': True,
-                'customer_id': data.get('customer_id') or data.get('external_id') # Salva ID SGP
-            }
+            defaults=user_defaults
         )
 
         # Register Device
@@ -637,5 +682,96 @@ def get_in_app_warnings(request):
             })
             
         return Response(filtered_warnings)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+@extend_schema(
+    tags=['Public'],
+    summary="Dispensar Aviso In-App",
+    description="Marca um aviso como lido/excluído. Se for um aviso direcionado (CPF específico), ele será removido do banco de dados.",
+    parameters=[
+        OpenApiParameter(name='provider_token', type=str, location=OpenApiParameter.QUERY, description="Token de identificação do provedor", required=True),
+    ],
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'warning_id': {'type': 'integer'},
+                'cpf': {'type': 'string'},
+            },
+            'required': ['warning_id']
+        }
+    }
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def dismiss_in_app_warning(request):
+    provider_token = request.GET.get('provider_token') or request.data.get('provider_token')
+    if not provider_token:
+        return Response({'error': 'provider_token é obrigatório.'}, status=400)
+
+    from core.models import ProviderToken
+    provider = None
+    
+    token_obj = ProviderToken.objects.filter(token=provider_token, is_active=True).first()
+    if token_obj:
+        provider = token_obj.provider
+    else:
+        provider = Provider.objects.filter(sgp_token=provider_token, is_active=True).first()
+
+    if not provider:
+        return Response({'error': 'Token de provedor inválido ou inativo.'}, status=403)
+
+    warning_id = request.data.get('warning_id')
+    if not warning_id:
+        return Response({'error': 'warning_id é obrigatório.'}, status=400)
+
+    try:
+        warning = InAppWarning.objects.filter(id=warning_id, provider=provider).first()
+        if not warning:
+            return Response({'error': 'Aviso não encontrado.'}, status=404)
+
+        # Se for um aviso direcionado (tem target_cpfs/contracts)
+        if warning.target_cpfs or warning.target_contracts:
+             current_cpf = request.data.get('cpf')
+             
+             # Caso 1: Apenas 1 alvo (ou nenhum alvo explícito sobrando), deleta direto
+             # Simplificação: Se tiver CPF fornecido, tenta remover da lista
+             if current_cpf:
+                 # Remove CPF da lista
+                 if warning.target_cpfs:
+                     cpfs = [c.strip() for c in warning.target_cpfs.split(',') if c.strip()]
+                     if current_cpf in cpfs:
+                         cpfs.remove(current_cpf)
+                         warning.target_cpfs = ','.join(cpfs)
+                         warning.save()
+                 
+                 # Se após remover (ou se não tinha CPF), não sobrar alvos, deleta
+                 remaining_cpfs = [c for c in (warning.target_cpfs or '').split(',') if c.strip()]
+                 remaining_contracts = [c for c in (warning.target_contracts or '').split(',') if c.strip()]
+                 
+                 if not remaining_cpfs and not remaining_contracts:
+                     warning.delete()
+                     return Response({'success': True, 'action': 'deleted', 'message': 'Aviso removido permanentemente.'})
+                 
+                 return Response({'success': True, 'action': 'updated', 'message': 'CPF removido da lista de alvos.'})
+             
+             # Se não enviou CPF (fallback), deleta se for o comportamento antigo (assumindo single user)
+             # Mas por segurança, só deleta se tiver poucos alvos?
+             # Para manter compatibilidade com o pedido "não lotar servidor", vamos forçar delete se o usuário pediu
+             # Mas cuidado com multi-usuários.
+             # Vamos assumir que se chegou aqui sem CPF, não podemos limpar parcialmente.
+             # Mas o mobile envia CPF.
+             
+             # Fallback: Se não conseguiu processar CPF, deleta apenas se tiver 1 alvo.
+             targets = (warning.target_cpfs or '').split(',') + (warning.target_contracts or '').split(',')
+             targets = [t for t in targets if t.strip()]
+             if len(targets) <= 1:
+                  warning.delete()
+                  return Response({'success': True, 'action': 'deleted', 'message': 'Aviso removido permanentemente.'})
+
+        # Se for broadcast (sem targets) OU se ainda tem outros targets, não deleta o registro global
+        return Response({'success': True, 'action': 'ignored', 'message': 'Aviso mantido.'})
+
     except Exception as e:
         return Response({'error': str(e)}, status=500)

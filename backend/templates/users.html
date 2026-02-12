@@ -135,7 +135,7 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="flex items-center gap-3 text-sm">
+                            <div class="flex items-center gap-3 text-sm flex-wrap">
                                 <span class="text-gray-500 dark:text-gray-400 font-mono">CPF: {{ user.cpf }}</span>
                                 <button class="px-2 py-0.5 rounded-md bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 transition-colors">Filtrar</button>
                                 <span class="px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-xs">
@@ -186,6 +186,9 @@
                         <div>
                             <p class="text-[11px] font-semibold tracking-wide text-gray-400 uppercase">Cliente</p>
                             <p class="text-sm text-white font-mono">#{{ user.customer_id|default:"-" }}</p>
+                            
+                            <p class="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mt-2">Login PPPoE</p>
+                            <p class="text-sm text-indigo-400 font-mono font-bold">{{ user.pppoe_login|default:"-" }}</p>
                         </div>
                     </div>
                 </div>

@@ -3,6 +3,7 @@ from . import views
 from . import views_push
 from . import sgp_proxy
 from . import ai_views
+from . import genieacs_views
 
 urlpatterns = [
     # --- IA ASSISTANT & TELEMETRY ---
@@ -12,6 +13,7 @@ urlpatterns = [
     # Endpoint Público para o App (Configuração do Tenant)
     path('public/config/', views.get_app_configuration, name='get_app_configuration'),
     path('public/warnings/', views.get_in_app_warnings, name='get_in_app_warnings'),
+    path('public/warnings/dismiss/', views.dismiss_in_app_warning, name='dismiss_in_app_warning'),
     path('public/plans/', views.get_plans, name='get_plans'),
 
     path('providers/', views.providers_api, name='api_providers'),
@@ -20,6 +22,9 @@ urlpatterns = [
     path('users/<int:pk>/', views.user_detail_api, name='api_user_detail'),
 
     # Proxy SGP (Centraliza as requisições do App)
+    # Novo Endpoint Wi-Fi (GenieACS Direto)
+    path('wifi/config/', genieacs_views.wifi_config_api, name='wifi_config_v1'),
+    
     path('sgp/<path:endpoint>', sgp_proxy.proxy_sgp_request, name='sgp_proxy'),
 
     # Endpoints para Integração SGP (Painel do Provedor)

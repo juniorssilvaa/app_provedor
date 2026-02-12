@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="glass-panel rounded-2xl p-6 border border-gray-700 shadow-lg">
+    <div class="flex justify-between items-center mb-6">
+        <h3 class="text-base font-bold text-white">Lista de Provedores</h3>
+        <a href="{% url 'provider_create' %}"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-all flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Novo Provedor
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead>
+                <tr class="text-gray-400 text-xs uppercase tracking-wider border-b border-gray-700">
+                    <th class="px-6 py-4 font-medium">Provedor</th>
+                    <th class="px-6 py-4 font-medium">CNPJ</th>
+                    <th class="px-6 py-4 font-medium">Contatos</th>
+                    <th class="px-6 py-4 font-medium">Status / Usuários App</th>
+                    <th class="px-6 py-4 font-medium">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+                {% for p in providers %}
+                <tr class="hover:bg-gray-800/30 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-bold text-white">{{ p.name }}</div>
+                        <div class="text-xs text-gray-500">Cadastrado em: {{ p.created_at|date:"d/m/Y" }}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-400">
+                        {{ p.cnpj }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-400">
+                        {{ p.number }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col space-y-1">
+                            <span
+                                class="px-2 py-0.5 w-max {% if p.is_active %}bg-green-500/10 text-green-400{% else %}bg-red-500/10 text-red-400{% endif %} text-[9px] font-bold rounded-full uppercase">
+                                {% if p.is_active %}Ativo{% else %}Inativo{% endif %}
+                            </span>
+                            <span class="text-[10px] text-gray-500">{{ p.app_user_count }} clientes app</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm font-medium">
+                        <div class="flex items-center space-x-3">
+                            <a href="{% url 'provider_edit' p.pk %}" class="text-blue-400 hover:text-blue-300"
+                                title="Editar">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                    </path>
+                                </svg>
+                            </a>
+                            <a href="{% url 'provider_toggle_status' p.pk %}"
+                                class="{% if p.is_active %}text-red-400 hover:text-red-300{% else %}text-green-400 hover:text-green-300{% endif %}"
+                                title="Alterar Status">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636">
+                                    </path>
+                                </svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-10 text-center text-gray-500 italic">
+                        Nenhum provedor cadastrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

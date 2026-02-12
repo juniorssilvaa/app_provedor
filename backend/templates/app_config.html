@@ -79,15 +79,61 @@
                 <div>
                     <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-4">Ferramentas <span class="text-[9px] font-normal normal-case ml-2">Acesso rápido a recursos de suporte e diagnóstico.</span></h4>
                     <div class="space-y-3">
-                        {% for tool in all_tools %}
+                        <!-- Speed Test -->
                         <div class="flex items-center justify-between p-3 rounded-lg border border-green-800 bg-green-900/10">
-                            <span class="text-xs font-bold text-white uppercase">{{ tool }} <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
+                            <span class="text-xs font-bold text-white uppercase">Fast Test <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="tools" value="{{ tool }}" class="sr-only peer" {% if tool in config.active_tools %}checked{% endif %}>
+                                <input type="checkbox" name="tool_speed_test" class="sr-only peer" {% if config.tool_speed_test %}checked{% endif %}>
                                 <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                             </label>
                         </div>
-                        {% endfor %}
+
+                        {% comment %}
+                        <!-- Auto Unlock -->
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-green-800 bg-green-900/10">
+                            <span class="text-xs font-bold text-white uppercase">Desbloqueio <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="tool_auto_unlock" class="sr-only peer" {% if config.tool_auto_unlock %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Faturas -->
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-green-800 bg-green-900/10">
+                            <span class="text-xs font-bold text-white uppercase">Faturas <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="tool_faturas" class="sr-only peer" {% if config.tool_faturas %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+                        {% endcomment %}
+                        
+                        <!-- Meu Wi-Fi -->
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-green-800 bg-green-900/10">
+                            <span class="text-xs font-bold text-white uppercase">Meu Wi-Fi <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="tool_wifi" class="sr-only peer" {% if config.tool_wifi %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+                        
+                        <!-- Cameras -->
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-green-800 bg-green-900/10">
+                            <span class="text-xs font-bold text-white uppercase">Câmeras <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="tool_cameras" class="sr-only peer" {% if config.tool_cameras %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Dispositivos Conectados -->
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-green-800 bg-green-900/10">
+                            <span class="text-xs font-bold text-white uppercase">Dispositivos Conectados <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="tool_connected_devices" class="sr-only peer" {% if config.tool_connected_devices %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
