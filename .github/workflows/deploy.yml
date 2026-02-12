@@ -98,17 +98,6 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}
 
-      - name: Build & push FRONTEND
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.frontend
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
-
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest

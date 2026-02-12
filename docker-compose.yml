@@ -105,26 +105,6 @@ services:
       - "traefik.http.services.app-provedor-webhook.loadbalancer.server.port=8001"
 
   # ===============================
-  # 🎨 FRONTEND (React/Next)
-  # ===============================
-  app-provedor-frontend:
-    image: ghcr.io/juniorssilvaa/app_provedor-frontend:${IMAGE_TAG:-latest}
-    networks:
-      - appNet
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '0.30'
-          memory: 256M
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app-provedor-frontend.rule=Host(`app.niochat.com.br`)"
-      - "traefik.http.routers.app-provedor-frontend.entrypoints=websecure"
-      - "traefik.http.routers.app-provedor-frontend.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.app-provedor-frontend.loadbalancer.server.port=3000"
-
-  # ===============================
   # ⏰ SCHEDULER (Processador de Notificações Agendadas)
   # ===============================
   app-provedor-scheduler:
