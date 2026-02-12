@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Instala dependências
 COPY mobile/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copia o código e exporta para web
 COPY mobile/ .
