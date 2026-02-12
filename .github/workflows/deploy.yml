@@ -80,7 +80,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./backend/Dockerfile
+          file: ./Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
@@ -91,7 +91,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./backend/Dockerfile.webhook
+          file: ./Dockerfile.webhook
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
