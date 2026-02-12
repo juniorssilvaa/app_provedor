@@ -98,6 +98,17 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}
 
+      - name: Build & push FRONTEND
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -110,8 +121,7 @@ jobs:
         env:
           PORTAINER_URL: https://app-provedor.niochat.com.br
           PORTAINER_API_KEY: ${{ secrets.PORTAINER_API_KEY }}
-          BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
-          WEBHOOK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:latest
+          IMAGE_TAG: ${{ github.sha }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           echo "🔍 Verificando conexão com Portainer..."
@@ -163,30 +173,22 @@ jobs:
             echo "✅ Rede 'appNet' já existe (ID: $NETWORK_EXISTS)"
           fi
 
-          # Atualiza o docker-compose.yml (mantendo latest conforme solicitado)
-          # COMPOSE=$(cat docker-compose.yml \
-          #   | sed "s|ghcr.io/juniorssilvaa/app_provedor-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}|g" \
-          #   | sed "s|ghcr.io/juniorssilvaa/app_provedor-webhook:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}|g")
-          
-          # Lê o arquivo original que já usa :latest
+          # Lê o arquivo original que já usa ${IMAGE_TAG:-latest}
           COMPOSE=$(cat docker-compose.yml)
           
           # Escapa o conteúdo do docker-compose para JSON
           ESCAPED=$(echo "$COMPOSE" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
           
           echo "🔄 Atualizando stack no Portainer..."
-          echo "📦 Imagem Backend: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}"
-          echo "📦 Imagem Webhook: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webhook:${{ github.sha }}"
+          echo "📦 IMAGE_TAG: $IMAGE_TAG"
           
           # Faz a atualização da stack no Portainer
-          # IMPORTANTE: O Portainer precisa estar configurado para autenticar no ghcr.io
-          # Configure um registry no Portainer: Settings > Registries > Add registry
-          # Type: Docker Hub, URL: ghcr.io, Username: juniorssilvaa, Password: [GHCR_TOKEN]
+          # Enviamos o IMAGE_TAG via variável de ambiente da stack para o Portainer usar no pull
           echo "🔄 Atualizando stack no Portainer (Stack ID: $STACK_ID, Endpoint ID: 1)..."
           RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
             -H "X-API-Key: $PORTAINER_API_KEY" \
             -H "Content-Type: application/json" \
-            --data "{\"StackFileContent\":\"$ESCAPED\",\"PullImage\":true,\"ForceRecreate\":true}" \
+            --data "{\"StackFileContent\":\"$ESCAPED\",\"Env\":[{\"name\":\"IMAGE_TAG\",\"value\":\"$IMAGE_TAG\"}],\"PullImage\":true,\"ForceRecreate\":true}" \
             "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=1")
           
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
