@@ -68,27 +68,6 @@ services:
       - "traefik.docker.network=appNet"
 
   # ===============================
-  # 🎨 FRONTEND (Expo Web - Modo Local)
-  # ===============================
-  app-provedor-frontend:
-    image: ghcr.io/juniorssilvaa/app_provedor-frontend:latest
-    networks:
-      - appNet
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 1024M
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app-provedor-frontend.rule=Host(`app.niochat.com.br`)"
-      - "traefik.http.routers.app-provedor-frontend.entrypoints=websecure"
-      - "traefik.http.routers.app-provedor-frontend.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.app-provedor-frontend.loadbalancer.server.port=8081"
-      - "traefik.docker.network=appNet"
-
-  # ===============================
   # 🔗 WEBHOOK (FastAPI)
   # ===============================
   app-provedor-webhook:
