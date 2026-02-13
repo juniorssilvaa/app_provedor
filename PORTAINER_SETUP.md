@@ -3,38 +3,16 @@
 ## Problema
 O Portainer não está puxando as novas imagens do GitHub Container Registry (ghcr.io) automaticamente.
 
-## Solução
+## Solução Automática (Implementada)
 
-### 1. Configurar Registry no Portainer
+O sistema agora utiliza tags dinâmicas baseadas no commit SHA do GitHub. Isso garante que:
+1. O Swarm sempre identifique uma nova versão da imagem.
+2. O pull seja obrigatório e automático em todos os nós.
+3. Não haja conflito de digest antigo.
 
-Para que o Portainer possa puxar imagens do GitHub Container Registry, você precisa configurar um registry:
+### Troubleshooting (Se o deploy automático falhar)
 
-1. Acesse o Portainer: `https://app-provedor.niochat.com.br`
-2. Vá em **Settings** > **Registries**
-3. Clique em **Add registry**
-4. Preencha os campos:
-   - **Name**: `GitHub Container Registry` (ou qualquer nome)
-   - **Registry URL**: `ghcr.io`
-   - **Authentication**: Marque a opção
-   - **Username**: `juniorssilvaa`
-   - **Password**: Use o token do GitHub (GHCR_TOKEN)
-     - Para gerar um token: GitHub > Settings > Developer settings > Personal access tokens > Tokens (classic)
-     - Permissões necessárias: `read:packages`
-
-### 2. Verificar se o Registry está configurado
-
-Após adicionar o registry, verifique se ele aparece na lista de registries disponíveis.
-
-### 3. Atualizar a Stack
-
-Quando o GitHub Actions fizer o deploy, o Portainer deve:
-1. Receber a atualização via API
-2. Puxar automaticamente as novas imagens do ghcr.io
-3. Recriar os containers com as novas imagens
-
-### 4. Troubleshooting
-
-Se o Portainer ainda não estiver puxando as imagens:
+Se por algum motivo o deploy automático não refletir as mudanças:
 
 1. **Verifique os logs do workflow do GitHub Actions**
    - Vá em: `https://github.com/juniorssilvaa/app_provedor/actions`

@@ -105,9 +105,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Aguarda o registry propagar a nova imagem antes do deploy (evita "No such image" no Swarm)
+      # Aguarda o registry propagar a nova imagem antes do deploy
       - name: Aguardar propagação do GHCR
-        run: sleep 45
+        run: sleep 15
 
       - name: Deploy to Portainer
         env:
@@ -116,13 +116,26 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           STACK_ID=1
-          ESCAPED=$(cat docker-compose.yml | jq -Rs .)
+          IMAGE_TAG="${{ github.sha }}"
           
-          # Deploy usando Stack API do Portainer com as variáveis necessárias
+          # Escapar o conteúdo do docker-compose.yml para JSON
+          ESCAPED_COMPOSE=$(cat docker-compose.yml | jq -Rs .)
+          
+          # Deploy usando Stack API do Portainer
+          # O parâmetro "PullImage":true força o Portainer a baixar a nova imagem (tag SHA)
+          # O parâmetro "Prune":true remove containers órfãos
           RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
             -H "X-API-Key: $PORTAINER_API_KEY" \
             -H "Content-Type: application/json" \
-            --data "{\"StackFileContent\":$ESCAPED,\"Env\":[{\"name\":\"GHCR_TOKEN\",\"value\":\"$GHCR_TOKEN\"}],\"PullImage\":true,\"ForceRecreate\":true}" \
+            --data "{
+              \"StackFileContent\": $ESCAPED_COMPOSE,
+              \"Env\": [
+                {\"name\": \"GHCR_TOKEN\", \"value\": \"$GHCR_TOKEN\"},
+                {\"name\": \"IMAGE_TAG\", \"value\": \"$IMAGE_TAG\"}
+              ],
+              \"PullImage\": true,
+              \"Prune\": true
+            }" \
             "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=1")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -133,4 +146,4 @@ jobs:
             echo "Resposta: $BODY"
             exit 1
           fi
-          echo "Deploy realizado com sucesso!"
+          echo "Deploy realizado com sucesso! O Portainer está atualizando as imagens..."
