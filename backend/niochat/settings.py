@@ -21,11 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-hl572c0(mj_m#b*p*vwunw%aty&k9+3lb3#$^umnl-i=s%3+l(')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-if os.environ.get('ALLOWED_HOSTS'):
-    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(',')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://painel.niochat.com.br',
@@ -155,7 +153,7 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.StaticFilesStorage",
     },
 }
 
