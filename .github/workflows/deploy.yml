@@ -105,6 +105,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Aguarda o registry propagar a nova imagem antes do deploy (evita "No such image" no Swarm)
+      - name: Aguardar propagação do GHCR
+        run: sleep 45
+
       - name: Deploy to Portainer
         env:
           PORTAINER_URL: https://app-provedor.niochat.com.br

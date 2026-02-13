@@ -75,3 +75,68 @@ Certifique-se de que os seguintes secrets estão configurados no GitHub:
 Para verificar se as imagens estão sendo criadas:
 1. Acesse: `https://github.com/juniorssilvaa/app_provedor/pkgs/container/app_provedor-backend`
 2. Verifique se as novas tags estão aparecendo após cada push
+
+---
+
+## Erro "No such image" no Swarm (tasks Rejected)
+
+Se os serviços aparecem com **Rejected** e o erro é `No such image: ghcr.io/juniorssilvaa/app_provedor-backend:latest@sha256:...`, o **nó** onde o serviço sobe (ex.: appProvador) não consegue puxar a imagem. Em Swarm, o pull é feito no nó que executa a task, não só no Portainer.
+
+### Solução 1: Login no nó (recomendado para pacote privado)
+
+No servidor que é nó do Swarm (ex.: **appProvador**), faça login no GHCR:
+
+```bash
+# No servidor (appProvador), use o mesmo token do GHCR_TOKEN (read:packages ou write:packages)
+docker login ghcr.io -u juniorssilvaa -p SEU_GHCR_TOKEN
+```
+
+Depois force a atualização do serviço para puxar de novo:
+
+```bash
+# Atualizar o serviço para forçar novo pull (no manager do Swarm)
+docker service update --force app_provedor_app-provedor-backend
+docker service update --force app_provedor_app-provedor-scheduler
+```
+
+Ou pelo Portainer: **Stacks** → sua stack → **Editor** → **Pull and redeploy** → **Update the stack**.
+
+### Solução 2: Deixar o pacote público (sem login no servidor)
+
+1. No GitHub: **juniorssilvaa/app_provedor** → **Packages** (ou acesse o package do container).
+2. Abra o package **app_provedor-backend**.
+3. **Package settings** → **Change visibility** → **Public**.
+
+Assim qualquer nó consegue `docker pull` sem credenciais. Depois faça **Update the stack** no Portainer (Pull and redeploy).
+
+### Solução 3: Verificar se a imagem existe
+
+No servidor ou em qualquer máquina:
+
+```bash
+docker pull ghcr.io/juniorssilvaa/app_provedor-backend:latest
+```
+
+- Se der **unauthorized**: o pacote é privado → use Solução 1 ou 2.
+- Se der **not found**: a imagem ainda não foi publicada → confira o workflow no GitHub Actions e se o job **build-and-push** concluiu com sucesso.
+
+---
+
+## Por que o Portainer não puxa a imagem sozinho (e o pull manual funciona)?
+
+Em **Docker Swarm**, quem puxa a imagem é o **nó** onde a task vai rodar (ex.: appProvador), não o Portainer. Duas coisas costumam causar o problema:
+
+1. **Digest antigo no serviço** – O serviço pode ter ficado com um digest (`sha256:...`) antigo na especificação. Quando o registry atualiza `latest`, esse digest pode deixar de existir e o nó passa a receber "No such image". O `docker pull` manual usa o `latest` atual; o serviço continua tentando o digest antigo.
+2. **Deploy logo após o push** – O workflow faz push e em seguida chama o Portainer. O GHCR pode ainda não ter propagado a nova imagem quando o nó tenta puxar.
+
+**O que já foi feito no workflow:** Foi adicionada uma espera de 45 segundos antes do deploy para dar tempo do registry propagar.
+
+**Quando os serviços continuam Rejected:** No servidor (manager do Swarm), force o serviço a usar a imagem de novo e recriar as tasks:
+
+```bash
+docker service update --image ghcr.io/juniorssilvaa/app_provedor-backend:latest --force app_provedor_app-provedor-backend
+docker service update --image ghcr.io/juniorssilvaa/app_provedor-backend:latest --force app_provedor_app-provedor-scheduler
+docker service update --image ghcr.io/juniorssilvaa/app_provedor-webhook:latest --force app_provedor_app-provedor-webhook
+```
+
+Assim o Swarm resolve de novo o `:latest`, puxa a imagem (que já existe no nó ou será baixada) e recria as tasks.
