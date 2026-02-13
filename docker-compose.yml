@@ -67,26 +67,6 @@ services:
       - "traefik.http.services.app-provedor-backend.loadbalancer.server.port=8000"
 
   # ===============================
-  # 🎨 FRONTEND (Expo Web)
-  # ===============================
-  app-provedor-frontend:
-    image: ghcr.io/juniorssilvaa/app_provedor-frontend:latest
-    networks:
-      - appNet
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '0.30'
-          memory: 256M
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app-provedor-frontend.rule=Host(`app.niochat.com.br`) || Host(`central.niochat.com.br`)"
-      - "traefik.http.routers.app-provedor-frontend.entrypoints=websecure"
-      - "traefik.http.routers.app-provedor-frontend.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.app-provedor-frontend.loadbalancer.server.port=80"
-
-  # ===============================
   # 🔗 WEBHOOK (FastAPI)
   # ===============================
   app-provedor-webhook:

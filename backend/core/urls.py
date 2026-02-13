@@ -1,15 +1,19 @@
 from django.urls import path
+from django.views.generic import RedirectView
 from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
+    # Raiz: redireciona para login (evita 404 em painel.niochat.com.br)
+    path('', RedirectView.as_view(url='/login/', permanent=False)),
+
     # Auth
     path('login/', views.CustomLoginView.as_view(template_name='login.html'), name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('redirect/', views.login_redirect, name='login_redirect'),
 
     # Dashboard
-    path('', views.dashboard, name='dashboard'),
+    path('dashboard/', views.dashboard, name='dashboard'),
     path('users/', views.user_list, name='user_list'),
     path('panel/users/', views.panel_user_list, name='panel_user_list'),
     path('panel/users/<int:pk>/delete/', views.panel_user_delete, name='panel_user_delete'),
