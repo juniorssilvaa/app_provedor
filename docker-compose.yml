@@ -39,7 +39,7 @@ services:
   # 🌐 BACKEND DJANGO (Painel + APIs)
   # ===============================
   app-provedor-backend:
-    image: ghcr.io/juniorssilvaa/app_provedor-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/juniorssilvaa/app_provedor-backend:latest
     networks:
       - appNet
     volumes:
@@ -71,7 +71,7 @@ services:
   # 🔗 WEBHOOK (FastAPI)
   # ===============================
   app-provedor-webhook:
-    image: ghcr.io/juniorssilvaa/app_provedor-webhook:${IMAGE_TAG:-latest}
+    image: ghcr.io/juniorssilvaa/app_provedor-webhook:latest
     networks:
       - appNet
     volumes:
@@ -97,7 +97,7 @@ services:
   # ⏰ SCHEDULER (Processador de Notificações Agendadas)
   # ===============================
   app-provedor-scheduler:
-    image: ghcr.io/juniorssilvaa/app_provedor-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/juniorssilvaa/app_provedor-backend:latest
     depends_on:
       - postgres
       - app-provedor-backend

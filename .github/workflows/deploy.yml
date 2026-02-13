@@ -105,9 +105,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Aguarda o registry propagar a nova imagem antes do deploy
+      # Aguarda o registry propagar a nova imagem antes do deploy (evita "No such image" no Swarm)
       - name: Aguardar propagação do GHCR
-        run: sleep 15
+        run: sleep 45
 
       - name: Deploy to Portainer
         env:
@@ -116,7 +116,7 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           STACK_ID=1
-          IMAGE_TAG="${{ github.sha }}"
+          IMAGE_TAG="latest"
           
           # Escapar o conteúdo do docker-compose.yml para JSON
           ESCAPED_COMPOSE=$(cat docker-compose.yml | jq -Rs .)
