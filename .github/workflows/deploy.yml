@@ -98,6 +98,17 @@ jobs:
             ghcr.io/juniorssilvaa/app_provedor-webhook:latest
             ghcr.io/juniorssilvaa/app_provedor-webhook:${{ github.sha }}
 
+      - name: Build & push FRONTEND
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/juniorssilvaa/app_provedor-frontend:latest
+            ghcr.io/juniorssilvaa/app_provedor-frontend:${{ github.sha }}
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest

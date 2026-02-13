@@ -52,7 +52,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-SOMxcet2sQT5oJHFhUBStA}@postgres:5432/${POSTGRES_DB:-app_provedor_db}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       FIREBASE_CREDENTIALS: /app/service_account_key.json
-    command: gunicorn niochat.wsgi:application --bind 0.0.0.0:8000 --workers 2
+    command: gunicorn niochat.wsgi:application --bind 0.0.0.0:8000 --workers 2 --access-logfile - --error-logfile -
     restart: always
     deploy:
       resources:
@@ -65,6 +65,28 @@ services:
       - "traefik.http.routers.app-provedor-backend.entrypoints=websecure"
       - "traefik.http.routers.app-provedor-backend.tls.certresolver=letsencryptresolver"
       - "traefik.http.services.app-provedor-backend.loadbalancer.server.port=8000"
+      - "traefik.docker.network=appNet"
+
+  # ===============================
+  # 🎨 FRONTEND (Expo Web - Modo Local)
+  # ===============================
+  app-provedor-frontend:
+    image: ghcr.io/juniorssilvaa/app_provedor-frontend:latest
+    networks:
+      - appNet
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 1024M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app-provedor-frontend.rule=Host(`app.niochat.com.br`)"
+      - "traefik.http.routers.app-provedor-frontend.entrypoints=websecure"
+      - "traefik.http.routers.app-provedor-frontend.tls.certresolver=letsencryptresolver"
+      - "traefik.http.services.app-provedor-frontend.loadbalancer.server.port=8081"
+      - "traefik.docker.network=appNet"
 
   # ===============================
   # 🔗 WEBHOOK (FastAPI)
@@ -89,6 +111,7 @@ services:
       - "traefik.http.routers.app-provedor-webhook.rule=Host(`webhook.niochat.com.br`) || Host(`webhooks.niochat.com.br`) || Host(`webook.niochat.com.br`)"
       - "traefik.http.routers.app-provedor-webhook.entrypoints=websecure"
       - "traefik.http.routers.app-provedor-webhook.tls.certresolver=letsencryptresolver"
+      - "traefik.docker.network=appNet"
       - "traefik.http.services.app-provedor-webhook.loadbalancer.server.port=8001"
 
   # ===============================
