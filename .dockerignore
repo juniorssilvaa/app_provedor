@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+db.sqlite3
+media/
+.env
+.DS_Store
+mobile/node_modules/
+mobile/node_modules/
+mobile/.expo/
+mobile/.expo-shared/
+mobile/dist/
+mobile/web-build/
+mobile/*-lock.json
+mobile/*.log
+backend/staticfiles/
+*.log

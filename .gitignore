@@ -1,0 +1,16 @@
+mobile/
+backend/firebase-credentials.json
+backend/service_account*.json
+backend/*.json
+.env
+.env.*
+backend/.env
+backend/.env.*
+**/*.pyc
+__pycache__/
+*.log
+node_modules/
+build/
+dist/
+backend/db.sqlite3
+ngrok.exe
