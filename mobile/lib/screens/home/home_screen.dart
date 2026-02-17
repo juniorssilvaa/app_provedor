@@ -1073,7 +1073,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNav(bool isDark) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 34), // Sobe um pouco em relação à borda inferior
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 48), // Sobe a barra (era 34)
       height: 62, // Mais fino em altura
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E).withOpacity(0.95) : Colors.white.withOpacity(0.95), // Fundo semi-transparente
@@ -1233,7 +1233,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Design "3D Grosso" High-End
     return Transform.translate(
-      offset: const Offset(0, 12), // Abaixo um pouco em direção à barra
+      offset: const Offset(0, 8), // Baixado um pouco mais para alinhar com a barra
       child: Container(
         width: 72,
         height: 80, // Mantém área suficiente sem cortar

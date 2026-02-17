@@ -23,6 +23,7 @@ import 'screens/connected_devices/connected_devices_screen.dart';
 import 'screens/menu/menu_screen.dart';
 import 'screens/menu/terms_screen.dart';
 import 'screens/menu/privacy_screen.dart';
+import 'screens/menu/select_contract_screen.dart';
 import 'screens/notification/notification_screen.dart';
 import 'screens/notification/notification_detail_screen.dart';
 
@@ -116,6 +117,7 @@ class MyApp extends StatelessWidget {
               '/speedtest': (context) => const SpeedTestScreen(),
               '/connected_devices': (context) => const ConnectedDevicesScreen(),
               '/menu': (context) => const MenuScreen(),
+              '/select_contract': (context) => const SelectContractScreen(),
               '/terms': (context) => const TermsScreen(),
               '/privacy': (context) => const PrivacyScreen(),
               '/notifications': (context) => const NotificationScreen(),

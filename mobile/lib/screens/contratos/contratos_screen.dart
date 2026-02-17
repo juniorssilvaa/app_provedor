@@ -185,8 +185,8 @@ class _ContratosScreenState extends State<ContratosScreen> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: primaryRed))
           : _errorMessage != null
-              ? Center(child: Text(_errorMessage!, style: TextStyle(color: isDark ? Colors.white : Colors.black)))
-              : _buildList(isDark, primaryRed),
+               ? Center(child: Text(_errorMessage!, style: TextStyle(color: isDark ? Colors.white : Colors.black)))
+               : _buildList(isDark, primaryRed),
     );
   }
 

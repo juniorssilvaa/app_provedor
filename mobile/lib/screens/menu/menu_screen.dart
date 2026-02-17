@@ -118,7 +118,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 svgIcon: _Svgs.contract,
                 title: 'Alterar Contratos',
                 subtitle: 'Gerencie seus contratos ativos',
-                onTap: () => Navigator.pushNamed(context, '/contratos'),
+                onTap: () => Navigator.pushNamed(context, '/select_contract'),
                 isDark: isDark,
               ),
 
