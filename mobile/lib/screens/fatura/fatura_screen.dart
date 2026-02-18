@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../provider.dart';
+import '../../config.dart';
 
 class FaturaScreen extends StatefulWidget {
   const FaturaScreen({super.key});
@@ -33,8 +34,26 @@ class _FaturaScreenState extends State<FaturaScreen> {
     try {
       final provider = context.read<AppProvider>();
       if (provider.cpf != null) {
-        final faturas = await provider.sgpService?.getInvoices(provider.cpf!);
-        if (faturas != null && faturas.isNotEmpty) {
+        final rawFaturas = await provider.sgpService?.getInvoices(provider.cpf!);
+        
+        // Filtrar faturas pelo contrato selecionado
+        List<dynamic> faturas = [];
+        if (rawFaturas != null) {
+          final selId = (provider.userContract['id'] ?? provider.userContract['contract_id'])?.toString();
+          
+          if (selId != null) {
+            faturas = rawFaturas.where((inv) {
+              if (inv is! Map) return false;
+              final invContratoId = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'] ?? inv['id_contrato'] ?? inv['numero_contrato'] ?? inv['contrato_id_display'])?.toString();
+              return invContratoId != null && invContratoId.trim() == selId.trim();
+            }).toList();
+          } else {
+            // Fallback se não houver contrato selecionado (não deveria ocorrer se logado)
+            faturas = rawFaturas;
+          }
+        }
+
+        if (faturas.isNotEmpty) {
           
           // 1. Processar datas e normalizar
           List<Map<String, dynamic>> processedInvoices = [];
@@ -236,11 +255,19 @@ class _FaturaScreenState extends State<FaturaScreen> {
 
     // Status Dinâmico
     bool isLate = false;
-    if (!isPaid && parsedDate != null && parsedDate.year > 1900) {
-       final now = DateTime.now();
-       final today = DateTime(now.year, now.month, now.day);
-       final dateOnly = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
-       isLate = dateOnly.isBefore(today);
+    if (fatura['esta_atrasada'] != null) {
+      isLate = fatura['esta_atrasada'] == true;
+    } else if (!isPaid && parsedDate != null && parsedDate.year > 1900) {
+        final now = AppConfig.getToday();
+        final today = DateTime(now.year, now.month, now.day);
+        final dateOnly = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+        
+        // Verificação ultra-robusta na listagem
+        if (dateOnly.year == today.year && dateOnly.month == today.month && dateOnly.day == today.day) {
+          isLate = false;
+        } else {
+          isLate = dateOnly.isBefore(today);
+        }
     }
 
     String statusLabel = isPaid ? 'PAGO' : (isLate ? 'ATRASADO' : 'ABERTO');

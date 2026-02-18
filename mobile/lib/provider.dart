@@ -699,6 +699,10 @@ class AppProvider with ChangeNotifier {
 
              // Buscar dados reais da fatura para complementar
              try {
+               // Sincronizar hora com o servidor
+               final sTime = await _sgpService!.getServerTime();
+               if (sTime != null) AppConfig.setServerTime(sTime);
+
                final invoices = await _sgpService!.getInvoices(_cpf!);
                debugPrint('REFRESH: Faturas encontradas: ${invoices.length}');
                debugPrint('REFRESH: RAW Invoices: $invoices');
@@ -718,7 +722,17 @@ class AppProvider with ChangeNotifier {
                      String? rawDate = inv['dataVencimento'] ?? inv['data_vencimento'];
                      if (rawDate != null) {
                         try {
-                          DateTime dt = DateTime.parse(rawDate);
+                          final dateParts = rawDate.split('-');
+                          DateTime dt;
+                          if (dateParts.length == 3) {
+                            dt = DateTime(
+                              int.parse(dateParts[0]), 
+                              int.parse(dateParts[1]), 
+                              int.parse(dateParts[2])
+                            );
+                          } else {
+                            dt = DateTime.parse(rawDate);
+                          }
                           inv['parsedDate'] = dt;
                           sortedInvoices.add(inv);
                         } catch (e) { }
@@ -777,7 +791,18 @@ class AppProvider with ChangeNotifier {
                      String? rawDate = priorityInvoice['dataVencimento'] ?? priorityInvoice['data_vencimento'];
                      if (rawDate != null) {
                        try {
-                          DateTime dueDate = DateTime.parse(rawDate);
+                           // Parsing manual para evitar que o DateTime.parse trate como UTC e mude o dia
+                           final dateParts = rawDate.split('-');
+                           DateTime dueDate;
+                           if (dateParts.length == 3) {
+                             dueDate = DateTime(
+                               int.parse(dateParts[0]), 
+                               int.parse(dateParts[1]), 
+                               int.parse(dateParts[2])
+                             );
+                           } else {
+                             dueDate = DateTime.parse(rawDate);
+                           }
                           String dayStr = dueDate.day.toString().padLeft(2, '0');
                           String monthStr = dueDate.month.toString().padLeft(2, '0');
                           String yearStr = dueDate.year.toString();
@@ -785,15 +810,26 @@ class AppProvider with ChangeNotifier {
                           selectedContract['last_invoice_due'] = '$dayStr/$monthStr/$yearStr';
                           selectedContract['expiry_date'] = selectedContract['last_invoice_due'];
 
-                          final now = DateTime.now();
-                          final today = DateTime(now.year, now.month, now.day);
-                          final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
-                          
-                          if (due.isBefore(today)) {
-                            selectedContract['invoice_status_code'] = 'overdue';
-                          } else {
-                            selectedContract['invoice_status_code'] = 'open';
-                          }
+                           final now = AppConfig.getToday();
+                           final today = DateTime(now.year, now.month, now.day);
+                           final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+                           
+                           debugPrint('REFRESH: Calculando status - Due: $due, Today: $today');
+                           
+                           // Prioriza o cálculo feito pelo SERVIDOR no proxy
+                           bool serverSaysLate = priorityInvoice['esta_atrasada'] ?? false;
+                           
+                           if (serverSaysLate) {
+                              selectedContract['invoice_status_code'] = 'overdue';
+                           } else if (due.year == today.year && due.month == today.month && due.day == today.day) {
+                              // Se o servidor não mandou, mas é hoje, garantimos Aberto
+                              selectedContract['invoice_status_code'] = 'open';
+                           } else if (due.isBefore(today)) {
+                              selectedContract['invoice_status_code'] = 'overdue';
+                           } else {
+                              selectedContract['invoice_status_code'] = 'open';
+                           }
+                           debugPrint('REFRESH: Status final definido: ${selectedContract['invoice_status_code']} (Server info: $serverSaysLate)');
                        } catch (_) {
                          selectedContract['last_invoice_due'] = rawDate;
                          selectedContract['invoice_status_code'] = 'open';

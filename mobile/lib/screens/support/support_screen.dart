@@ -61,8 +61,16 @@ class _SupportScreenState extends State<SupportScreen> {
 
       if (contractId.isNotEmpty) {
         final data = await sgpService.getSupportTickets(cpf, password, contractId);
+        
+        // Filtrar chamados pelo contrato selecionado
+        final filteredTickets = (data as List).where((ticket) {
+          if (ticket is! Map) return false;
+          final ticketContratoId = (ticket['oc_contrato_id'] ?? ticket['contrato_id'] ?? ticket['contrato'] ?? ticket['id_contrato'])?.toString();
+          return ticketContratoId != null && ticketContratoId.trim() == contractId.trim();
+        }).toList();
+
         setState(() {
-          _tickets = data;
+          _tickets = filteredTickets;
         });
       }
     } catch (e) {

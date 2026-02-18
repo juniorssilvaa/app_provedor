@@ -98,24 +98,34 @@ class SGPService {
     final payload = Map<String, dynamic>.from(data);
     payload['provider_token'] = token;
 
-    final url = Uri.parse('${apiBaseUrl}$endpoint');
-
+    final url = Uri.parse('${apiBaseUrl}$endpoint?provider_token=$token');
     try {
       debugPrint('SGPService: API POST $url');
-      final response = await http.post(
-        url,
+      final response = await http.post(url, 
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
-          'X-Provider-Token': token,
-        },
-        body: jsonEncode(payload),
+        }, 
+        body: jsonEncode(payload)
       );
       return _handleResponse(response);
     } catch (e) {
       debugPrint('Erro na requisição API POST: $e');
       return null;
     }
+  }
+
+  /// Busca a hora oficial do servidor (Brasília)
+  Future<DateTime?> getServerTime() async {
+    try {
+      final data = await _apiGet('public/server-time/', {});
+      if (data != null && data['server_time'] != null) {
+        return DateTime.parse(data['server_time']);
+      }
+    } catch (e) {
+      debugPrint('Erro ao buscar hora do servidor: $e');
+    }
+    return null;
   }
 
   dynamic _handleResponse(http.Response response) {
@@ -138,9 +148,12 @@ class SGPService {
     }
   }
 
-  Future<List<dynamic>> getInvoices(String cpfCnpj) async {
+  Future<List<dynamic>> getInvoices(String cpfCnpj, {String? status}) async {
     try {
-      final data = await _proxyPost('ura/titulos/', {'cpf_cnpj': cpfCnpj});
+      final payload = {'cpf_cnpj': cpfCnpj};
+      if (status != null) payload['status'] = status;
+      
+      final data = await _proxyPost('ura/titulos/', payload);
       
       if (data is List) return data;
       if (data is Map<String, dynamic>) {
@@ -167,11 +180,10 @@ class SGPService {
       debugPrint('SGPService: Buscando contratos/assinaturas para CPF $cpfCnpj');
       
       // Chama o endpoint do backend que faz proxy para ura/consultacliente
-      // A rota 'cliente/consulta/' no backend está mapeada para 'api/ura/consultacliente'
       final data = await _proxyPost('cliente/consulta/', {
-        'cpf_cnpj': cpfCnpj, // Backend converte para cpfcnpj
+        'cpf_cnpj': cpfCnpj, 
         'assinatura_eletronica': 1,
-        'app': 'asnetchat', // Conforme exemplo
+        'app': 'asnetchat', 
       });
       
       debugPrint('SGPService: Resposta contratos: $data');
@@ -191,6 +203,7 @@ class SGPService {
     try {
       final data = await _proxyPost('central/chamado/list/', {
         'cpfcnpj': cpfCnpj,
+        'contrato': contractId,
         'oc_status': '0',
       });
       
@@ -211,9 +224,9 @@ class SGPService {
     try {
       final data = await _proxyPost('ura/chamado/', {
         'contrato': contractId,
-        'ocorrenciatipo': typeId, // 1: Sem acesso, 2: Internet lenta
+        'ocorrenciatipo': typeId, 
         'conteudo': message,
-        'conteudolimpo': message, // Envia a mesma mensagem como conteudo limpo
+        'conteudolimpo': message, 
       });
       return data is Map<String, dynamic> ? data : {'status': 'success', 'data': data};
     } catch (e) {
@@ -282,7 +295,6 @@ class SGPService {
   }
 
   Future<List<dynamic>> getConsumption(String cpfCnpj, String password, String contractId, int month, int year) async {
-    debugPrint('DEBUG: getConsumption - CPF: $cpfCnpj, Pass: ${password.isEmpty ? "EMPTY" : "MASKED"}, Contract: $contractId, Date: $month/$year');
     try {
       final data = await _proxyPost('central/extratouso/', {
         'cpfcnpj': cpfCnpj,
@@ -308,7 +320,7 @@ class SGPService {
   Future<Map<String, dynamic>> getConsultaCliente(String cpfCnpj) async {
     try {
       final data = await _proxyPost('ura/consultacliente/', {
-        'app': 'asnetchat', // Fixo conforme exemplo, mas poderia vir de config
+        'app': 'asnetchat', 
         'cpfcnpj': cpfCnpj,
         'assinatura_eletronica': 1,
       });

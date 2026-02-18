@@ -38,4 +38,24 @@ class AppConfig {
     final base = _envApiBaseUrl.isNotEmpty ? _envApiBaseUrl : 'https://apis.niochat.com.br/api/';
     return base.endsWith('/') ? base : '$base/';
   }
+
+  /// Diferença de tempo entre o celular e o servidor (em milisegundos)
+  static int _serverOffsetMs = 0;
+
+  /// Atualiza o desvio de tempo baseado na hora vinda do servidor
+  static void setServerTime(DateTime serverTime) {
+    _serverOffsetMs = serverTime.millisecondsSinceEpoch - DateTime.now().millisecondsSinceEpoch;
+  }
+
+  /// Retorna a data atual no fuso horário de Brasília sincronizada com o servidor
+  static DateTime getToday() {
+    // Se tivermos offset, usamos o horário local sincronizado
+    // Caso contrário, usamos o fallback UTC-3
+    if (_serverOffsetMs != 0) {
+      return DateTime.now().add(Duration(milliseconds: _serverOffsetMs));
+    }
+    
+    final nowUtc = DateTime.now().toUtc();
+    return nowUtc.subtract(const Duration(hours: 3));
+  }
 }

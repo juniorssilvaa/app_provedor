@@ -426,11 +426,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
                    String? rawDate = inv['dataVencimento'] ?? inv['data_vencimento'];
                    if (rawDate != null) {
-                      try {
-                        DateTime dt = DateTime.parse(rawDate);
-                        inv['parsedDate'] = dt;
-                        sortedInvoices.add(inv);
-                      } catch (e) {}
+                       try {
+                         // Parsing manual para evitar desvios de fuso horário
+                         final dateParts = rawDate.split('-');
+                         DateTime dt;
+                         if (dateParts.length == 3) {
+                           dt = DateTime(
+                             int.parse(dateParts[0]), 
+                             int.parse(dateParts[1]), 
+                             int.parse(dateParts[2])
+                           );
+                         } else {
+                           dt = DateTime.parse(rawDate);
+                         }
+                         inv['parsedDate'] = dt;
+                         sortedInvoices.add(inv);
+                       } catch (e) {}
                    }
                  }
                }
@@ -462,10 +473,22 @@ class _LoginScreenState extends State<LoginScreen> {
                  }
                  
                  String? rawDate = priorityInvoice['dataVencimento'] ?? priorityInvoice['data_vencimento'];
-                 if (rawDate != null) {
-                   try {
-                      DateTime dueDate = DateTime.parse(rawDate);
-                      final parts = rawDate.split('-');
+                  if (rawDate != null) {
+                    try {
+                       // Parsing manual robusto
+                       final dateParts = rawDate.split('-');
+                       DateTime dueDate;
+                       if (dateParts.length == 3) {
+                         dueDate = DateTime(
+                           int.parse(dateParts[0]), 
+                           int.parse(dateParts[1]), 
+                           int.parse(dateParts[2])
+                         );
+                       } else {
+                         dueDate = DateTime.parse(rawDate);
+                       }
+
+                       final parts = rawDate.split('-');
                       if (parts.length == 3) {
                         selectedContract['last_invoice_due'] = '${parts[2]}/${parts[1]}/${parts[0]}';
                         selectedContract['expiry_date'] = selectedContract['last_invoice_due'];
@@ -473,15 +496,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         selectedContract['last_invoice_due'] = rawDate;
                       }
 
-                      final now = DateTime.now();
-                      final today = DateTime(now.year, now.month, now.day);
-                      final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
-                      
-                      if (due.isBefore(today)) {
-                        selectedContract['invoice_status_code'] = 'overdue';
-                      } else {
-                        selectedContract['invoice_status_code'] = 'open';
-                      }
+                       final now = AppConfig.getToday();
+                       final today = DateTime(now.year, now.month, now.day);
+                       final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+                       
+                       // Verificação ultra-robusta para o Login
+                       bool serverSaysLate = priorityInvoice['esta_atrasada'] ?? false;
+                       if (serverSaysLate) {
+                         selectedContract['invoice_status_code'] = 'overdue';
+                       } else if (due.year == today.year && due.month == today.month && due.day == today.day) {
+                         selectedContract['invoice_status_code'] = 'open';
+                       } else if (due.isBefore(today)) {
+                         selectedContract['invoice_status_code'] = 'overdue';
+                       } else {
+                         selectedContract['invoice_status_code'] = 'open';
+                       }
                    } catch (_) {
                      selectedContract['last_invoice_due'] = rawDate;
                      selectedContract['invoice_status_code'] = 'open';
