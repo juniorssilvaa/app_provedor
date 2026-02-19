@@ -267,6 +267,21 @@ class SGPService {
     }
   }
 
+<<<<<<< HEAD
+=======
+  Future<Map<String, dynamic>?> getConnectedDevices(String contractId) async {
+    try {
+      debugPrint('SGPService: Fetching connected devices for contract: $contractId');
+      final data = await _apiGet('wifi/hosts/', {'contrato': contractId});
+      debugPrint('SGPService: Connected devices response: $data');
+      return data;
+    } catch (e) {
+      debugPrint('Erro ao buscar dispositivos conectados: $e');
+      return null;
+    }
+  }
+
+>>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
   Future<Map<String, dynamic>> openTicket(String contractId, String title, String description) async {
     try {
       final result = await _proxyPost('chamado/novo/', {

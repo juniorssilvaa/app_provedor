@@ -42,6 +42,12 @@ void main() async {
     await Firebase.initializeApp().timeout(const Duration(seconds: 5));
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   } catch (_) {}
+<<<<<<< HEAD
+=======
+  try {
+    await AppConfig.syncTime();
+  } catch (_) {}
+>>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
   runApp(const MyApp());
 }
 

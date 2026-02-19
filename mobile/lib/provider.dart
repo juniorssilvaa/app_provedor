@@ -83,11 +83,14 @@ class AppProvider with ChangeNotifier {
           };
           merged.add(newItem);
         }
+<<<<<<< HEAD
         for (final entry in existing.entries) {
           if (!merged.any((m) => m['id'].toString() == entry.key)) {
             merged.add(entry.value);
           }
         }
+=======
+>>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
         merged.sort((a, b) {
           final aStr = a['created_at']?.toString();
           final bStr = b['created_at']?.toString();
@@ -400,6 +403,32 @@ class AppProvider with ChangeNotifier {
         osVersion = 'iOS ${iosInfo.systemVersion}';
       }
 
+<<<<<<< HEAD
+=======
+      // Coletar TODOS os logins disponíveis para o painel
+      String? allLogins;
+      try {
+        final List<String> logins = [];
+        if (info != null && info['contratos'] is List) {
+          for (var c in info['contratos']) {
+            final l = c['servico_login'] ?? c['login'] ?? c['pppoe_login'];
+            if (l != null && l.toString().trim().isNotEmpty) {
+              final s = l.toString().trim();
+              if (!logins.contains(s)) logins.add(s);
+            }
+          }
+        }
+        // Fallback para o login do contrato atual se a lista estiver vazia
+        if (logins.isEmpty) {
+          final l = contract?['servico_login'] ?? contract?['login'] ?? contract?['pppoe_login'];
+          if (l != null) logins.add(l.toString().trim());
+        }
+        if (logins.isNotEmpty) allLogins = logins.join(', ');
+      } catch (e) {
+        debugPrint('Erro ao coletar logins no login: $e');
+      }
+
+>>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
       final url = Uri.parse('${AppConfig.apiBaseUrl}app/register/');
       http.post(
         url,
@@ -412,11 +441,19 @@ class AppProvider with ChangeNotifier {
           'customer_id': customerId,
           'device_platform': Platform.isAndroid ? 'android' : 'ios',
           'push_token': _pushService.token,
+<<<<<<< HEAD
+=======
+          'pppoe_login': allLogins,
+>>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
           'model': model,
           'manufacturer': manufacturer,
           'os_version': osVersion,
         }),
+<<<<<<< HEAD
       ).then((_) => debugPrint('Usuário registrado no backend')).catchError((e) => debugPrint('Erro registro backend: $e'));
+=======
+      ).then((_) => debugPrint('Usuário registrado no backend com logins: $allLogins')).catchError((e) => debugPrint('Erro registro backend: $e'));
+>>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
       
       // Registrar dispositivo para Push Notifications
       final prefs = await SharedPreferences.getInstance();
@@ -625,7 +662,14 @@ class AppProvider with ChangeNotifier {
                  'expiry_date': '29/05/2025', 
                  'last_invoice_value': '0,00', 
                  'last_invoice_due': '--/--/----',
+<<<<<<< HEAD
                  'last_invoice_status': 'pending'
+=======
+                 'last_invoice_status': 'pending',
+                 'login': c['login'],
+                 'pppoe_login': c['pppoe_login'],
+                 'servico_login': c['servico_login'],
+>>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
                });
            }
 
@@ -859,6 +903,7 @@ class AppProvider with ChangeNotifier {
              
              // Atualizar contrato do usuário com a seleção preservada
              _userContract = selectedContract;
+<<<<<<< HEAD
       }
       
       if (clientData != null) {
@@ -876,6 +921,70 @@ class AppProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Erro no refreshData: $e');
       throw e;
+=======
+       } // Fim do if (allMappedContracts.isNotEmpty)
+      
+      notifyListeners();
+      
+      // Registrar/Sincronizar no backend (Garante que o login apareça no painel)
+      try {
+        final List<String> logins = [];
+        
+        // Coleta de todos os contratos brutos
+        if (clientFullData != null && clientFullData.containsKey('contratos')) {
+          final rawContratos = clientFullData['contratos'] as List;
+          for (var rc in rawContratos) {
+            final l = rc['servico_login'] ?? rc['login'] ?? rc['pppoe_login'];
+            if (l != null && l.toString().trim().isNotEmpty) {
+              final s = l.toString().trim();
+              if (!logins.contains(s)) logins.add(s);
+            }
+          }
+        }
+        
+        // Fallback se não achou nada nos brutos (tenta no contrato selecionado)
+        if (logins.isEmpty) {
+           final l = _userContract['servico_login'] ?? _userContract['login'] ?? _userContract['pppoe_login'];
+           if (l != null) logins.add(l.toString().trim());
+        }
+
+        if (logins.isNotEmpty) {
+          final String allLogins = logins.join(', ');
+          final devicePlatform = Platform.isAndroid ? 'android' : 'ios';
+          debugPrint('REFRESH: Sincronizando registro no backend com logins: $allLogins');
+          
+          final regUrl = Uri.parse('${AppConfig.apiBaseUrl}app/register/');
+          http.post(
+            regUrl,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'provider_token': _providerToken,
+              'cpf': _cpf,
+              'pppoe_login': allLogins,
+              'customer_id': _userContract['id']?.toString(),
+              'device_platform': devicePlatform,
+              'push_token': _pushService.token,
+            }),
+          ).catchError((e) => debugPrint('Erro na sincronização de registro: $e'));
+        }
+      } catch (e) {
+        debugPrint('Erro ao extrair logins para sincronização: $e');
+      }
+
+      if (clientData != null) {
+        // Atualizar estado
+        _userInfo = clientData;
+        // _userContract já foi atualizado acima
+        
+        // Persistir
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userInfo', jsonEncode(_userInfo));
+        await prefs.setString('userContract', jsonEncode(_userContract));
+      }
+    } catch (e) {
+      debugPrint('Erro no refreshData: $e');
+      rethrow;
+>>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
     }
   }
 

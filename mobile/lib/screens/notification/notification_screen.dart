@@ -108,6 +108,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                           ),
                                         ),
                                       ),
+<<<<<<< HEAD
                                       if (!isRead)
                                         Container(
                                           width: 8,
@@ -117,6 +118,49 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                             shape: BoxShape.circle,
                                           ),
                                         ),
+=======
+                                      Row(
+                                        children: [
+                                          if (!isRead)
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              margin: const EdgeInsets.only(right: 8),
+                                              decoration: BoxDecoration(
+                                                color: primaryRed,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                                            onPressed: () {
+                                              showDialog(
+                                                context: context,
+                                                builder: (ctx) => AlertDialog(
+                                                  title: const Text('Excluir Notificação'),
+                                                  content: const Text('Deseja realmente remover esta notificação?'),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(ctx),
+                                                      child: const Text('Cancelar'),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        provider.dismissNotification(notif['id'].toString());
+                                                        Navigator.pop(ctx);
+                                                      },
+                                                      child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                        ],
+                                      ),
+>>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
                                     ],
                                   ),
                                   const SizedBox(height: 4),
