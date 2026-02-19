@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-=======
 import 'dart:convert';
 import 'package:http/http.dart' as http;
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
 
 /// Configurações do aplicativo
 class AppConfig {
@@ -40,10 +37,7 @@ class AppConfig {
     if (_runtimeApiBaseUrl != null && _runtimeApiBaseUrl!.isNotEmpty) {
       return _runtimeApiBaseUrl!;
     }
-<<<<<<< HEAD
-=======
     // Para local, usamos o IP do servidor local ou 10.0.2.2 para o emulador Android
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
     final base = _envApiBaseUrl.isNotEmpty ? _envApiBaseUrl : 'https://apis.niochat.com.br/api/';
     return base.endsWith('/') ? base : '$base/';
   }
@@ -51,8 +45,6 @@ class AppConfig {
   /// Diferença de tempo entre o celular e o servidor (em milisegundos)
   static int _serverOffsetMs = 0;
 
-<<<<<<< HEAD
-=======
   /// Sincroniza a hora do app com o servidor
   static Future<void> syncTime() async {
     try {
@@ -70,8 +62,6 @@ class AppConfig {
       print('Erro ao sincronizar hora: $e');
     }
   }
-
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
   /// Atualiza o desvio de tempo baseado na hora vinda do servidor
   static void setServerTime(DateTime serverTime) {
     _serverOffsetMs = serverTime.millisecondsSinceEpoch - DateTime.now().millisecondsSinceEpoch;

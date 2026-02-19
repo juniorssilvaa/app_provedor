@@ -226,14 +226,10 @@ class _LoginScreenState extends State<LoginScreen> {
                'expiry_date': '29/05/2025', 
                'last_invoice_value': '0,00', 
                'last_invoice_due': '--/--/----',
-<<<<<<< HEAD
-               'last_invoice_status': 'pending'
-=======
-               'last_invoice_status': 'pending',
-               'login': c['login'],
-               'pppoe_login': c['pppoe_login'],
-               'servico_login': c['servico_login'],
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
+                'last_invoice_status': 'pending',
+                'login': c['login'],
+                'pppoe_login': c['pppoe_login'],
+                'servico_login': c['servico_login'],
              });
            }
 

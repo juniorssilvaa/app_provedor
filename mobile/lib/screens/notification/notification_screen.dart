@@ -108,17 +108,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                           ),
                                         ),
                                       ),
-<<<<<<< HEAD
-                                      if (!isRead)
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            color: primaryRed,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-=======
                                       Row(
                                         children: [
                                           if (!isRead)
@@ -160,7 +149,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                           ),
                                         ],
                                       ),
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
                                     ],
                                   ),
                                   const SizedBox(height: 4),

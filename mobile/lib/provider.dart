@@ -83,14 +83,11 @@ class AppProvider with ChangeNotifier {
           };
           merged.add(newItem);
         }
-<<<<<<< HEAD
         for (final entry in existing.entries) {
           if (!merged.any((m) => m['id'].toString() == entry.key)) {
             merged.add(entry.value);
           }
         }
-=======
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
         merged.sort((a, b) {
           final aStr = a['created_at']?.toString();
           final bStr = b['created_at']?.toString();
@@ -403,8 +400,6 @@ class AppProvider with ChangeNotifier {
         osVersion = 'iOS ${iosInfo.systemVersion}';
       }
 
-<<<<<<< HEAD
-=======
       // Coletar TODOS os logins disponíveis para o painel
       String? allLogins;
       try {
@@ -427,8 +422,6 @@ class AppProvider with ChangeNotifier {
       } catch (e) {
         debugPrint('Erro ao coletar logins no login: $e');
       }
-
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
       final url = Uri.parse('${AppConfig.apiBaseUrl}app/register/');
       http.post(
         url,
@@ -441,19 +434,12 @@ class AppProvider with ChangeNotifier {
           'customer_id': customerId,
           'device_platform': Platform.isAndroid ? 'android' : 'ios',
           'push_token': _pushService.token,
-<<<<<<< HEAD
-=======
           'pppoe_login': allLogins,
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
           'model': model,
           'manufacturer': manufacturer,
           'os_version': osVersion,
         }),
-<<<<<<< HEAD
-      ).then((_) => debugPrint('Usuário registrado no backend')).catchError((e) => debugPrint('Erro registro backend: $e'));
-=======
       ).then((_) => debugPrint('Usuário registrado no backend com logins: $allLogins')).catchError((e) => debugPrint('Erro registro backend: $e'));
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
       
       // Registrar dispositivo para Push Notifications
       final prefs = await SharedPreferences.getInstance();
@@ -662,14 +648,10 @@ class AppProvider with ChangeNotifier {
                  'expiry_date': '29/05/2025', 
                  'last_invoice_value': '0,00', 
                  'last_invoice_due': '--/--/----',
-<<<<<<< HEAD
-                 'last_invoice_status': 'pending'
-=======
-                 'last_invoice_status': 'pending',
-                 'login': c['login'],
-                 'pppoe_login': c['pppoe_login'],
-                 'servico_login': c['servico_login'],
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
+                  'last_invoice_status': 'pending',
+                  'login': c['login'],
+                  'pppoe_login': c['pppoe_login'],
+                  'servico_login': c['servico_login'],
                });
            }
 
@@ -903,26 +885,7 @@ class AppProvider with ChangeNotifier {
              
              // Atualizar contrato do usuário com a seleção preservada
              _userContract = selectedContract;
-<<<<<<< HEAD
-      }
-      
-      if (clientData != null) {
-         // Atualizar estado
-         _userInfo = clientData;
-         // _userContract já foi atualizado acima
-         
-         // Persistir
-         final prefs = await SharedPreferences.getInstance();
-         await prefs.setString('userInfo', jsonEncode(_userInfo));
-         await prefs.setString('userContract', jsonEncode(_userContract));
-         
-         notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Erro no refreshData: $e');
-      throw e;
-=======
-       } // Fim do if (allMappedContracts.isNotEmpty)
+      } // Fim do if (allMappedContracts.isNotEmpty)
       
       notifyListeners();
       
@@ -984,7 +947,6 @@ class AppProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Erro no refreshData: $e');
       rethrow;
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
     }
   }
 
