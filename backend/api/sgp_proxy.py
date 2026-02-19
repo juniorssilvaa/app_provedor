@@ -23,12 +23,9 @@ def proxy_sgp_request(request, endpoint):
         print(f"DEBUG PROXY: Recebida requisição {request.method} para {endpoint}")
 
         # Identificar o provedor
-        # POST: request.data
-        # GET: request.query_params
-        data_source = request.data if request.method == 'POST' else request.query_params
-        
-        provider_token = data_source.get('provider_token')
-        provider_id = data_source.get('provider_id')
+        # Busca no Query Client (URL) ou no Body (JSON/Form)
+        provider_token = request.query_params.get('provider_token') or request.data.get('provider_token')
+        provider_id = request.query_params.get('provider_id') or request.data.get('provider_id')
         
         provider = None
         if provider_token:

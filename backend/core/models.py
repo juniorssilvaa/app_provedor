@@ -35,8 +35,8 @@ class Provider(models.Model):
         return token_obj.token if token_obj else None
 
     def generate_new_token(self):
-        """Gera um novo token, invalidando os anteriores."""
-        self.tokens.all().update(is_active=False)
+        """Gera um novo token, removendo permanentemente os anteriores."""
+        self.tokens.all().delete()
         return ProviderToken.objects.create(provider=self)
 
 class ProviderToken(models.Model):
@@ -175,6 +175,7 @@ class AppUser(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     tags = models.CharField(max_length=255, blank=True, null=True)
+    dismissed_warnings = models.JSONField(default=list, blank=True, help_text="Lista de IDs de avisos que o usuário fechou")
     active = models.BooleanField(default=True)
 
     class Meta:

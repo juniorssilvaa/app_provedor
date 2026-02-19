@@ -181,18 +181,31 @@
             <header class="bg-white sidebar-glass border-b border-gray-200 dark:border-gray-700 h-16 flex items-center justify-between px-6">
                 <h2 class="text-xl font-semibold">NIOCHAT SERVIÇOS TECNOLÓGICOS</h2>
                 
-                <button id="theme-toggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                    <span id="theme-toggle-dark-icon" class="hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                <div class="flex items-center space-x-4">
+                    <!-- Relógio do Servidor -->
+                    <div id="server-clock-container" class="hidden md:flex items-center space-x-2 px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-primary">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                    </span>
-                    <span id="theme-toggle-light-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                        </svg>
-                    </span>
-                </button>
+                        <div class="flex flex-col">
+                            <span id="server-time-display" class="text-xs font-bold text-gray-700 dark:text-gray-200 leading-tight">--:--:--</span>
+                            <span id="server-date-display" class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">--/--/----</span>
+                        </div>
+                    </div>
+
+                    <button id="theme-toggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        <span id="theme-toggle-dark-icon" class="hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                            </svg>
+                        </span>
+                        <span id="theme-toggle-light-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                            </svg>
+                        </span>
+                    </button>
+                </div>
             </header>
 
             <!-- Content -->
@@ -230,6 +243,51 @@
                 lightIcon.classList.remove('hidden');
             }
         });
+
+        // Lógica do Relógio do Servidor
+        (function() {
+            const timeDisplay = document.getElementById('server-time-display');
+            const dateDisplay = document.getElementById('server-date-display');
+            const clockContainer = document.getElementById('server-clock-container');
+            let serverOffset = 0;
+
+            async function syncTime() {
+                try {
+                    const start = Date.now();
+                    const response = await fetch('/api/public/server-time/');
+                    const data = await response.json();
+                    const serverTime = new Date(data.server_time);
+                    // Compensação simples de latência (metade da ida e volta)
+                    const latency = (Date.now() - start) / 2;
+                    serverOffset = serverTime.getTime() - Date.now() + latency;
+                    clockContainer.classList.remove('hidden');
+                } catch (e) {
+                    console.error('Erro ao sincronizar relógio:', e);
+                }
+            }
+
+            function updateClock() {
+                if (serverOffset === 0) return;
+                
+                const now = new Date(Date.now() + serverOffset);
+                
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = now.getFullYear();
+
+                timeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+                dateDisplay.textContent = `${day}/${month}/${year}`;
+            }
+
+            syncTime();
+            setInterval(updateClock, 1000);
+            // Ressincronizar a cada 10 minutos para garantir precisão
+            setInterval(syncTime, 600000);
+        })();
     </script>
 </body>
 </html>

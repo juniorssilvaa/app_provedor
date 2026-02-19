@@ -63,6 +63,7 @@ python manage.py migrate
 python manage.py runserver 0.0.0.0:8000
 ```
 Acesse o painel em: `http://localhost:8000/login/`
+produção: 'https://apis.niochat.com.br/api/'
 
 ### 2. Mobile (App)
 ```bash

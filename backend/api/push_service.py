@@ -111,7 +111,15 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
                     title=title,
                     body=message,
                 ),
-                data=formatted_data
+                data=formatted_data,
+                android=messaging.AndroidConfig(
+                    priority='high',
+                ),
+                apns=messaging.APNSConfig(
+                    payload=messaging.APNSPayload(
+                        aps=messaging.Aps(content_available=True)
+                    ),
+                ),
             )
             
             response = messaging.send_each_for_multicast(message_payload)

@@ -495,7 +495,49 @@ class GenieACSService:
             logger.error(f"Error fetching device info: {e}")
             return None
             
+    def get_lan_hosts(self, device_id):
+        """
+        Retorna a lista de dispositivos conectados na LAN (Hosts).
+        """
+        # Projection para buscar especificamente a tabela de Hosts
+        projection = "InternetGatewayDevice.LANDevice.1.Hosts.Host"
+        
+        query = {"_id": device_id}
+        encoded_query = urllib.parse.quote(json.dumps(query))
+        url = f"{self.nbi_url}/devices/?query={encoded_query}&projection={projection}"
+        
+        try:
+            response = requests.get(url, auth=self.auth, timeout=10)
+            if response.status_code != 200 or not response.json():
+                return []
+            
+            device = response.json()[0]
+            igd = device.get('InternetGatewayDevice', {})
+            lan_device = igd.get('LANDevice', {})
+            lan_1 = lan_device.get('1', {})
+            hosts_obj = lan_1.get('Hosts', {}).get('Host', {})
+            
+            connected_devices = []
+            if isinstance(hosts_obj, dict):
+                for _, host in hosts_obj.items():
+                    if not isinstance(host, dict): continue
+                    
+                    # Filtramos apenas os ativos (opcional, mas recomendado pelo usuário)
+                    # No GenieACS, campos booleanos costumam vir como {"_value": true, "_type": "xsd:boolean"}
+                    is_active = host.get('Active', {}).get('_value')
+                    
+                    connected_devices.append({
+                        'hostname': host.get('HostName', {}).get('_value') or "Dispositivo sem nome",
+                        'ip': host.get('IPAddress', {}).get('_value') or "0.0.0.0",
+                        'mac': host.get('MACAddress', {}).get('_value') or "00:00:00:00:00:00",
+                        'active': is_active if is_active is not None else True,
+                        'lease_time': host.get('LeaseTimeRemaining', {}).get('_value', 0)
+                    })
+            
+            # Ordenar por ativos primeiro
+            connected_devices.sort(key=lambda x: x['active'], reverse=True)
+            return connected_devices
+            
         except Exception as e:
-            self._set_last_error('exception', f"Error fetching device info: {e}")
-            logger.error(f"Error fetching device info: {e}")
-            return None
+            logger.error(f"Error fetching LAN hosts: {e}")
+            return []

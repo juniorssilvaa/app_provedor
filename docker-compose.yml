@@ -128,11 +128,8 @@ services:
         echo '⏰ Aguardando PostgreSQL...' &&
         until nc -z postgres 5432; do sleep 1; done &&
         echo '✅ PostgreSQL disponível!' &&
-        echo '⏰ Iniciando processador de notificações agendadas...' &&
-        while true; do
-          python manage.py process_scheduled_notifications
-          sleep 60
-        done
+        echo '⏰ Iniciando processador de notificações (loop 10s)...' &&
+        python manage.py process_notifications --loop
       "
 
 networks:

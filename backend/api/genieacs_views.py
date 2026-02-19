@@ -217,3 +217,60 @@ def wifi_config_api(request):
             msg = (service.last_error or {}).get('message') or 'Falha ao aplicar configurações no modem via GenieACS.'
             status_code = 502 if (service.last_error or {}).get('kind') in ['connection', 'cwmp_port'] else 500
             return Response({'erro': True, 'mensagem': msg}, status=status_code)
+
+@extend_schema(
+    summary="Listar Dispositivos Conectados na LAN (GenieACS)",
+    description="Busca a lista de dispositivos atualmente conectados ao modem via InternetGatewayDevice.LANDevice.1.Hosts.Host.",
+    parameters=[
+        OpenApiParameter(name='contrato', description='ID do Contrato do Cliente', required=True, type=str, location=OpenApiParameter.QUERY),
+    ],
+    responses={
+        200: inline_serializer(
+            name='LanHostsResponse',
+            fields={
+                'devices': serializers.ListField(child=serializers.DictField()),
+                'count': serializers.IntegerField(),
+                'status': serializers.CharField(),
+                'erro': serializers.BooleanField(),
+            }
+        ),
+        400: inline_serializer(name='Error400Hosts', fields={'erro': serializers.BooleanField(), 'mensagem': serializers.CharField()}),
+        404: inline_serializer(name='Error404Hosts', fields={'erro': serializers.BooleanField(), 'mensagem': serializers.CharField()}),
+    }
+)
+@csrf_exempt
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def lan_hosts_api(request):
+    contrato = request.GET.get('contrato')
+    
+    if not contrato:
+        return Response({'erro': True, 'mensagem': 'Contrato não informado.'}, status=400)
+
+    # 1. Buscar Usuário Localmente (SGP Mirror)
+    app_user = AppUser.objects.filter(customer_id=contrato).first()
+    if not app_user or not app_user.pppoe_login:
+        return Response({'erro': True, 'mensagem': 'Contrato não encontrado ou sem login PPPoE vinculado.'}, status=404)
+
+    service = GenieACSService()
+    
+    # 2. Buscar Dispositivo no GenieACS (Cache ou API)
+    device_id = app_user.genieacs_device_id
+    if not device_id:
+        device_id = service.find_device_by_pppoe(app_user.pppoe_login)
+        if device_id:
+            app_user.genieacs_device_id = device_id
+            app_user.save(update_fields=['genieacs_device_id'])
+    
+    if not device_id:
+        return Response({'erro': True, 'mensagem': f'Modem não encontrado para o login {app_user.pppoe_login}.'}, status=404)
+
+    # 3. Buscar Hosts
+    hosts = service.get_lan_hosts(device_id)
+    
+    return Response({
+        'devices': hosts,
+        'count': len(hosts),
+        'status': 'success',
+        'erro': False
+    })

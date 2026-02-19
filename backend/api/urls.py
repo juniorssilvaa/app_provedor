@@ -15,6 +15,7 @@ urlpatterns = [
     path('public/warnings/', views.get_in_app_warnings, name='get_in_app_warnings'),
     path('public/warnings/dismiss/', views.dismiss_in_app_warning, name='dismiss_in_app_warning'),
     path('public/plans/', views.get_plans, name='get_plans'),
+    path('public/server-time/', views.server_time, name='server_time'),
 
     path('providers/', views.providers_api, name='api_providers'),
     path('providers/<int:pk>/', views.provider_detail_api, name='api_provider_detail'),
@@ -22,8 +23,8 @@ urlpatterns = [
     path('users/<int:pk>/', views.user_detail_api, name='api_user_detail'),
 
     # Proxy SGP (Centraliza as requisições do App)
-    # Novo Endpoint Wi-Fi (GenieACS Direto)
     path('wifi/config/', genieacs_views.wifi_config_api, name='wifi_config_v1'),
+    path('wifi/hosts/', genieacs_views.lan_hosts_api, name='wifi_hosts'),
     
     path('sgp/<path:endpoint>', sgp_proxy.proxy_sgp_request, name='sgp_proxy'),
 

@@ -497,7 +497,7 @@ def register_app_user(request):
     """
     try:
         data = request.data
-        provider_token = data.get('provider_token')
+        provider_token = request.query_params.get('provider_token') or data.get('provider_token')
         cpf = data.get('cpf')
         name = data.get('name')
         email = data.get('email')
@@ -531,7 +531,9 @@ def register_app_user(request):
         }
         
         if pppoe_login:
-            user_defaults['pppoe_login'] = pppoe_login
+            # Limpa o login (remove espaços extras)
+            user_defaults['pppoe_login'] = str(pppoe_login).strip()
+            print(f"DEBUG: Login PPPoE recebido via request para {cpf_limpo}: {user_defaults['pppoe_login']}")
         elif provider.sgp_url and provider.sgp_token:
             # Tenta buscar no SGP se não veio no request
             try:
@@ -546,23 +548,33 @@ def register_app_user(request):
                 resp = requests.post(url, json=payload, timeout=5)
                 if resp.status_code == 200:
                     data_sgp = resp.json()
-                    # Tenta extrair login de várias formas comuns
-                    found_login = data_sgp.get('login') or data_sgp.get('pppoe_login')
                     
-                    if not found_login and 'contratos' in data_sgp:
+                    logins_encontrados = []
+                    
+                    # 1. Tenta extrair login do nível superior
+                    root_login = data_sgp.get('login') or data_sgp.get('pppoe_login') or data_sgp.get('servico_login')
+                    if root_login:
+                        logins_encontrados.append(str(root_login).strip())
+                    
+                    # 2. Busca em todos os contratos do cliente
+                    if 'contratos' in data_sgp:
                         contratos = data_sgp['contratos']
-                        if isinstance(contratos, list) and len(contratos) > 0:
-                            # Prioriza o contrato ativo ou o primeiro
+                        if isinstance(contratos, list):
                             for c in contratos:
-                                if c.get('login'):
-                                    found_login = c.get('login')
-                                    break
+                                # Tenta várias chaves comuns
+                                c_login = c.get('login') or c.get('pppoe_login') or c.get('servico_login')
+                                if c_login:
+                                    c_login_str = str(c_login).strip()
+                                    if c_login_str not in logins_encontrados:
+                                        logins_encontrados.append(c_login_str)
                     
-                    if found_login:
-                        user_defaults['pppoe_login'] = found_login
-                        print(f"DEBUG: Login recuperado do SGP para {cpf_limpo}: {found_login}")
+                    if logins_encontrados:
+                        # Une múltiplos logins com vírgula (limitado a 100 caracteres do campo)
+                        login_final = ", ".join(logins_encontrados)[:100]
+                        user_defaults['pppoe_login'] = login_final
+                        print(f"DEBUG: Logins recuperados do SGP para {cpf_limpo}: {login_final}")
             except Exception as e:
-                print(f"ERRO: Falha ao buscar login no SGP: {e}")
+                print(f"ERRO: Falha ao buscar login no SGP para {cpf_limpo}: {e}")
 
         user, created = AppUser.objects.update_or_create(
             provider=provider,
@@ -654,10 +666,31 @@ def get_in_app_warnings(request):
         cpf = request.GET.get('cpf')
         contract_id = request.GET.get('contract_id')
         
+        # Obter dados do usuário para filtrar por data de criação
+        user = None
+        dismissed_ids = []
+        if cpf:
+            import re
+            cpf_limpo = re.sub(r'\D', '', str(cpf))
+            user = AppUser.objects.filter(provider=provider, cpf=cpf_limpo).first()
+            if user:
+                dismissed_ids = user.dismissed_warnings or []
+        
         warnings = InAppWarning.objects.filter(provider=provider, active=True).order_by('-sticky', '-created_at')
         
         filtered_warnings = []
         for w in warnings:
+            # Pular se o usuário já dispensou este aviso
+            if w.id in dismissed_ids:
+                continue
+            
+            # Filtro para usuários novos: não mostrar histórico antigo
+            # Exceto se for um aviso fixo (sticky), que serve para comunicados permanentes
+            if user and not w.sticky:
+                # Comparamos as datas (created_at da notificação vs created_at do usuário)
+                if w.created_at < user.created_at:
+                    continue
+
             # Check CPFs
             if w.target_cpfs:
                 target_cpfs = [c.strip() for c in w.target_cpfs.split(',')]
@@ -735,47 +768,57 @@ def dismiss_in_app_warning(request):
         if not warning:
             return Response({'error': 'Aviso não encontrado.'}, status=404)
 
-        # Se for um aviso direcionado (tem target_cpfs/contracts)
-        if warning.target_cpfs or warning.target_contracts:
-             current_cpf = request.data.get('cpf')
-             
-             # Caso 1: Apenas 1 alvo (ou nenhum alvo explícito sobrando), deleta direto
-             # Simplificação: Se tiver CPF fornecido, tenta remover da lista
-             if current_cpf:
-                 # Remove CPF da lista
-                 if warning.target_cpfs:
-                     cpfs = [c.strip() for c in warning.target_cpfs.split(',') if c.strip()]
-                     if current_cpf in cpfs:
-                         cpfs.remove(current_cpf)
-                         warning.target_cpfs = ','.join(cpfs)
-                         warning.save()
-                 
-                 # Se após remover (ou se não tinha CPF), não sobrar alvos, deleta
-                 remaining_cpfs = [c for c in (warning.target_cpfs or '').split(',') if c.strip()]
-                 remaining_contracts = [c for c in (warning.target_contracts or '').split(',') if c.strip()]
-                 
-                 if not remaining_cpfs and not remaining_contracts:
-                     warning.delete()
-                     return Response({'success': True, 'action': 'deleted', 'message': 'Aviso removido permanentemente.'})
-                 
-                 return Response({'success': True, 'action': 'updated', 'message': 'CPF removido da lista de alvos.'})
-             
-             # Se não enviou CPF (fallback), deleta se for o comportamento antigo (assumindo single user)
-             # Mas por segurança, só deleta se tiver poucos alvos?
-             # Para manter compatibilidade com o pedido "não lotar servidor", vamos forçar delete se o usuário pediu
-             # Mas cuidado com multi-usuários.
-             # Vamos assumir que se chegou aqui sem CPF, não podemos limpar parcialmente.
-             # Mas o mobile envia CPF.
-             
-             # Fallback: Se não conseguiu processar CPF, deleta apenas se tiver 1 alvo.
-             targets = (warning.target_cpfs or '').split(',') + (warning.target_contracts or '').split(',')
-             targets = [t for t in targets if t.strip()]
-             if len(targets) <= 1:
-                  warning.delete()
-                  return Response({'success': True, 'action': 'deleted', 'message': 'Aviso removido permanentemente.'})
+        # 1. Registrar a dispensa no perfil do usuário (persistência individual)
+        current_cpf = request.data.get('cpf')
+        if current_cpf:
+            import re
+            cpf_limpo = re.sub(r'\D', '', str(current_cpf))
+            user = AppUser.objects.filter(provider=provider, cpf=cpf_limpo).first()
+            if user:
+                if warning.id not in user.dismissed_warnings:
+                    user.dismissed_warnings.append(int(warning.id))
+                    user.save()
 
-        # Se for broadcast (sem targets) OU se ainda tem outros targets, não deleta o registro global
-        return Response({'success': True, 'action': 'ignored', 'message': 'Aviso mantido.'})
+        # 2. Lógica de limpeza do banco (opcional para notificações direcionadas)
+        # Se for um aviso direcionado (tem target_cpfs/contracts)
+        if (warning.target_cpfs or warning.target_contracts) and current_cpf:
+             cpf_limpo = re.sub(r'\D', '', str(current_cpf))
+             
+             # Remove CPF da lista de alvos para economizar espaço e processamento futuro
+             if warning.target_cpfs:
+                 cpfs = [c.strip() for c in warning.target_cpfs.split(',') if c.strip()]
+                 if cpf_limpo in cpfs:
+                     cpfs.remove(cpf_limpo)
+                     warning.target_cpfs = ','.join(cpfs)
+                     warning.save()
+             
+             # Se não houver mais alvos, podemos deletar o registro global
+             remaining_cpfs = [c for c in (warning.target_cpfs or '').split(',') if c.strip()]
+             remaining_contracts = [c for c in (warning.target_contracts or '').split(',') if c.strip()]
+             
+             if not remaining_cpfs and not remaining_contracts:
+                 warning.delete()
+                 return Response({'success': True, 'action': 'deleted', 'message': 'Aviso removido permanentemente.'})
+             
+             return Response({'success': True, 'action': 'updated', 'message': 'CPF removido da lista de alvos.'})
+
+        return Response({'success': True, 'action': 'dismissed', 'message': 'Aviso marcado como lido para este usuário.'})
 
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+@extend_schema(
+    tags=['Public'],
+    summary="Hora do servidor",
+    description="Retorna a data e hora atual do servidor para sincronização com o App."
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def server_time(request):
+    """
+    Retorna a hora atual do servidor para o App sincronizar o relógio.
+    """
+    now = timezone.localtime()
+    return Response({
+        "server_time": now.isoformat(),
+        "server_date": now.date().isoformat()
+    })
