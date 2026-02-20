@@ -46,123 +46,8 @@ class AppProvider with ChangeNotifier {
   int get unreadNotificationsCount => _notifications.where((n) => n['read'] != true).length;
   List<Map<String, dynamic>> get notifications => _notifications;
 
-  Future<void> fetchNotifications() async {
-    if (!_isLoggedIn || _providerToken == null) return;
-    
-    try {
-      String url = '${AppConfig.apiBaseUrl}public/warnings/?provider_token=$_providerToken';
-      if (_cpf != null) {
-        url += '&cpf=$_cpf';
-      }
-      
-      // Include contract_id if available
-      if (_userContract.isNotEmpty) {
-        final contractId = _userContract['id'] ?? _userContract['contract_id'];
-        if (contractId != null) {
-          url += '&contract_id=$contractId';
-        }
-      }
-      
-      final response = await http.get(Uri.parse(url));
-      
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        final Map<String, Map<String, dynamic>> existing = {
-          for (final n in _notifications) n['id'].toString(): Map<String, dynamic>.from(n)
-        };
-        final List<Map<String, dynamic>> merged = [];
-        for (final raw in data) {
-          if (raw is! Map) continue;
-          final idStr = raw['id'].toString();
-          final was = existing[idStr];
-          final isRead = (was?['read'] == true) || _readNotificationIds.contains(idStr);
-          final newItem = <String, dynamic>{
-            ...(was ?? const <String, dynamic>{}),
-            ...Map<String, dynamic>.from(raw),
-            'read': isRead,
-          };
-          merged.add(newItem);
-        }
-        for (final entry in existing.entries) {
-          if (!merged.any((m) => m['id'].toString() == entry.key)) {
-            merged.add(entry.value);
-          }
-        }
-        merged.sort((a, b) {
-          final aStr = a['created_at']?.toString();
-          final bStr = b['created_at']?.toString();
-          try {
-            final ad = DateTime.parse(aStr ?? '');
-            final bd = DateTime.parse(bStr ?? '');
-            return bd.compareTo(ad);
-          } catch (_) {
-            return 0;
-          }
-        });
-        _notifications = merged;
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Erro ao buscar notificações: $e');
-    }
-  }
 
-  void markNotificationAsRead(String id) {
-    final index = _notifications.indexWhere((n) => n['id'].toString() == id);
-    if (index != -1) {
-      _notifications[index]['read'] = true;
-      if (!_readNotificationIds.contains(id)) {
-        _readNotificationIds.add(id);
-        _saveReadNotifications();
-      }
-      notifyListeners();
-    }
-  }
-
-  Future<void> dismissNotification(String id) async {
-    // 1. Mark as read locally first (optimistic UI)
-    markNotificationAsRead(id);
-    
-    // 2. Call API to delete/dismiss on backend
-    if (_providerToken == null) return;
-
-    try {
-      final url = '${AppConfig.apiBaseUrl}public/warnings/dismiss/';
-      final body = {
-        'provider_token': _providerToken,
-        'warning_id': int.tryParse(id) ?? id,
-        'cpf': _cpf,
-      };
-
-      await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
-      
-      // Remove from local list if deleted (optional, but requested "some do app")
-      _notifications.removeWhere((n) => n['id'].toString() == id);
-      notifyListeners();
-      
-    } catch (e) {
-      debugPrint('Erro ao dispensar notificação: $e');
-    }
-  }
-  
-  Future<void> dismissReadNotifications() async {
-    final readIds = _notifications
-        .where((n) => n['read'] == true)
-        .map((n) => n['id'].toString())
-        .toList();
-    for (final id in readIds) {
-      await dismissNotification(id);
-    }
-  }
-  
-  Future<void> _saveReadNotifications() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('read_notifications', _readNotificationIds);
-  }
+  // --- SESSION MANAGEMENT ---
 
   // Getters
   ThemeMode get themeMode => _themeMode;
@@ -509,28 +394,31 @@ class AppProvider with ChangeNotifier {
     
     try {
       // 1. Buscar Notificações Reais (FCM / Banco local no endpoint do painel)
-      final notificationsResponse = await _sgpService?._apiGet('app/notifications/', {});
+      final notificationsResponse = await _sgpService?.apiGet('app/notifications/', {});
       
       // 2. Buscar Avisos In-App (Persistentes do Backend)
-      final warningsResponse = await _sgpService?._apiGet('app/warnings/', {});
+      final warningsResponse = await _sgpService?.apiGet('app/warnings/', {});
 
-      List<dynamic> allFetched = [];
+      List<Map<String, dynamic>> allFetched = [];
       
       if (notificationsResponse is List) {
-        allFetched.addAll(notificationsResponse);
+        allFetched.addAll(List<Map<String, dynamic>>.from(notificationsResponse));
       }
       
       if (warningsResponse is List) {
         // Mapear warnings para o formato de notificação
-        final mappedWarnings = warningsResponse.map((w) => {
-          'id': 'warning_${w['id']}',
-          'backend_warning_id': w['id'], // Para exclusão sincronizada
-          'title': w['title'],
-          'body': w['message'],
-          'type': w['type'] ?? 'info',
-          'sticky': w['sticky'] ?? false,
-          'created_at': w['created_at'],
-          'is_warning': true,
+        final mappedWarnings = warningsResponse.map((w) {
+          final map = Map<String, dynamic>.from(w);
+          return {
+            'id': 'warning_${map['id']}',
+            'backend_warning_id': map['id'], // Para exclusão sincronizada
+            'title': map['title'],
+            'body': map['message'],
+            'type': map['type'] ?? 'info',
+            'sticky': map['sticky'] ?? false,
+            'created_at': map['created_at'],
+            'is_warning': true,
+          };
         }).toList();
         allFetched.addAll(mappedWarnings);
       }
@@ -544,6 +432,7 @@ class AppProvider with ChangeNotifier {
         return {
           ...n,
           'isRead': _readNotificationIds.contains(id),
+          'read': _readNotificationIds.contains(id), // Compatibilidade com getters antigos se houver
         };
       }).toList();
 
@@ -570,6 +459,7 @@ class AppProvider with ChangeNotifier {
     _notifications.insert(0, {
       ...notification,
       'isRead': false,
+      'read': false,
       'created_at': notification['created_at'] ?? DateTime.now().toIso8601String(),
     });
     notifyListeners();
@@ -586,7 +476,7 @@ class AppProvider with ChangeNotifier {
       // 2. Se for um Warning do Backend, informar o backend para persistência
       if (notif['is_warning'] == true && notif['backend_warning_id'] != null) {
         debugPrint('Provider: Informando backend da remoção do aviso ${notif['backend_warning_id']}');
-        await _sgpService?._apiPost('app/warnings/dismiss/', {
+        await _sgpService?.apiPost('app/warnings/dismiss/', {
           'warning_id': notif['backend_warning_id'],
           'cpf': _cpf,
         });
@@ -596,7 +486,9 @@ class AppProvider with ChangeNotifier {
       _notifications.removeAt(index);
       
       // 4. Salvar na lista de ignorados local (fallback)
-      _readNotificationIds.add(id);
+      if (!_readNotificationIds.contains(id)) {
+        _readNotificationIds.add(id);
+      }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('read_notifications', _readNotificationIds);
       
@@ -606,17 +498,18 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  Future<void> markAsRead(String id) async {
+  Future<void> markNotificationAsRead(String id) async {
     if (!_readNotificationIds.contains(id)) {
       _readNotificationIds.add(id);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('read_notifications', _readNotificationIds);
-      
-      final index = _notifications.indexWhere((n) => n['id'].toString() == id);
-      if (index != -1) {
-        _notifications[index]['isRead'] = true;
-        notifyListeners();
-      }
+    }
+    
+    final index = _notifications.indexWhere((n) => n['id'].toString() == id);
+    if (index != -1) {
+      _notifications[index]['isRead'] = true;
+      _notifications[index]['read'] = true;
+      notifyListeners();
     }
   }
 

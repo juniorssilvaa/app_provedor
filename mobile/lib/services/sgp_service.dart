@@ -71,7 +71,7 @@ class SGPService {
   }
 
   // --- INTERNAL API METHODS (Direct Backend Access) ---
-  Future<dynamic> _apiGet(String endpoint, Map<String, String> params) async {
+  Future<dynamic> apiGet(String endpoint, Map<String, String> params) async {
     final token = providerToken;
     final fullParams = Map<String, String>.from(params);
     fullParams['provider_token'] = token;
@@ -93,7 +93,7 @@ class SGPService {
     }
   }
 
-  Future<dynamic> _apiPost(String endpoint, Map<String, dynamic> data) async {
+  Future<dynamic> apiPost(String endpoint, Map<String, dynamic> data) async {
     final token = providerToken;
     final payload = Map<String, dynamic>.from(data);
     payload['provider_token'] = token;
@@ -118,7 +118,7 @@ class SGPService {
   /// Busca a hora oficial do servidor (Brasília)
   Future<DateTime?> getServerTime() async {
     try {
-      final data = await _apiGet('public/server-time/', {});
+      final data = await apiGet('public/server-time/', {});
       if (data != null && data['server_time'] != null) {
         return DateTime.parse(data['server_time']);
       }
@@ -247,7 +247,7 @@ class SGPService {
       if (ssid5g != null && ssid5g.isNotEmpty) payload['novo_ssid_5ghz'] = ssid5g;
       if (password5g != null && password5g.isNotEmpty) payload['nova_senha_5ghz'] = password5g;
 
-      await _apiPost('wifi/config/', payload);
+      await apiPost('wifi/config/', payload);
       return true;
     } catch (e) {
       debugPrint('Erro ao alterar wifi: $e');
@@ -258,7 +258,7 @@ class SGPService {
   Future<Map<String, dynamic>?> getModemInfo(String contractId) async {
     try {
       debugPrint('SGPService: Fetching modem info for contract: $contractId');
-      final data = await _apiGet('wifi/config/', {'contrato': contractId});
+      final data = await apiGet('wifi/config/', {'contrato': contractId});
       debugPrint('SGPService: Modem info response: $data');
       return data;
     } catch (e) {
@@ -270,7 +270,7 @@ class SGPService {
   Future<Map<String, dynamic>?> getConnectedDevices(String contractId) async {
     try {
       debugPrint('SGPService: Fetching connected devices for contract: $contractId');
-      final data = await _apiGet('wifi/hosts/', {'contrato': contractId});
+      final data = await apiGet('wifi/hosts/', {'contrato': contractId});
       debugPrint('SGPService: Connected devices response: $data');
       return data;
     } catch (e) {
