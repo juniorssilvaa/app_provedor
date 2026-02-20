@@ -4,10 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:nanet_app/config.dart';
 
 class SGPService {
-  final String apiBaseUrl;
   final String providerToken;
 
-  SGPService({required this.apiBaseUrl, required this.providerToken});
+  SGPService({required this.providerToken});
 
   Future<dynamic> _proxyGet(String endpoint, Map<String, String> params) async {
     final token = providerToken;
@@ -18,7 +17,7 @@ class SGPService {
 
     // Constrói a query string
     final queryString = Uri(queryParameters: fullParams).query;
-    final url = Uri.parse('${apiBaseUrl}sgp/$endpoint?$queryString');
+    final url = AppConfig.apiUrl('sgp/$endpoint?$queryString');
 
     try {
       debugPrint('SGPService: GET $url');
@@ -42,7 +41,7 @@ class SGPService {
     final token = providerToken;
     
     // Adiciona token na query string também para garantir passagem em proxies agressivos
-    final url = Uri.parse('${apiBaseUrl}sgp/$endpoint?provider_token=$token');
+    final url = AppConfig.apiUrl('sgp/$endpoint?provider_token=$token');
     
     // Injeta o token na requisição para identificar o provedor no backend
     final payload = Map<String, dynamic>.from(data);
@@ -77,7 +76,7 @@ class SGPService {
     fullParams['provider_token'] = token;
 
     final queryString = Uri(queryParameters: fullParams).query;
-    final url = Uri.parse('${apiBaseUrl}$endpoint?$queryString');
+    final url = AppConfig.apiUrl(endpoint + (queryString.isNotEmpty ? '?$queryString' : ''));
 
     try {
       debugPrint('SGPService: API GET $url');
@@ -98,7 +97,7 @@ class SGPService {
     final payload = Map<String, dynamic>.from(data);
     payload['provider_token'] = token;
 
-    final url = Uri.parse('${apiBaseUrl}$endpoint?provider_token=$token');
+    final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint?provider_token=$token');
     try {
       debugPrint('SGPService: API POST $url');
       final response = await http.post(url, 
@@ -118,7 +117,7 @@ class SGPService {
   /// Busca a hora oficial do servidor (Brasília)
   Future<DateTime?> getServerTime() async {
     try {
-      final data = await apiGet('public/server-time/', {});
+      final data = await apiGet('api/public/server-time/', {});
       if (data != null && data['server_time'] != null) {
         return DateTime.parse(data['server_time']);
       }

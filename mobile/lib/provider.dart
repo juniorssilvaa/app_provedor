@@ -12,9 +12,6 @@ import 'services/telemetry_service.dart';
 import 'services/push_service.dart';
 
 class AppProvider with ChangeNotifier {
-  // Config
-  // static const String apiBaseUrl = 'http://127.0.0.1:8000/api/'; // Moved to config.dart
-
   // Theme
   ThemeMode _themeMode = ThemeMode.dark;
 
@@ -46,9 +43,6 @@ class AppProvider with ChangeNotifier {
   int get unreadNotificationsCount => _notifications.where((n) => n['read'] != true).length;
   List<Map<String, dynamic>> get notifications => _notifications;
 
-
-  // --- SESSION MANAGEMENT ---
-
   // Getters
   ThemeMode get themeMode => _themeMode;
   bool get isLoggedIn => _isLoggedIn;
@@ -67,9 +61,7 @@ class AppProvider with ChangeNotifier {
   List<String> get activeTools => _activeTools;
   bool get appConfigLoaded => _appConfigLoaded;
 
-  AppProvider() {
-    // Initialization moved to initialize() method
-  }
+  AppProvider();
 
   // Inicializar Push Service
   bool _pushListening = false;
@@ -79,7 +71,6 @@ class AppProvider with ChangeNotifier {
     
     if (!_pushListening) {
       _pushService.messageStream.listen((message) {
-        // Evita duplicatas se o ID já existir
         if (!_notifications.any((n) => n['id'] == message['id'])) {
            _notifications.insert(0, message);
            notifyListeners();
@@ -88,17 +79,14 @@ class AppProvider with ChangeNotifier {
       _pushListening = true;
     }
     
-    // Se estiver logado, garante que o token esteja atualizado no backend
     if (_isLoggedIn && _cpf != null) {
-      debugPrint('Provider: Sincronizando token Push após inicialização...');
       String? customerId = _userInfo['id']?.toString() ?? _userInfo['id_cliente']?.toString();
       if (customerId == null && _userContract.isNotEmpty) {
         customerId = _userContract['id']?.toString() ?? _userContract['contract_id']?.toString();
       }
       final prefs = await SharedPreferences.getInstance();
       final tokenNow = _pushService.token ?? '';
-      // Versão da assinatura para forçar re-registro quando mudamos o payload
-      final sig = '${_cpf ?? ''}|$tokenNow|v2';
+      final sig = '${_cpf ?? ''}|$tokenNow|v3';
       final lastSig = prefs.getString('last_push_reg_sig');
       if (lastSig != sig) {
         await _pushService.registerDevice(cpf: _cpf, contractId: customerId);
@@ -107,30 +95,26 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  // Carregar configurações salvas
   Future<void> initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
       _cpf = prefs.getString('cpf');
       _token = prefs.getString('token');
-      // Always use the token from AppConfig to ensure it's up to date
       _providerToken = AppConfig.apiToken; 
       _userName = prefs.getString('userName');
       _centralPassword = prefs.getString('centralPassword');
       
-      // Initialize services with the config token
       _initServices(_providerToken!);
 
-      // Carregar configurações do app (atalhos)
       final cachedShortcuts = prefs.getString('activeShortcuts');
       final cachedTools = prefs.getString('activeTools');
-      
       _readNotificationIds = prefs.getStringList('read_notifications') ?? [];
 
       if (_isLoggedIn) {
         await fetchNotifications();
       }
+      
       if (cachedShortcuts != null) {
         try {
           _activeShortcuts = List<String>.from(jsonDecode(cachedShortcuts));
@@ -143,9 +127,9 @@ class AppProvider with ChangeNotifier {
           _appConfigLoaded = true;
         } catch (_) {}
       }
+      
       await fetchAppConfig();
-      fetchNotifications();
-
+      
       if (prefs.containsKey('userContract')) {
         final contractJson = prefs.getString('userContract');
         if (contractJson != null) {
@@ -168,15 +152,8 @@ class AppProvider with ChangeNotifier {
         }
       }
 
-      // LIMPEZA DE SEGURANÇA: Se carregou como "logado" mas os dados são MOCK ou inválidos, forçar logout
-      if (_isLoggedIn) {
-        final name = _userName ?? _userInfo['nome'] ?? '';
-        final contractId = _userContract['id']?.toString() ?? '';
-        if (name == 'NANET' || name == 'CLIENTE' || name == 'Cliente' || contractId == '1' || contractId == '') {
-           debugPrint('SEGURANÇA: Sessão inválida detectada no boot. Limpando...');
-           logout();
-        }
-      }
+      // As travas de segurança agressivas para ID "1" e nomes genéricos foram removidas
+      // para suportar contratos reais com esses valores.
 
       notifyListeners();
     } catch (e) {
@@ -185,51 +162,38 @@ class AppProvider with ChangeNotifier {
   }
 
   void _initServices(String provToken) {
-    _sgpService = SGPService(apiBaseUrl: AppConfig.apiBaseUrl, providerToken: provToken);
-    _aiService = AIService(apiBaseUrl: AppConfig.apiBaseUrl, providerToken: provToken);
+    _sgpService = SGPService(providerToken: provToken);
+    _aiService = AIService(providerToken: provToken);
   }
 
   Future<void> fetchAppConfig() async {
     try {
       final tokenToUse = _providerToken ?? AppConfig.apiToken;
-      final url = Uri.parse('${AppConfig.apiBaseUrl}public/config/?provider_token=$tokenToUse');
+      final url = AppConfig.apiUrl('public/config/?provider_token=$tokenToUse');
       final response = await http.get(url).timeout(const Duration(seconds: 3));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
         if (data['active_shortcuts'] != null) {
           _activeShortcuts = List<String>.from(data['active_shortcuts']);
         }
-        
         if (data['active_tools'] != null) {
           if (data['active_tools'] is Map) {
             final toolsMap = data['active_tools'] as Map;
-            _activeTools = toolsMap.entries
-                .where((e) => e.value == true)
-                .map((e) => e.key.toString())
-                .toList();
+            _activeTools = toolsMap.entries.where((e) => e.value == true).map((e) => e.key.toString()).toList();
           } else if (data['active_tools'] is List) {
             _activeTools = List<String>.from(data['active_tools']);
           }
         }
-
         _appConfigLoaded = true;
-
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('activeShortcuts', jsonEncode(_activeShortcuts));
         await prefs.setString('activeTools', jsonEncode(_activeTools));
-        
         notifyListeners();
-      } else {
-        debugPrint('Erro ao buscar config do app: ${response.statusCode}');
       }
-    } catch (e) {
-      debugPrint('Erro ao buscar config do app: $e');
-    }
+    } catch (_) {}
   }
 
-  // Login
   Future<void> login({
     required String cpf,
     required String token,
@@ -240,7 +204,6 @@ class AppProvider with ChangeNotifier {
     Map<String, dynamic>? info,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('cpf', cpf);
     await prefs.setString('token', token);
@@ -248,12 +211,8 @@ class AppProvider with ChangeNotifier {
     if (userName != null) await prefs.setString('userName', userName);
     if (centralPassword != null) await prefs.setString('centralPassword', centralPassword);
     
-    if (contract != null) {
-      await prefs.setString('userContract', jsonEncode(contract));
-    }
-    if (info != null) {
-      await prefs.setString('userInfo', jsonEncode(info));
-    }
+    if (contract != null) await prefs.setString('userContract', jsonEncode(contract));
+    if (info != null) await prefs.setString('userInfo', jsonEncode(info));
 
     _isLoggedIn = true;
     _cpf = cpf;
@@ -265,23 +224,18 @@ class AppProvider with ChangeNotifier {
     _userInfo = info ?? {};
     
     _initServices(providerToken);
-
     await fetchAppConfig();
     await fetchNotifications();
     
-    // Registrar usuário no backend para garantir nome correto na IA
     try {
-      // Tenta extrair o ID do cliente (prioridade: info > contract)
       String? customerId = info?['id']?.toString() ?? info?['id_cliente']?.toString();
       if (customerId == null && contract != null) {
         customerId = contract['id']?.toString() ?? contract['contract_id']?.toString();
       }
 
-      // Coletar informações do dispositivo
       String model = 'Unknown';
       String manufacturer = 'Unknown';
       String osVersion = 'Unknown';
-      
       final deviceInfo = DeviceInfoPlugin();
       
       if (Platform.isAndroid) {
@@ -296,7 +250,6 @@ class AppProvider with ChangeNotifier {
         osVersion = 'iOS ${iosInfo.systemVersion}';
       }
 
-      // Coletar TODOS os logins disponíveis para o painel
       String? allLogins;
       try {
         final List<String> logins = [];
@@ -309,58 +262,48 @@ class AppProvider with ChangeNotifier {
             }
           }
         }
-        // Fallback para o login do contrato atual se a lista estiver vazia
         if (logins.isEmpty) {
           final l = contract?['servico_login'] ?? contract?['login'] ?? contract?['pppoe_login'];
           if (l != null) logins.add(l.toString().trim());
         }
         if (logins.isNotEmpty) allLogins = logins.join(', ');
-      } catch (e) {
-        debugPrint('Erro ao coletar logins no login: $e');
-      }
-      // NÃO REGISTRAR no backend se não houver ID do cliente ou se o nome for o default genérico
-      if (customerId == null || customerId == '1' || userName == 'Cliente Desconhecido' || userName == 'Cliente' || userName == 'CLIENTE') {
-        debugPrint('Usuário ignorado no registro backend (dados insuficientes ou padrão): $userName / $customerId');
-        return;
-      }
+      } catch (_) {}
 
-      final url = Uri.parse('${AppConfig.apiBaseUrl}app/register/');
-      http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'provider_token': providerToken,
-          'cpf': cpf,
-          'name': userName,
-          'email': info?['email'],
-          'customer_id': customerId,
-          'device_platform': Platform.isAndroid ? 'android' : 'ios',
-          'push_token': _pushService.token,
-          'pppoe_login': allLogins,
-          'model': model,
-          'manufacturer': manufacturer,
-          'os_version': osVersion,
-        }),
-      ).then((_) => debugPrint('Usuário registrado no backend com logins: $allLogins')).catchError((e) => debugPrint('Erro registro backend: $e'));
-      
-      // Registrar dispositivo para Push Notifications
-      final prefs = await SharedPreferences.getInstance();
-      final tokenNow = _pushService.token ?? '';
-      final sig = '${cpf}|$tokenNow';
-      final lastSig = prefs.getString('last_push_reg_sig');
-      if (lastSig != sig) {
-        await _pushService.registerDevice(cpf: cpf, contractId: customerId);
-        await prefs.setString('last_push_reg_sig', sig);
+      if (customerId != null) {
+        final url = AppConfig.apiUrl('app/register/');
+        http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'provider_token': providerToken,
+            'cpf': cpf,
+            'name': userName,
+            'email': info?['email'],
+            'customer_id': customerId,
+            'device_platform': Platform.isAndroid ? 'android' : 'ios',
+            'push_token': _pushService.token,
+            'pppoe_login': allLogins,
+            'model': model,
+            'manufacturer': manufacturer,
+            'os_version': osVersion,
+          }),
+        ).then((_) => debugPrint('Usuário registrado no backend')).catchError((_) {});
+        
+        final tokenNow = _pushService.token ?? '';
+        final sig = '${cpf}|$tokenNow';
+        final lastSig = prefs.getString('last_push_reg_sig');
+        if (lastSig != sig) {
+          await _pushService.registerDevice(cpf: cpf, contractId: customerId);
+          await prefs.setString('last_push_reg_sig', sig);
+        }
       }
       
-    } catch (e) {
-      debugPrint('Erro ao tentar registrar usuário: $e');
-    }
+      await refreshData();
+    } catch (_) {}
 
     notifyListeners();
   }
 
-  // Logout
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('isLoggedIn');
@@ -387,31 +330,19 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- NOTIFICATION SYSTEM (FCM + IN-APP WARNINGS) ---
-
   Future<void> fetchNotifications() async {
     if (!_isLoggedIn || _cpf == null) return;
-    
     try {
-      // 1. Buscar Notificações Reais (FCM / Banco local no endpoint do painel)
       final notificationsResponse = await _sgpService?.apiGet('api/app/notifications/', {});
-      
-      // 2. Buscar Avisos In-App (Persistentes do Backend)
       final warningsResponse = await _sgpService?.apiGet('api/app/warnings/', {});
-
       List<Map<String, dynamic>> allFetched = [];
-      
-      if (notificationsResponse is List) {
-        allFetched.addAll(List<Map<String, dynamic>>.from(notificationsResponse));
-      }
-      
+      if (notificationsResponse is List) allFetched.addAll(List<Map<String, dynamic>>.from(notificationsResponse));
       if (warningsResponse is List) {
-        // Mapear warnings para o formato de notificação
         final mappedWarnings = warningsResponse.map((w) {
           final map = Map<String, dynamic>.from(w);
           return {
             'id': 'warning_${map['id']}',
-            'backend_warning_id': map['id'], // Para exclusão sincronizada
+            'backend_warning_id': map['id'],
             'title': map['title'],
             'body': map['message'],
             'type': map['type'] ?? 'info',
@@ -422,80 +353,29 @@ class AppProvider with ChangeNotifier {
         }).toList();
         allFetched.addAll(mappedWarnings);
       }
-
-      // Filtrar notificações excluídas (vistas apenas localmente se não for warning)
-      // Nota: Warnings são filtrados no backend se o CPF for removido da lista,
-      // mas mantemos o suporte a read_notifications para persistência local do estado de leitura.
-      
       _notifications = allFetched.map((n) {
         final id = n['id'].toString();
-        return {
-          ...n,
-          'isRead': _readNotificationIds.contains(id),
-          'read': _readNotificationIds.contains(id), // Compatibilidade com getters antigos se houver
-        };
+        return {...n, 'isRead': _readNotificationIds.contains(id), 'read': _readNotificationIds.contains(id)};
       }).toList();
-
-      // Ordenar por data (mais recentes primeiro)
-      _notifications.sort((a, b) {
-        final dateAStr = a['created_at']?.toString() ?? '';
-        final dateBStr = b['created_at']?.toString() ?? '';
-        return dateBStr.compareTo(dateAStr);
-      });
-
+      _notifications.sort((a, b) => (b['created_at']?.toString() ?? '').compareTo(a['created_at']?.toString() ?? ''));
       notifyListeners();
-    } catch (e) {
-      debugPrint('Erro ao buscar notificações: $e');
-    }
-  }
-
-  void addNotification(Map<String, dynamic> notification) {
-    // Adiciona uma notificação recebida em tempo real
-    final id = notification['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
-    
-    // Evita duplicatas
-    if (_notifications.any((n) => n['id'].toString() == id)) return;
-
-    _notifications.insert(0, {
-      ...notification,
-      'isRead': false,
-      'read': false,
-      'created_at': notification['created_at'] ?? DateTime.now().toIso8601String(),
-    });
-    notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> dismissNotification(String id) async {
     try {
-      // 1. Achar a notificação
       final index = _notifications.indexWhere((n) => n['id'].toString() == id);
       if (index == -1) return;
-      
       final notif = _notifications[index];
-      
-      // 2. Se for um Warning do Backend, informar o backend para persistência
       if (notif['is_warning'] == true && notif['backend_warning_id'] != null) {
-        debugPrint('Provider: Informando backend da remoção do aviso ${notif['backend_warning_id']}');
-        await _sgpService?.apiPost('app/warnings/dismiss/', {
-          'warning_id': notif['backend_warning_id'],
-          'cpf': _cpf,
-        });
+        await _sgpService?.apiPost('api/app/warnings/dismiss/', {'warning_id': notif['backend_warning_id'], 'cpf': _cpf});
       }
-
-      // 3. Remover localmente
       _notifications.removeAt(index);
-      
-      // 4. Salvar na lista de ignorados local (fallback)
-      if (!_readNotificationIds.contains(id)) {
-        _readNotificationIds.add(id);
-      }
+      if (!_readNotificationIds.contains(id)) _readNotificationIds.add(id);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('read_notifications', _readNotificationIds);
-      
       notifyListeners();
-    } catch (e) {
-      debugPrint('Erro ao excluir notificação: $e');
-    }
+    } catch (_) {}
   }
 
   Future<void> dismissReadNotifications() async {
@@ -511,7 +391,6 @@ class AppProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('read_notifications', _readNotificationIds);
     }
-    
     final index = _notifications.indexWhere((n) => n['id'].toString() == id);
     if (index != -1) {
       _notifications[index]['isRead'] = true;
@@ -520,23 +399,17 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  // Atualizar informações do usuário
   Future<void> updateUserInfo(Map<String, dynamic> info) async {
     _userInfo = {..._userInfo, ...info};
-    
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('userInfo', jsonEncode(_userInfo));
-    
     notifyListeners();
   }
 
-  // Atualizar contrato
   Future<void> updateContract(Map<String, dynamic> contract) async {
     _userContract = contract;
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('userContract', jsonEncode(contract));
-
     notifyListeners();
   }
 
@@ -547,465 +420,98 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Atualizar dados completos (Recarregar do servidor)
+  Future<Map<String, dynamic>> unlockContract(String contractId) async {
+    if (_sgpService == null) return {'status': 0, 'msg': 'Serviço indisponível'};
+    return await _sgpService!.unlockContract(contractId);
+  }
+
   Future<void> refreshData() async {
-    // Sempre recarrega a configuração do app ao atualizar
     await fetchAppConfig();
     fetchNotifications();
-
     if (_cpf == null || _sgpService == null) return;
-
     try {
-      // 1. Buscar dados do cliente no SGP
-      Map<String, dynamic>? clientData;
       Map<String, dynamic>? clientFullData = await _sgpService!.getClientByCpf(_cpf!);
-      
-      // Tentar obter lista completa de contratos via /central/contratos se tiver senha
       List contratos = [];
       if (_centralPassword != null && _centralPassword!.isNotEmpty) {
-          try {
-             debugPrint('REFRESH: Tentando buscar contratos via /central/contratos com senha...');
-             contratos = await _sgpService!.getContratos(_cpf!, _centralPassword!);
-             debugPrint('REFRESH: Sucesso! ${contratos.length} contratos encontrados via /central/contratos');
-          } catch (e) {
-             debugPrint('REFRESH: Erro ao buscar contratos via /central/contratos: $e');
-          }
+          try { contratos = await _sgpService!.getContratos(_cpf!, _centralPassword!); } catch (_) {}
       }
-
-      // Se não conseguiu via /central/contratos, usa o do getClientByCpf
-      if (contratos.isEmpty && clientFullData != null && clientFullData.containsKey('contratos')) {
+      if (contratos.isEmpty && clientFullData != null && clientFullData['contratos'] != null) {
            contratos = clientFullData['contratos'];
-           debugPrint('REFRESH: Usando lista de contratos do getClientByCpf (${contratos.length})');
       }
 
       if (contratos.isNotEmpty) {
-           debugPrint('REFRESH: RAW Contratos: $contratos');
-           // 1. Mapear TODOS os contratos
            final List<Map<String, dynamic>> allMappedContracts = [];
-           
            for (var c in contratos) {
-               // Tentar enriquecer com dados do clientFullData se os campos de endereço estiverem vazios
-               bool hasNoAddress = (c['endereco_logradouro'] == null || c['endereco_logradouro'].toString().trim().isEmpty) && 
-                                   (c['logradouro'] == null || c['logradouro'].toString().trim().isEmpty);
-
+               bool hasNoAddress = (c['endereco_logradouro'] == null || c['endereco_logradouro'].toString().trim().isEmpty) && (c['logradouro'] == null || c['logradouro'].toString().trim().isEmpty);
                if (clientFullData != null && hasNoAddress) {
-                   // Tenta achar esse contrato no clientFullData['contratos']
                    var match;
                    final String cId = (c['contrato'] ?? c['id'] ?? c['contratoId'])?.toString() ?? '';
                    if (clientFullData['contratos'] is List && cId.isNotEmpty) {
                        try {
-                           match = (clientFullData['contratos'] as List).firstWhere((element) => 
-                               (element['contrato']?.toString() == cId) || 
-                               (element['id']?.toString() == cId) ||
-                               (element['contratoId']?.toString() == cId), orElse: () => null);
+                           match = (clientFullData['contratos'] as List).firstWhere((element) => (element['contrato']?.toString() == cId) || (element['id']?.toString() == cId), orElse: () => null);
                        } catch (_) {}
                    }
-                   
                    if (match != null) {
-                        debugPrint('REFRESH: Match encontrado para contrato $cId no clientFullData');
-                        // Mescla dados do match no contrato atual (priorizando o atual)
                         c = <String, dynamic>{...match, ...c};
-                        
-                        // Garante que o endereço foi atualizado no objeto c
                         c['logradouro'] = c['logradouro'] ?? match['logradouro'] ?? match['endereco_logradouro'];
                         c['numero'] = c['numero'] ?? match['numero'] ?? match['endereco_numero'];
                         c['bairro'] = c['bairro'] ?? match['bairro'] ?? match['endereco_bairro'];
                     } else {
-                        debugPrint('REFRESH: Nenhum match específico para contrato $cId, usando endereço global');
-                        // Se não achou match específico, usa o endereço principal do cliente como fallback
-                        c['logradouro'] = c['logradouro'] ?? clientFullData['logradouro'] ?? clientFullData['endereco_logradouro'];
-                        c['numero'] = c['numero'] ?? clientFullData['numero'] ?? clientFullData['endereco_numero'];
-                        c['bairro'] = c['bairro'] ?? clientFullData['bairro'] ?? clientFullData['endereco_bairro'];
+                        c['logradouro'] = c['logradouro'] ?? clientFullData['logradouro'];
+                        c['numero'] = c['numero'] ?? clientFullData['numero'];
+                        c['bairro'] = c['bairro'] ?? clientFullData['bairro'];
                     }
                }
-
-               // Suporte a endereços aninhados (endereco_instalacao / endereco_cobranca)
-                if (c['endereco_instalacao'] is Map) {
-                   final ei = c['endereco_instalacao'] as Map;
-                   if (c['logradouro'] == null || c['logradouro'].toString().isEmpty) c['logradouro'] = ei['logradouro'];
-                   if (c['numero'] == null || c['numero'].toString().isEmpty) c['numero'] = ei['numero'];
-                   if (c['bairro'] == null || c['bairro'].toString().isEmpty) c['bairro'] = ei['bairro'];
-                } else if (c['endereco_cobranca'] is Map) {
-                   final ec = c['endereco_cobranca'] as Map;
-                   if (c['logradouro'] == null || c['logradouro'].toString().isEmpty) c['logradouro'] = ec['logradouro'];
-                   if (c['numero'] == null || c['numero'].toString().isEmpty) c['numero'] = ec['numero'];
-                   if (c['bairro'] == null || c['bairro'].toString().isEmpty) c['bairro'] = ec['bairro'];
-                }
-
-               // Construção robusta do endereço
-               String logradouro = (c['endereco_logradouro'] ?? c['logradouro'] ?? c['rua'] ?? c['endereco'] ?? c['end'] ?? c['endereco_res'] ?? c['logradouro_res'] ?? c['rua_res'] ?? '').toString().trim();
-               String numero = (c['endereco_numero'] ?? c['numero'] ?? c['n'] ?? c['numero_res'] ?? c['num'] ?? 'S/N').toString().trim();
-               String bairro = (c['endereco_bairro'] ?? c['bairro'] ?? c['bairro_res'] ?? '').toString().trim();
-               
-               // Se logradouro ainda estiver vazio e tivermos clientFullData, tentar global novamente
-               if (logradouro.isEmpty && clientFullData != null) {
-                  logradouro = (clientFullData['endereco_logradouro'] ?? clientFullData['logradouro'] ?? '').toString().trim();
-                  numero = (clientFullData['endereco_numero'] ?? clientFullData['numero'] ?? 'S/N').toString().trim();
-                  bairro = (clientFullData['endereco_bairro'] ?? clientFullData['bairro'] ?? '').toString().trim();
-               }
-
-               String enderecoCompleto = '';
-               
-               if (logradouro.isNotEmpty) {
-                 enderecoCompleto = logradouro;
-                 if (numero.isNotEmpty && numero != '0') {
-                   enderecoCompleto += ', $numero';
-                 }
-               }
-               
-               if (bairro.isNotEmpty) {
-                 if (enderecoCompleto.isNotEmpty) {
-                   enderecoCompleto += ' - $bairro';
-                 } else {
-                   enderecoCompleto = bairro;
-                 }
-               }
-               
-               // Fallback se tudo falhar
-               if (enderecoCompleto.isEmpty || enderecoCompleto.trim() == ',') {
-                 enderecoCompleto = 'Endereço não cadastrado';
-               }
-               
-               debugPrint('REFRESH: Endereço processado para contrato ${c['contratoId'] ?? c['contrato']}: $enderecoCompleto (Raw: Log=$logradouro, Num=$numero, Bai=$bairro)');
-               
-               String dataCadastro = c['dataCadastro'] ?? c['data_cadastro'] ?? '24/10/2024';
-               if (dataCadastro.contains(' ')) {
-                 dataCadastro = dataCadastro.split(' ')[0];
-               }
+               String logradouro = (c['endereco_logradouro'] ?? c['logradouro'] ?? '').toString().trim();
+               String numero = (c['endereco_numero'] ?? c['numero'] ?? 'S/N').toString().trim();
+               String bairro = (c['endereco_bairro'] ?? c['bairro'] ?? '').toString().trim();
+               String enderecoCompleto = logradouro.isNotEmpty ? '$logradouro, $numero - $bairro' : 'Endereço não cadastrado';
 
                allMappedContracts.add({
                  'id': c['contratoId']?.toString() ?? c['contrato']?.toString() ?? '1',
                  'status': c['contratoStatusDisplay'] ?? c['status'] ?? 'ATIVO',
                  'plan_name': c['planointernet'] ?? 'PLANO INTERNET',
-                 'contract_due_day': c['cobVencimento']?.toString() ?? c['vencimento']?.toString() ?? '30',
-                 'registration_date': dataCadastro,
+                 'contract_due_day': c['cobVencimento']?.toString() ?? '30',
+                 'registration_date': c['data_cadastro'] ?? '24/10/2024',
                  'address': enderecoCompleto,
-                 'expiry_date': '29/05/2025', 
-                 'last_invoice_value': '0,00', 
-                 'last_invoice_due': '--/--/----',
-                  'last_invoice_status': 'pending',
-                  'login': c['login'],
-                  'pppoe_login': c['pppoe_login'],
-                  'servico_login': c['servico_login'],
+                 'login': c['login'],
                });
            }
+           final currentId = (_userContract['id'] ?? _userContract['contrato'])?.toString().trim();
+           _userContract = allMappedContracts.firstWhere((c) => c['id'].toString().trim() == currentId, orElse: () => allMappedContracts.first);
+           
+           final sTime = await _sgpService!.getServerTime();
+           if (sTime != null) AppConfig.setServerTime(sTime);
+           final invoices = await _sgpService!.getInvoices(_cpf!);
+           if (invoices.isNotEmpty) {
+              // Filtrar faturas específicas para este contrato
+              final List<Map<String, dynamic>> contractInvoices = invoices.where((inv) {
+                final invContractId = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'])?.toString().trim();
+                return invContractId == currentId && inv['status']?.toString().toLowerCase() == 'aberto';
+              }).map((e) => Map<String, dynamic>.from(e)).toList();
 
-           // Tentar obter dados do primeiro contrato para clientData (nome, senha)
-           Map<String, dynamic> firstContractData = contratos.first;
-           String razaoSocial = firstContractData['razaoSocial'] ?? firstContractData['razaosocial'] ?? 'Cliente';
-           if (clientFullData != null && clientFullData.containsKey('contratos') && (clientFullData['contratos'] as List).isNotEmpty) {
-              razaoSocial = clientFullData['contratos'][0]['razaoSocial'] ?? razaoSocial;
-           }
-
-           // Atualizar senha se vier na resposta
-           String? newPassword;
-           if (clientFullData != null) {
-              newPassword = clientFullData['contratoCentralSenha'] ?? 
-                            clientFullData['senha_central'] ?? 
-                            clientFullData['senha'] ?? 
-                            clientFullData['central_senha'] ?? 
-                            clientFullData['password'];
-              if (newPassword == null && clientFullData['contratos'] != null && (clientFullData['contratos'] as List).isNotEmpty) {
-                  newPassword = clientFullData['contratos'][0]['contratoCentralSenha'] ?? clientFullData['contratos'][0]['senha'];
+              final Map<String, dynamic>? priority = contractInvoices.firstOrNull;
+              if (priority != null) {
+                  final dueStr = priority['dataVencimento'] ?? priority['data_vencimento'];
+                  if (dueStr != null) {
+                     final due = DateTime.parse(dueStr);
+                     final today = AppConfig.getToday();
+                     bool isOverdue = due.isBefore(DateTime(today.year, today.month, today.day));
+                     
+                     double valor = double.tryParse(priority['valor']?.toString() ?? '0') ?? 0;
+                     double valorCorrigido = double.tryParse(priority['valorCorrigido']?.toString() ?? priority['valor_corrigido']?.toString() ?? priority['valor']?.toString() ?? '0') ?? valor;
+                     
+                     debugPrint('REFRESH: Fatura encontrada para contrato $currentId: Vencimento=$dueStr, Valor=$valor, Corrigido=$valorCorrigido, Atrasada=$isOverdue');
+                     _userContract['last_invoice_value'] = valor.toStringAsFixed(2).replaceFirst('.', ',');
+                     _userContract['last_invoice_corrected_value'] = valorCorrigido.toStringAsFixed(2).replaceFirst('.', ',');
+                     _userContract['last_invoice_interest'] = (valorCorrigido - valor).toStringAsFixed(2).replaceFirst('.', ',');
+                     _userContract['last_invoice_due'] = dueStr.split('-').reversed.join('/');
+                     _userContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
+                  }
               }
            }
-           
-           if (newPassword != null) {
-               _centralPassword = newPassword;
-               final prefs = await SharedPreferences.getInstance();
-               await prefs.setString('centralPassword', newPassword);
-           }
-
-           clientData = {
-             'nome': razaoSocial,
-             'contratos': allMappedContracts
-           };
-
-           // Preservar contrato selecionado atualmente
-           Map<String, dynamic> selectedContract;
-           
-           // DEBUG: Ver chaves do contrato atual
-           debugPrint('REFRESH: _userContract keys: ${_userContract.keys.toList()}');
-           debugPrint('REFRESH: _userContract values: $_userContract');
-
-           final currentId = (_userContract['id'] ?? _userContract['contrato'] ?? _userContract['contratoId'] ?? _userContract['contrato_id'])?.toString().trim();
-           
-           debugPrint('REFRESH: ID atual antes da busca: $currentId');
-           debugPrint('REFRESH: IDs disponíveis: ${allMappedContracts.map((c) => c['id']).toList()}');
-
-           try {
-             if (currentId != null) {
-                selectedContract = allMappedContracts.firstWhere(
-                  (c) => c['id'].toString().trim() == currentId,
-                  orElse: () => allMappedContracts.first
-                );
-
-                // Preservar endereço do estado anterior se o novo estiver vazio
-                if ((selectedContract['address'] == 'Endereço não cadastrado' || selectedContract['address'] == '') && 
-                    _userContract['id'].toString() == selectedContract['id'].toString() &&
-                    _userContract['address'] != null && 
-                    _userContract['address'] != 'Endereço não cadastrado') {
-                    
-                     selectedContract['address'] = _userContract['address'];
-                     debugPrint('REFRESH: Endereço preservado do estado anterior: ${selectedContract['address']}');
-                }
-             } else {
-                selectedContract = allMappedContracts.first;
-             }
-             debugPrint('REFRESH: Contrato mantido/selecionado: ${selectedContract['id']}');
-           } catch (_) {
-             debugPrint('REFRESH: Contrato não encontrado, revertendo para o primeiro.');
-             selectedContract = allMappedContracts.first;
-           }
-
-             // Buscar dados reais da fatura para complementar
-             try {
-               // Sincronizar hora com o servidor
-               final sTime = await _sgpService!.getServerTime();
-               if (sTime != null) AppConfig.setServerTime(sTime);
-
-               final invoices = await _sgpService!.getInvoices(_cpf!);
-               debugPrint('REFRESH: Faturas encontradas: ${invoices.length}');
-               debugPrint('REFRESH: RAW Invoices: $invoices');
-               
-               if (invoices.isNotEmpty) {
-                 final List<Map<String, dynamic>> sortedInvoices = [];
-                 
-                 for (var inv in invoices) {
-                   if (inv is Map<String, dynamic>) {
-                     final status = inv['status']?.toString().toLowerCase().trim();
-                     // Aceita tudo que não for explicitamente pago/baixado/cancelado
-                     if (status == 'pago' || status == 'baixado' || status == 'cancelado') continue;
-                     
-                     final invContratoId = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'] ?? inv['id_contrato'] ?? inv['numero_contrato'] ?? inv['contrato_id_display'])?.toString();
-                     debugPrint('REFRESH: Processando fatura ${inv['id'] ?? 'S/ID'} (Contrato: $invContratoId) - Status: $status');
-
-                     String? rawDate = inv['dataVencimento'] ?? inv['data_vencimento'];
-                     if (rawDate != null) {
-                        try {
-                          final dateParts = rawDate.split('-');
-                          DateTime dt;
-                          if (dateParts.length == 3) {
-                            dt = DateTime(
-                              int.parse(dateParts[0]), 
-                              int.parse(dateParts[1]), 
-                              int.parse(dateParts[2])
-                            );
-                          } else {
-                            dt = DateTime.parse(rawDate);
-                          }
-                          inv['parsedDate'] = dt;
-                          sortedInvoices.add(inv);
-                        } catch (e) { }
-                     }
-                   }
-                 }
-
-                 sortedInvoices.sort((a, b) {
-                   final dA = a['parsedDate'] as DateTime;
-                   final dB = b['parsedDate'] as DateTime;
-                   return dA.compareTo(dB);
-                 });
-                 
-                 // Tentar encontrar fatura para o contrato selecionado
-                 Map<String, dynamic>? priorityInvoice;
-                 try {
-                   final selId = selectedContract['id'].toString();
-                   
-                   // Log da primeira fatura para debug se necessário
-                   if (sortedInvoices.isNotEmpty) {
-                     debugPrint('REFRESH: Chaves da primeira fatura: ${sortedInvoices.first.keys.toList()}');
-                     debugPrint('REFRESH: Valores da primeira fatura: ${sortedInvoices.first}');
-                   }
-
-                   priorityInvoice = sortedInvoices.firstWhere(
-                     (inv) {
-                       final invContrato = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'] ?? inv['id_contrato'] ?? inv['numero_contrato'] ?? inv['contrato_id_display'])?.toString();
-                       
-                       debugPrint('REFRESH: Comparando fatura (Contrato: $invContrato) com selecionado ($selId)');
-
-                       // Match exato
-                       if (invContrato != null && invContrato.toString().trim() == selId.trim()) return true;
-                       
-                       return false;
-                     },
-                     orElse: () => <String, dynamic>{},
-                   );
-                   
-                   if (priorityInvoice.isEmpty) priorityInvoice = null;
-                   
-                   debugPrint('REFRESH: Fatura prioritária encontrada para contrato $selId: ${priorityInvoice != null}');
-                 } catch (_) {
-                   // Se só tem um contrato e achou faturas, assume que são dele
-                   if (allMappedContracts.length == 1 && sortedInvoices.isNotEmpty) {
-                     priorityInvoice = sortedInvoices.first;
-                     debugPrint('REFRESH: Usando primeira fatura disponível (contrato único)');
-                   }
-                 }
-                 
-                  if (priorityInvoice != null) {
-                      if (priorityInvoice['valor'] != null) {
-                        double val = double.tryParse(priorityInvoice['valor'].toString()) ?? 0.0;
-                        selectedContract['last_invoice_value'] = val.toStringAsFixed(2).replaceAll('.', ',');
-                        
-                        // Mapeia valor corrigido e juros
-                        double valCorrigido = double.tryParse(priorityInvoice['valorCorrigido']?.toString() ?? '') ?? val;
-                        selectedContract['last_invoice_corrected_value'] = valCorrigido.toStringAsFixed(2).replaceAll('.', ',');
-                        
-                        double juros = valCorrigido - val;
-                        selectedContract['last_invoice_interest'] = juros > 0 ? juros.toStringAsFixed(2).replaceAll('.', ',') : null;
-                      }
-                     
-                     String? rawDate = priorityInvoice['dataVencimento'] ?? priorityInvoice['data_vencimento'];
-                     if (rawDate != null) {
-                       try {
-                           // Parsing manual para evitar que o DateTime.parse trate como UTC e mude o dia
-                           final dateParts = rawDate.split('-');
-                           DateTime dueDate;
-                           if (dateParts.length == 3) {
-                             dueDate = DateTime(
-                               int.parse(dateParts[0]), 
-                               int.parse(dateParts[1]), 
-                               int.parse(dateParts[2])
-                             );
-                           } else {
-                             dueDate = DateTime.parse(rawDate);
-                           }
-                          String dayStr = dueDate.day.toString().padLeft(2, '0');
-                          String monthStr = dueDate.month.toString().padLeft(2, '0');
-                          String yearStr = dueDate.year.toString();
-                          
-                          selectedContract['last_invoice_due'] = '$dayStr/$monthStr/$yearStr';
-                          selectedContract['expiry_date'] = selectedContract['last_invoice_due'];
-
-                           final now = AppConfig.getToday();
-                           final today = DateTime(now.year, now.month, now.day);
-                           final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
-                           
-                           debugPrint('REFRESH: Calculando status - Due: $due, Today: $today');
-                           
-                           // Prioriza o cálculo feito pelo SERVIDOR no proxy
-                           bool serverSaysLate = priorityInvoice['esta_atrasada'] ?? false;
-                           
-                           if (serverSaysLate) {
-                              selectedContract['invoice_status_code'] = 'overdue';
-                           } else if (due.year == today.year && due.month == today.month && due.day == today.day) {
-                              // Se o servidor não mandou, mas é hoje, garantimos Aberto
-                              selectedContract['invoice_status_code'] = 'open';
-                           } else if (due.isBefore(today)) {
-                              selectedContract['invoice_status_code'] = 'overdue';
-                           } else {
-                              selectedContract['invoice_status_code'] = 'open';
-                           }
-                           debugPrint('REFRESH: Status final definido: ${selectedContract['invoice_status_code']} (Server info: $serverSaysLate)');
-                       } catch (_) {
-                         selectedContract['last_invoice_due'] = rawDate;
-                         selectedContract['invoice_status_code'] = 'open';
-                       }
-                     }
-
-                     if (priorityInvoice['codigoPix'] != null) {
-                       selectedContract['pix_code'] = priorityInvoice['codigoPix'];
-                     }
-                     if (priorityInvoice['linhaDigitavel'] != null) {
-                       selectedContract['barcode'] = priorityInvoice['linhaDigitavel'];
-                     }
-                 } else {
-                    selectedContract['invoice_status_code'] = 'paid';
-                    selectedContract['last_invoice_value'] = '0,00';
-                    selectedContract['last_invoice_due'] = '--/--/----';
-                 }
-               } else {
-                  // Sem faturas retornadas (vazio) -> Tudo pago
-                  selectedContract['invoice_status_code'] = 'paid';
-                  selectedContract['last_invoice_value'] = '0,00';
-                  selectedContract['last_invoice_due'] = '--/--/----';
-               }
-             } catch (e) {
-               debugPrint('Erro ao complementar dados da fatura no refresh: $e');
-             }
-             
-             // Atualizar contrato do usuário com a seleção preservada
-             _userContract = selectedContract;
-      } // Fim do if (allMappedContracts.isNotEmpty)
-      
-      notifyListeners();
-      
-      // Registrar/Sincronizar no backend (Garante que o login apareça no painel)
-      try {
-        final List<String> logins = [];
-        
-        // Coleta de todos os contratos brutos
-        if (clientFullData != null && clientFullData.containsKey('contratos')) {
-          final rawContratos = clientFullData['contratos'] as List;
-          for (var rc in rawContratos) {
-            final l = rc['servico_login'] ?? rc['login'] ?? rc['pppoe_login'];
-            if (l != null && l.toString().trim().isNotEmpty) {
-              final s = l.toString().trim();
-              if (!logins.contains(s)) logins.add(s);
-            }
-          }
-        }
-        
-        // Fallback se não achou nada nos brutos (tenta no contrato selecionado)
-        if (logins.isEmpty) {
-           final l = _userContract['servico_login'] ?? _userContract['login'] ?? _userContract['pppoe_login'];
-           if (l != null) logins.add(l.toString().trim());
-        }
-
-        if (logins.isNotEmpty) {
-          final String allLogins = logins.join(', ');
-          final devicePlatform = Platform.isAndroid ? 'android' : 'ios';
-          debugPrint('REFRESH: Sincronizando registro no backend com logins: $allLogins');
-          
-          final regUrl = Uri.parse('${AppConfig.apiBaseUrl}app/register/');
-          http.post(
-            regUrl,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'provider_token': _providerToken,
-              'cpf': _cpf,
-              'pppoe_login': allLogins,
-              'customer_id': _userContract['id']?.toString(),
-              'device_platform': devicePlatform,
-              'push_token': _pushService.token,
-            }),
-          ).catchError((e) => debugPrint('Erro na sincronização de registro: $e'));
-        }
-      } catch (e) {
-        debugPrint('Erro ao extrair logins para sincronização: $e');
+           notifyListeners();
       }
-
-      if (clientData != null) {
-        // Atualizar estado
-        _userInfo = clientData;
-        // _userContract já foi atualizado acima
-        
-        // Persistir
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userInfo', jsonEncode(_userInfo));
-        await prefs.setString('userContract', jsonEncode(_userContract));
-      }
-    } catch (e) {
-      debugPrint('Erro no refreshData: $e');
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> unlockContract(String contractId) async {
-    if (_sgpService == null) return {'status': 0, 'msg': 'Serviço não inicializado'};
-    try {
-      final result = await _sgpService!.unlockContract(contractId, message: 'Solicitação de Desbloqueio via App');
-      // Se sucesso, atualizar dados para refletir novo status
-      if (result['status'] == 1 || result['liberado'] == true) {
-         // Pequeno delay para propagação
-         await Future.delayed(const Duration(seconds: 1));
-         await refreshData();
-      }
-      return result;
-    } catch (e) {
-      debugPrint('Erro ao desbloquear contrato: $e');
-      return {'status': 0, 'msg': 'Erro: $e'};
-    }
+    } catch (_) {}
   }
 }

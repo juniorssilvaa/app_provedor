@@ -40,3 +40,10 @@ backend/db.sqlite3
 # Explicitly allow google-services.json for flavors
 !mobile/android/app/src/nanet/google-services.json
 !mobile/android/app/src/jocanet/google-services.json
+
+# Explicitly allow Gradle wrapper for CI
+!mobile/android/gradlew
+!mobile/android/gradlew.bat
+!mobile/android/gradle/
+!mobile/android/gradle/wrapper/
+!mobile/android/gradle/wrapper/**

@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:nanet_app/config.dart';
 
 class AIService {
-  final String apiBaseUrl;
   final String providerToken;
 
-  AIService({required this.apiBaseUrl, required this.providerToken});
+  AIService({required this.providerToken});
 
   Future<Map<String, dynamic>> sendMessage({
     required String message,
@@ -14,11 +14,10 @@ class AIService {
     String? name,
     Map<String, dynamic>? telemetry,
   }) async {
+    final url = AppConfig.apiUrl('ai/chat/');
     final response = await http.post(
-      Uri.parse('${apiBaseUrl}ai/chat/'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      url,
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'provider_token': providerToken,
         'cpf': cpf,
@@ -32,10 +31,7 @@ class AIService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      return {
-        'error': 'Erro na comunicação com a IA',
-        'status': response.statusCode,
-      };
+      return {'error': 'Erro na comunicação com a IA', 'status': response.statusCode};
     }
   }
 }

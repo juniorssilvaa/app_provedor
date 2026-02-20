@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "454735615208",
+    "project_id": "app-provedor-6e059",
+    "storage_bucket": "app-provedor-6e059.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454735615208:android:c1e9f3807e1579277b255d",
+        "android_client_info": {
+          "package_name": "com.jocanet.app.niochat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDug6ebHwdPFsWRC3uTHyOsXt6352P7fzQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454735615208:android:131f1dbf71d27db17b255d",
+        "android_client_info": {
+          "package_name": "com.nanettelecom.app.niochat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDug6ebHwdPFsWRC3uTHyOsXt6352P7fzQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -52,8 +52,6 @@ app.*.map.json
 # Android
 /android/.gradle
 /android/captures/
-/android/gradlew
-/android/gradlew.bat
 /android/local.properties
 /android/*.iml
 /android/.idea
@@ -61,7 +59,6 @@ app.*.map.json
 /android/app/*.iml
 /android/app/build/
 /android/build/
-/android/gradle/
 
 # iOS
 /ios/.generated/

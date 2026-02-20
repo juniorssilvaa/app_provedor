@@ -99,6 +99,11 @@ jobs:
       - name: Install dependencies and Clean build
         working-directory: ./mobile
         run: |
+          # Verificar se o google-services.json existe para o flavor nanet
+          if [ ! -f "android/app/src/nanet/google-services.json" ]; then
+            echo "::error::google-services.json missing in android/app/src/nanet/"
+            exit 1
+          fi
           flutter clean
           flutter pub get
 

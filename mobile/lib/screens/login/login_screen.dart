@@ -114,7 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // Inicializar serviço SGP para consulta
       final sgpService = SGPService(
-        apiBaseUrl: AppConfig.apiBaseUrl,
         providerToken: AppConfig.apiToken,
       );
 
@@ -469,11 +468,15 @@ class _LoginScreenState extends State<LoginScreen> {
                  }
                }
 
-               if (priorityInvoice != null) {
-                 if (priorityInvoice['valor'] != null) {
-                   double val = double.tryParse(priorityInvoice['valor'].toString()) ?? 0.0;
-                   selectedContract['last_invoice_value'] = val.toStringAsFixed(2).replaceAll('.', ',');
-                 }
+                if (priorityInvoice != null) {
+                  if (priorityInvoice['valor'] != null) {
+                    double val = double.tryParse(priorityInvoice['valor'].toString()) ?? 0.0;
+                    double valCorr = double.tryParse((priorityInvoice['valorCorrigido'] ?? priorityInvoice['valor_corrigido'] ?? priorityInvoice['valor']).toString()) ?? val;
+                    
+                    selectedContract['last_invoice_value'] = val.toStringAsFixed(2).replaceAll('.', ',');
+                    selectedContract['last_invoice_corrected_value'] = valCorr.toStringAsFixed(2).replaceAll('.', ',');
+                    selectedContract['last_invoice_interest'] = (valCorr - val).toStringAsFixed(2).replaceAll('.', ',');
+                  }
                  
                  String? rawDate = priorityInvoice['dataVencimento'] ?? priorityInvoice['data_vencimento'];
                   if (rawDate != null) {
@@ -609,7 +612,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // VALIDAÇÃO FINAL: Impede login se não tiver um ID de contrato válido
       // Relaxado: Permite '1' como ID se for o único contrato (comum em alguns SGPs)
       final String contractId = contract['id']?.toString() ?? '';
-      if (contractId.isEmpty || contractId == 'N/A' || (contractId == '1' && clientData['contratos'] != null && (clientData['contratos'] as List).length > 1 && _savedCpf == null)) {
+      if (contractId.isEmpty || contractId == 'N/A') {
          debugPrint('LOGIN: Falha na validação do contrato: ID=$contractId');
          throw Exception('Não foi possível identificar um contrato válido vinculado a este CPF.');
       }

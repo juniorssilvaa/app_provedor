@@ -16,9 +16,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 class PushService {
-  final String _apiBaseUrl = AppConfig.apiBaseUrl;
-  final String _apiToken = AppConfig.apiToken;
-
   late final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   
@@ -255,15 +252,10 @@ class PushService {
       final device = await _collectDeviceInfo();
       final permissions = await _collectPermissions();
 
-      // Ajuste na URL para garantir que está correta
-      String baseUrl = _apiBaseUrl;
-      if (!baseUrl.endsWith('/')) {
-        baseUrl += '/';
-      }
-      final url = Uri.parse('${baseUrl}devices/register/');
+      final url = AppConfig.apiUrl('devices/register/');
       
       final body = {
-        'provider_token': _apiToken,
+        'provider_token': AppConfig.apiToken,
         'push_token': _token,
         'platform': Platform.isAndroid ? 'android' : 'ios',
         'cpf': cpf,
