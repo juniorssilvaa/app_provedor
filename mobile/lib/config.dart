@@ -32,13 +32,15 @@ class AppConfig {
   static const String supportPhone = '+558182337720';
 
   // URL da API
-  static const String _envApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+  // Para produção, a URL oficial da NIOCHAT é usada por padrão.
+  // Pode ser sobrescrita via --dart-define=API_BASE_URL=...
+  static const String _envApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://apis.niochat.com.br/api/');
   static String get apiBaseUrl {
     if (_runtimeApiBaseUrl != null && _runtimeApiBaseUrl!.isNotEmpty) {
       return _runtimeApiBaseUrl!;
     }
     // Para produção, usamos a URL oficial da NIOCHAT
-    final base = _envApiBaseUrl.isNotEmpty ? _envApiBaseUrl : 'https://apis.niochat.com.br/api/';
+    final base = _envApiBaseUrl; // Agora _envApiBaseUrl já contém a URL de produção como default
     return base.endsWith('/') ? base : '$base/';
   }
 
