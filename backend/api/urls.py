@@ -33,6 +33,10 @@ urlpatterns = [
     path('panel/integrations/sgp/generate/', views.generate_sgp_token, name='generate_sgp_token'),
     path('panel/integrations/sgp/webhook/', views.update_webhook_url, name='update_webhook_url'),
 
+    # Endpoints para o App (Compatibilidade)
+    path('app/warnings/', views.get_in_app_warnings, name='app_warnings'),
+    path('app/notifications/', views.get_plans, name='app_notifications_placeholder'), # Placeholder temporário que retorna JSON
+
     # Registro de Usuário do App (Legacy/Auth)
     path('app/register/', views.register_app_user, name='register_app_user'),
     

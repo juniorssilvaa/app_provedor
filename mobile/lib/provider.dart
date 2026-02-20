@@ -394,10 +394,10 @@ class AppProvider with ChangeNotifier {
     
     try {
       // 1. Buscar Notificações Reais (FCM / Banco local no endpoint do painel)
-      final notificationsResponse = await _sgpService?.apiGet('app/notifications/', {});
+      final notificationsResponse = await _sgpService?.apiGet('api/app/notifications/', {});
       
       // 2. Buscar Avisos In-App (Persistentes do Backend)
-      final warningsResponse = await _sgpService?.apiGet('app/warnings/', {});
+      final warningsResponse = await _sgpService?.apiGet('api/app/warnings/', {});
 
       List<Map<String, dynamic>> allFetched = [];
       
@@ -843,11 +843,18 @@ class AppProvider with ChangeNotifier {
                    }
                  }
                  
-                 if (priorityInvoice != null) {
-                     if (priorityInvoice['valor'] != null) {
-                       double val = double.tryParse(priorityInvoice['valor'].toString()) ?? 0.0;
-                       selectedContract['last_invoice_value'] = val.toStringAsFixed(2).replaceAll('.', ',');
-                     }
+                  if (priorityInvoice != null) {
+                      if (priorityInvoice['valor'] != null) {
+                        double val = double.tryParse(priorityInvoice['valor'].toString()) ?? 0.0;
+                        selectedContract['last_invoice_value'] = val.toStringAsFixed(2).replaceAll('.', ',');
+                        
+                        // Mapeia valor corrigido e juros
+                        double valCorrigido = double.tryParse(priorityInvoice['valorCorrigido']?.toString() ?? '') ?? val;
+                        selectedContract['last_invoice_corrected_value'] = valCorrigido.toStringAsFixed(2).replaceAll('.', ',');
+                        
+                        double juros = valCorrigido - val;
+                        selectedContract['last_invoice_interest'] = juros > 0 ? juros.toStringAsFixed(2).replaceAll('.', ',') : null;
+                      }
                      
                      String? rawDate = priorityInvoice['dataVencimento'] ?? priorityInvoice['data_vencimento'];
                      if (rawDate != null) {

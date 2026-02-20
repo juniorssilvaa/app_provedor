@@ -273,6 +273,19 @@ class _FaturaScreenState extends State<FaturaScreen> {
     String statusLabel = isPaid ? 'PAGO' : (isLate ? 'ATRASADO' : 'ABERTO');
     Color statusColor = isPaid ? Colors.green : (isLate ? Colors.red : Colors.orange);
 
+    // Valor Original e Corrigido
+    double valOriginal = double.tryParse(fatura['valor']?.toString() ?? '0') ?? 0.0;
+    double valCorrigido = double.tryParse(fatura['valorCorrigido']?.toString() ?? '') ?? valOriginal;
+    
+    final String valorExibido = (isLate && !isPaid) 
+        ? valCorrigido.toStringAsFixed(2).replaceAll('.', ',')
+        : valOriginal.toStringAsFixed(2).replaceAll('.', ',');
+    
+    final double jurosVal = valCorrigido - valOriginal;
+    final String? jurosLabel = (isLate && !isPaid && jurosVal > 0)
+        ? jurosVal.toStringAsFixed(2).replaceAll('.', ',')
+        : null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -302,6 +315,11 @@ class _FaturaScreenState extends State<FaturaScreen> {
                   ),
                 ),
               ),
+              if (jurosLabel != null)
+                Text(
+                  '+ R\$ $jurosLabel de juros',
+                  style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
               Text(
                 'Venc. $vencimento',
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
@@ -310,9 +328,17 @@ class _FaturaScreenState extends State<FaturaScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'R\$ $valor',
+            'R\$ $valorExibido',
             style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
           ),
+          if (jurosLabel != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                'Valor original: R\$ ${valOriginal.toStringAsFixed(2).replaceAll('.', ',')}',
+                style: const TextStyle(color: Colors.grey, fontSize: 12, decoration: TextDecoration.lineThrough),
+              ),
+            ),
           const SizedBox(height: 20),
           if (!isPaid)
             Column(

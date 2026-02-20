@@ -31,6 +31,8 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt_BR', null);
+
+  // Configurações Globais
   try {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool('api_base_url_use_override') ?? false;
@@ -38,14 +40,26 @@ void main() async {
     if (enabled && override.isNotEmpty) {
       AppConfig.setRuntimeApiBaseUrl(override);
     }
-  } catch (_) {}
+  } catch (e) {
+    debugPrint("Erro ao carregar SharedPreferences: $e");
+  }
+
+  // Inicialização do Firebase (Robusta para White-Label)
   try {
-    await Firebase.initializeApp().timeout(const Duration(seconds: 5));
+    debugPrint("Iniciando Firebase...");
+    await Firebase.initializeApp().timeout(const Duration(seconds: 8));
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  } catch (_) {}
+    debugPrint("Firebase inicializado com sucesso.");
+  } catch (e) {
+    debugPrint("⚠️ ALERTA: Erro ao inicializar Firebase: $e");
+    debugPrint("O app continuará sem recursos de Push.");
+  }
+
+  // Sincronização de Tempo e Logs de Identificação
   try {
     await AppConfig.syncTime();
   } catch (_) {}
+
   runApp(const MyApp());
 }
 

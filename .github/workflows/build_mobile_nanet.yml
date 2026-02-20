@@ -96,41 +96,41 @@ jobs:
             echo "Android signing variables detected."
           fi
 
-#      - name: Create google-services.json
-#        working-directory: ./mobile/android/app
-#        env:
-#          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
-#        run: |
-#          if [[ -n "$GOOGLE_SERVICES_JSON_BASE64" ]]; then
-#            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > google-services.json
-#            echo "google-services.json created from secret."
-#          else
-#            echo "Warning: GOOGLE_SERVICES_JSON_BASE64 secret not found. Build may fail if firebase is enabled."
-#          fi
-
-      - name: Install dependencies
+      - name: Install dependencies and Clean build
         working-directory: ./mobile
-        run: flutter pub get
+        run: |
+          flutter clean
+          flutter pub get
 
-      - name: Build APK
+      - name: Build APK (Flavor Nanet)
         working-directory: ./mobile
-        run: flutter build apk --release --dart-define=PROVIDER_API_TOKEN=$PROVIDER_API_TOKEN
+        run: |
+          if [ -z "$PROVIDER_API_TOKEN" ]; then
+            flutter build apk --flavor nanet --release
+          else
+            flutter build apk --flavor nanet --release --dart-define=PROVIDER_API_TOKEN=$PROVIDER_API_TOKEN
+          fi
 
-      - name: Build App Bundle
+      - name: Build App Bundle (Flavor Nanet)
         working-directory: ./mobile
-        run: flutter build appbundle --release --dart-define=PROVIDER_API_TOKEN=$PROVIDER_API_TOKEN
+        run: |
+          if [ -z "$PROVIDER_API_TOKEN" ]; then
+            flutter build appbundle --flavor nanet --release
+          else
+            flutter build appbundle --flavor nanet --release --dart-define=PROVIDER_API_TOKEN=$PROVIDER_API_TOKEN
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: nanet-android-apk
-          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          path: mobile/build/app/outputs/flutter-apk/app-nanet-release.apk
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: nanet-android-aab
-          path: mobile/build/app/outputs/bundle/release/app-release.aab
+          path: mobile/build/app/outputs/bundle/nanetRelease/app-nanet-release.aab
 
   build-ios:
     if: ${{ vars.ENABLE_IOS_BUILD == 'true' }}

@@ -564,7 +564,9 @@ class _HomeScreenState extends State<HomeScreen> {
       return _buildCongratsCard(cardBg, textColor, subTextColor);
     }
 
-    final invoiceAmount = contract['last_invoice_value'] ?? contract['last_invoice_amount'] ?? '0,00';
+    final invoiceAmount = contract['last_invoice_value'] ?? '0,00';
+    final invoiceCorrected = contract['last_invoice_corrected_value'] ?? invoiceAmount;
+    final interestAmount = contract['last_invoice_interest'];
     final invoiceDue = contract['last_invoice_due'] ?? contract['expiry_date'] ?? 'N/A';
     
     // Determina o status da fatura
@@ -583,20 +585,46 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(statusIcon, color: statusColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                statusText,
-                style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  Icon(statusIcon, color: statusColor, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    statusText,
+                    style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
+              if (isOverdue && interestAmount != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor!.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: statusColor!.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    '+ R\$ $interestAmount de juros',
+                    style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            'R\$ $invoiceAmount',
+            'R\$ ${isOverdue ? invoiceCorrected : invoiceAmount}',
             style: TextStyle(color: textColor, fontSize: 36, fontWeight: FontWeight.bold),
           ),
+          if (isOverdue && invoiceCorrected != invoiceAmount)
+             Padding(
+               padding: const EdgeInsets.only(bottom: 4),
+               child: Text(
+                 'Valor original: R\$ $invoiceAmount',
+                 style: const TextStyle(color: Colors.grey, fontSize: 12, decoration: TextDecoration.lineThrough),
+               ),
+             ),
           Text(
             'Vencimento $invoiceDue',
             style: TextStyle(color: isOverdue ? const Color(0xFFFF3333) : Colors.grey, fontSize: 14, fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal),

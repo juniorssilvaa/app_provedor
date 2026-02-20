@@ -217,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
              }
 
              allMappedContracts.add({
-               'id': c['contratoId']?.toString() ?? c['contrato']?.toString() ?? '1',
+               'id': c['id']?.toString() ?? c['contratoId']?.toString() ?? c['contrato']?.toString() ?? '1',
                'status': c['contratoStatusDisplay'] ?? c['status'] ?? 'ATIVO',
                'plan_name': c['planointernet'] ?? 'PLANO INTERNET',
                'contract_due_day': c['cobVencimento']?.toString() ?? c['vencimento']?.toString() ?? '30',
@@ -607,7 +607,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // VALIDAÇÃO FINAL: Impede login se não tiver um ID de contrato válido
-      if (contract['id'] == null || contract['id'].toString() == '1' || contract['id'].toString() == 'N/A') {
+      // Relaxado: Permite '1' como ID se for o único contrato (comum em alguns SGPs)
+      final String contractId = contract['id']?.toString() ?? '';
+      if (contractId.isEmpty || contractId == 'N/A' || (contractId == '1' && clientData['contratos'] != null && (clientData['contratos'] as List).length > 1 && _savedCpf == null)) {
+         debugPrint('LOGIN: Falha na validação do contrato: ID=$contractId');
          throw Exception('Não foi possível identificar um contrato válido vinculado a este CPF.');
       }
 

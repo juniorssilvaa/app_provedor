@@ -132,7 +132,9 @@ class SGPService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      debugPrint('Backend error: ${response.statusCode} - ${response.body}');
+      final isHtml = response.body.contains('<!DOCTYPE html>') || response.body.contains('<html');
+      final bodyToLog = isHtml ? '[HTML content hidden]' : response.body;
+      debugPrint('Backend error: ${response.statusCode} - $bodyToLog');
       throw Exception('Failed to load data: ${response.statusCode}');
     }
   }

@@ -83,99 +83,39 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryRed = Color(0xFFFF0000);
-    const Color scaffoldBg = Color(0xFF000000);
+    const Color scaffoldBg = Color(0xFF000000); // Fundo preto conforme referência
 
     return Scaffold(
       backgroundColor: scaffoldBg,
-      body: Stack(
-        children: [
-          /*
-          // Background subtle gradient removed as per user request
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.0,
-                  colors: [
-                    primaryRed.withOpacity(0.05),
-                    scaffoldBg,
-                  ],
-                ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Logo Centralizada
+            Image.asset(
+              'assets/logo.png',
+              width: 250, // Um pouco maior para destaque
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                  Icons.wifi_rounded,
+                  size: 100,
+                  color: Color(0xFFFF0000),
+                );
+              },
+            ),
+            const SizedBox(height: 48),
+            // Loading discreto
+            const SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF0000)),
               ),
             ),
-          ),
-          */
-          
-          Center(
-            child: SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo Section with animation-ready structure
-                  TweenAnimationBuilder<double>(
-                  key: const ValueKey('splash_logo_anim'),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: const Duration(seconds: 1),
-                  curve: Curves.easeOut,
-                  builder: (context, value, child) {
-                    final double safeOpacity = value.clamp(0.0, 1.0);
-                    return Transform.scale(
-                      scale: value,
-                      child: Opacity(
-                        opacity: safeOpacity,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: Image.asset(
-                    'assets/logo_home.png',
-                    width: 200,
-                    height: 200,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.network_check_rounded,
-                        size: 140,
-                        color: primaryRed,
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 80),
-                
-                // Loading Section
-                const SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(primaryRed),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ),
-          
-          // Version info at bottom
-          /*const Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text(
-                'versão 2.1.0',
-                style: TextStyle(
-                  color: Colors.white10,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),*/
-        ],
+          ],
+        ),
       ),
     );
   }
