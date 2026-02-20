@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:454735615208:android:0a39d1b89f99fb1c7b255d",
+        "mobilesdk_app_id": "1:454735615208:android:c1e9f3807e1579277b255d",
         "android_client_info": {
-          "package_name": "com.provedor.jocanet"
+          "package_name": "com.jocanet.app.niochat"
         }
       },
       "oauth_client": [],
@@ -26,9 +26,9 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:454735615208:android:3c66b6250714f43f7b255d",
+        "mobilesdk_app_id": "1:454735615208:android:131f1dbf71d27db17b255d",
         "android_client_info": {
-          "package_name": "com.provedor.nanettelecom"
+          "package_name": "com.nanettelecom.app.niochat"
         }
       },
       "oauth_client": [],
