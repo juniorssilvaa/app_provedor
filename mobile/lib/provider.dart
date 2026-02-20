@@ -498,6 +498,13 @@ class AppProvider with ChangeNotifier {
     }
   }
 
+  Future<void> dismissReadNotifications() async {
+    final toDismiss = _notifications.where((n) => n['isRead'] == true || n['read'] == true).toList();
+    for (var n in toDismiss) {
+      await dismissNotification(n['id'].toString());
+    }
+  }
+
   Future<void> markNotificationAsRead(String id) async {
     if (!_readNotificationIds.contains(id)) {
       _readNotificationIds.add(id);
