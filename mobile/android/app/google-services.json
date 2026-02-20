@@ -26,9 +26,9 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:454735615208:android:3c66b6250714f43f7b255d",
+        "mobilesdk_app_id": "1:454735615208:android:cac3233436f14c627b255d",
         "android_client_info": {
-          "package_name": "com.provedor.nanettelecom"
+          "package_name": "com.nanet.telecom"
         }
       },
       "oauth_client": [],

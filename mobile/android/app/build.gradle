@@ -32,7 +32,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.provedor.nanettelecom"
+    namespace "com.nanet.telecom"
     compileSdkVersion 36
     ndkVersion flutter.ndkVersion
 
@@ -51,7 +51,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.provedor.nanettelecom"
+        applicationId "com.nanet.telecom"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
