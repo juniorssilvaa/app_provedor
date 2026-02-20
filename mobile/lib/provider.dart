@@ -282,6 +282,17 @@ class AppProvider with ChangeNotifier {
           }
         }
       }
+
+      // LIMPEZA DE SEGURANÇA: Se carregou como "logado" mas os dados são MOCK ou inválidos, forçar logout
+      if (_isLoggedIn) {
+        final name = _userName ?? _userInfo['nome'] ?? '';
+        final contractId = _userContract['id']?.toString() ?? '';
+        if (name == 'NANET' || name == 'CLIENTE' || name == 'Cliente' || contractId == '1' || contractId == '') {
+           debugPrint('SEGURANÇA: Sessão inválida detectada no boot. Limpando...');
+           logout();
+        }
+      }
+
       notifyListeners();
     } catch (e) {
       debugPrint('Erro na inicialização do Provider: $e');
@@ -422,6 +433,12 @@ class AppProvider with ChangeNotifier {
       } catch (e) {
         debugPrint('Erro ao coletar logins no login: $e');
       }
+      // NÃO REGISTRAR no backend se não houver ID do cliente ou se o nome for o default genérico
+      if (customerId == null || customerId == '1' || userName == 'Cliente Desconhecido' || userName == 'Cliente' || userName == 'CLIENTE') {
+        debugPrint('Usuário ignorado no registro backend (dados insuficientes ou padrão): $userName / $customerId');
+        return;
+      }
+
       final url = Uri.parse('${AppConfig.apiBaseUrl}app/register/');
       http.post(
         url,
@@ -483,6 +500,124 @@ class AppProvider with ChangeNotifier {
     _aiService = null;
     
     notifyListeners();
+  }
+
+  // --- NOTIFICATION SYSTEM (FCM + IN-APP WARNINGS) ---
+
+  Future<void> fetchNotifications() async {
+    if (!_isLoggedIn || _cpf == null) return;
+    
+    try {
+      // 1. Buscar Notificações Reais (FCM / Banco local no endpoint do painel)
+      final notificationsResponse = await _sgpService?._apiGet('app/notifications/', {});
+      
+      // 2. Buscar Avisos In-App (Persistentes do Backend)
+      final warningsResponse = await _sgpService?._apiGet('app/warnings/', {});
+
+      List<dynamic> allFetched = [];
+      
+      if (notificationsResponse is List) {
+        allFetched.addAll(notificationsResponse);
+      }
+      
+      if (warningsResponse is List) {
+        // Mapear warnings para o formato de notificação
+        final mappedWarnings = warningsResponse.map((w) => {
+          'id': 'warning_${w['id']}',
+          'backend_warning_id': w['id'], // Para exclusão sincronizada
+          'title': w['title'],
+          'body': w['message'],
+          'type': w['type'] ?? 'info',
+          'sticky': w['sticky'] ?? false,
+          'created_at': w['created_at'],
+          'is_warning': true,
+        }).toList();
+        allFetched.addAll(mappedWarnings);
+      }
+
+      // Filtrar notificações excluídas (vistas apenas localmente se não for warning)
+      // Nota: Warnings são filtrados no backend se o CPF for removido da lista,
+      // mas mantemos o suporte a read_notifications para persistência local do estado de leitura.
+      
+      _notifications = allFetched.map((n) {
+        final id = n['id'].toString();
+        return {
+          ...n,
+          'isRead': _readNotificationIds.contains(id),
+        };
+      }).toList();
+
+      // Ordenar por data (mais recentes primeiro)
+      _notifications.sort((a, b) {
+        final dateAStr = a['created_at']?.toString() ?? '';
+        final dateBStr = b['created_at']?.toString() ?? '';
+        return dateBStr.compareTo(dateAStr);
+      });
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erro ao buscar notificações: $e');
+    }
+  }
+
+  void addNotification(Map<String, dynamic> notification) {
+    // Adiciona uma notificação recebida em tempo real
+    final id = notification['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
+    
+    // Evita duplicatas
+    if (_notifications.any((n) => n['id'].toString() == id)) return;
+
+    _notifications.insert(0, {
+      ...notification,
+      'isRead': false,
+      'created_at': notification['created_at'] ?? DateTime.now().toIso8601String(),
+    });
+    notifyListeners();
+  }
+
+  Future<void> dismissNotification(String id) async {
+    try {
+      // 1. Achar a notificação
+      final index = _notifications.indexWhere((n) => n['id'].toString() == id);
+      if (index == -1) return;
+      
+      final notif = _notifications[index];
+      
+      // 2. Se for um Warning do Backend, informar o backend para persistência
+      if (notif['is_warning'] == true && notif['backend_warning_id'] != null) {
+        debugPrint('Provider: Informando backend da remoção do aviso ${notif['backend_warning_id']}');
+        await _sgpService?._apiPost('app/warnings/dismiss/', {
+          'warning_id': notif['backend_warning_id'],
+          'cpf': _cpf,
+        });
+      }
+
+      // 3. Remover localmente
+      _notifications.removeAt(index);
+      
+      // 4. Salvar na lista de ignorados local (fallback)
+      _readNotificationIds.add(id);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('read_notifications', _readNotificationIds);
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erro ao excluir notificação: $e');
+    }
+  }
+
+  Future<void> markAsRead(String id) async {
+    if (!_readNotificationIds.contains(id)) {
+      _readNotificationIds.add(id);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('read_notifications', _readNotificationIds);
+      
+      final index = _notifications.indexWhere((n) => n['id'].toString() == id);
+      if (index != -1) {
+        _notifications[index]['isRead'] = true;
+        notifyListeners();
+      }
+    }
   }
 
   // Atualizar informações do usuário

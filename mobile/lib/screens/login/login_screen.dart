@@ -584,27 +584,9 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
 
-      // Se ainda for null, validar se é um teste ou erro
+      // Se ainda for null, lançar erro (sem fallback de mock data em produção)
       if (clientData == null) {
-        // TODO: Em produção, lançar erro.
-        // throw Exception('Cliente não encontrado.');
-        
-        // MOCK DE FALLBACK PARA DEMONSTRAÇÃO SE A API FALHAR
-        clientData = {
-          'nome': 'NANET',
-          'contratos': [
-            {
-              'id': '1',
-              'status': 'ATIVO',
-              'plan_name': 'FULL',
-              'expiry_date': '29/05/2025',
-              'address': 'RUA DO CAMPO, 270 - JARDIM JORDÃO',
-              'last_invoice_value': '50,00',
-              'last_invoice_due': '29/06/2025',
-              'last_invoice_status': 'pending'
-            }
-          ]
-        };
+        throw Exception('Cliente não encontrado para o CPF/CNPJ informado.');
       }
 
       // Processar dados para login
@@ -624,6 +606,11 @@ class _LoginScreenState extends State<LoginScreen> {
         contract = (clientData['contratos'] as List).first;
       }
 
+      // VALIDAÇÃO FINAL: Impede login se não tiver um ID de contrato válido
+      if (contract['id'] == null || contract['id'].toString() == '1' || contract['id'].toString() == 'N/A') {
+         throw Exception('Não foi possível identificar um contrato válido vinculado a este CPF.');
+      }
+
       await provider.login(
         cpf: cpf,
         token: 'mock_token', // Token de sessão do app
@@ -638,8 +625,28 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.of(context).pushReplacementNamed('/home');
       }
     } catch (e) {
+      String errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Exception:', '');
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao entrar: $e')),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Colors.white70, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  errorMessage,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF2A2A2A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

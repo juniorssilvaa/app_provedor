@@ -37,7 +37,7 @@ class AppConfig {
     if (_runtimeApiBaseUrl != null && _runtimeApiBaseUrl!.isNotEmpty) {
       return _runtimeApiBaseUrl!;
     }
-    // Para local, usamos o IP do servidor local ou 10.0.2.2 para o emulador Android
+    // Para produção, usamos a URL oficial da NIOCHAT
     final base = _envApiBaseUrl.isNotEmpty ? _envApiBaseUrl : 'https://apis.niochat.com.br/api/';
     return base.endsWith('/') ? base : '$base/';
   }

@@ -359,14 +359,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildUserCard(Color cardBg, Color textColor, Color subTextColor, bool isDark) {
     final provider = Provider.of<AppProvider>(context);
     final contract = provider.userContract;
-    final userName = provider.userName ?? 'CLIENTE';
-    final contractId = contract['id']?.toString() ?? 'N/A';
-    final status = contract['status'] ?? 'ATIVO';
-    final planName = contract['plan_name'] ?? 'PLANO BASICO';
-    final address = contract['address'] ?? 'Endereço não informado';
+    final userName = provider.userName ?? '';
+    final contractId = contract['id']?.toString() ?? '';
+    final status = contract['status'] ?? '';
+    final planName = contract['plan_name'] ?? '';
+    final address = contract['address'] ?? '';
     // Mostra a data de cadastro conforme solicitado
-    final registrationDate = contract['registration_date'] ?? '24/10/2024';
-    final contractDueDay = contract['contract_due_day'] ?? '30';
+    final registrationDate = contract['registration_date'] ?? '';
+    final contractDueDay = contract['contract_due_day'] ?? '';
 
     // Se estiver suspenso, muda cores
     final statusUpper = status.toString().toUpperCase();
