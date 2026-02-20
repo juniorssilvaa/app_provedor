@@ -1,19 +1,17 @@
-<<<<<<< HEAD
-# Ignore everything by default
+# Root .gitignore
+# Ignore everything by default to keep the repository clean
 *
 
-# Allow .gitignore
+# Allow essential project structure
 !.gitignore
+!README.md
+!mobile/
+!.github/
 
-# Allow mobile directory
+# Allow mobile directory content
 !mobile/**
 
-# Allow specific workflow
-!.github/
-!.github/workflows/
-!.github/workflows/build_mobile_nanet.yml
-
-# Specific ignores inside mobile (optional but good)
+# Specific ignores inside mobile
 mobile/ios/Flutter/Generated.xcconfig
 mobile/ios/Flutter/flutter_export_environment.sh
 mobile/.dart_tool/
@@ -21,7 +19,11 @@ mobile/.packages
 mobile/.pub-cache/
 mobile/.pub/
 mobile/build/
-=======
+mobile/android/app/build/
+mobile/android/.gradle/
+mobile/android/local.properties
+
+# Backend and credential ignores (Security)
 backend/firebase-credentials.json
 backend/service_account*.json
 backend/*.json
@@ -33,8 +35,8 @@ backend/.env.*
 __pycache__/
 *.log
 node_modules/
-build/
-dist/
 backend/db.sqlite3
-ngrok.exe
->>>>>>> 5039ff9 (Adiciona projeto mobile Nanet Telecom)
+
+# Explicitly allow google-services.json for flavors
+!mobile/android/app/src/nanet/google-services.json
+!mobile/android/app/src/jocanet/google-services.json
