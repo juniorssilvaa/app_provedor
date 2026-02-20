@@ -28,7 +28,9 @@ class _PlanosScreenState extends State<PlanosScreen> {
 
   Future<void> _fetchPlans() async {
     try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}public/plans/?provider_token=${AppConfig.apiToken}');
+      final url = AppConfig.apiUrl('public/plans/').replace(
+        queryParameters: {'provider_token': AppConfig.apiToken}
+      );
       debugPrint('Fetching plans from: $url');
       
       final response = await http.get(url);

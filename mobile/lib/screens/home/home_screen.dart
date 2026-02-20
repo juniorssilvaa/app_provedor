@@ -851,7 +851,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 12),
               _buildActionIconButton(FontAwesomeIcons.whatsapp, () async {
                 final digits = AppConfig.supportPhone.replaceAll(RegExp(r'[^\d]'), '');
-                final waUrl = Uri.parse('https://wa.me/$digits');
+                final message = Uri.encodeComponent('Preciso de suporte');
+                final waUrl = Uri.parse('https://wa.me/$digits?text=$message');
                 if (await canLaunchUrl(waUrl)) {
                   await launchUrl(waUrl, mode: LaunchMode.externalApplication);
                 } else {
