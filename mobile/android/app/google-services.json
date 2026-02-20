@@ -7,25 +7,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:454735615208:android:0a39d1b89f99fb1c7b255d",
-        "android_client_info": {
-          "package_name": "com.provedor.jocanet"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDug6ebHwdPFsWRC3uTHyOsXt6352P7fzQ"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:454735615208:android:3c66b6250714f43f7b255d",
         "android_client_info": {
           "package_name": "com.provedor.nanettelecom"
