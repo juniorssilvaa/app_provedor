@@ -1,0 +1,149 @@
+name: Deploy App Provedor to Production
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: juniorssilvaa/app_provedor
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_provedor_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install dj-database-url psycopg2-binary
+
+      - name: Run tests
+        env:
+          SECRET_KEY: test-secret-key
+          DEBUG: True
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app_provedor_test
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          cd backend
+          python manage.py migrate
+          python manage.py test
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push BACKEND
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/juniorssilvaa/app_provedor-backend:latest
+            ghcr.io/juniorssilvaa/app_provedor-backend:${{ github.sha }}
+
+      - name: Build & push WEBHOOK
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.webhook
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/juniorssilvaa/app_provedor-webhook:latest
+            ghcr.io/juniorssilvaa/app_provedor-webhook:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Aguarda o registry propagar a nova imagem antes do deploy (evita "No such image" no Swarm)
+      - name: Aguardar propagação do GHCR
+        run: sleep 45
+
+      - name: Deploy to Portainer
+        env:
+          PORTAINER_URL: https://app-provedor.niochat.com.br
+          PORTAINER_API_KEY: ${{ secrets.PORTAINER_API_KEY }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          STACK_ID=3
+          IMAGE_TAG="latest"
+          
+          # Escapar o conteúdo do docker-compose.yml para JSON
+          ESCAPED_COMPOSE=$(cat docker-compose.yml | jq -Rs .)
+          
+          # Deploy usando Stack API do Portainer
+          # O parâmetro "PullImage":true força o Portainer a baixar a nova imagem (tag SHA)
+          # O parâmetro "Prune":true remove containers órfãos
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+            -H "X-API-Key: $PORTAINER_API_KEY" \
+            -H "Content-Type: application/json" \
+            --data "{
+              \"StackFileContent\": $ESCAPED_COMPOSE,
+              \"Env\": [
+                {\"name\": \"GHCR_TOKEN\", \"value\": \"$GHCR_TOKEN\"},
+                {\"name\": \"IMAGE_TAG\", \"value\": \"$IMAGE_TAG\"}
+              ],
+              \"PullImage\": true,
+              \"Prune\": true
+            }" \
+            "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=1")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Erro no deploy! Status: $HTTP_CODE"
+            echo "Resposta: $BODY"
+            exit 1
+          fi
+          echo "Deploy realizado com sucesso! O Portainer está atualizando as imagens..."
