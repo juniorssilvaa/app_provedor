@@ -10,7 +10,7 @@ class NotificationDetailScreen extends StatelessWidget {
       case 'warning':
         return Colors.orange;
       case 'critical':
-        return Colors.red;
+        return const Color(0xFF1A237E);
       case 'success':
         return Colors.green;
       default:
@@ -39,13 +39,13 @@ class NotificationDetailScreen extends StatelessWidget {
     final Map<String, dynamic> notif =
         (args is Map<String, dynamic>) ? args : {};
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryRed = const Color(0xFFFF0000);
+    const primaryNavy = Color(0xFF1A237E);
     final type = notif['type']?.toString();
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
       appBar: AppBar(
-        backgroundColor: primaryRed,
+        backgroundColor: const Color(0xFF1A237E),
         foregroundColor: Colors.white,
         title: const Text('Notificação', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,

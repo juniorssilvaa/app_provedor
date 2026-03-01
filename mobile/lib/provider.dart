@@ -152,9 +152,9 @@ class AppProvider with ChangeNotifier {
         }
       }
 
-      // As travas de segurança agressivas para ID "1" e nomes genéricos foram removidas
-      // para suportar contratos reais com esses valores.
-
+      // Inicia a sincronização com o servidor imediatamente (sem travar o boot)
+      refreshData();
+      
       notifyListeners();
     } catch (e) {
       debugPrint('Erro na inicialização do Provider: $e');
@@ -480,6 +480,8 @@ class AppProvider with ChangeNotifier {
            final currentId = (_userContract['id'] ?? _userContract['contrato'])?.toString().trim();
            _userContract = allMappedContracts.firstWhere((c) => c['id'].toString().trim() == currentId, orElse: () => allMappedContracts.first);
            
+           debugPrint('REFRESH: Status do contrato $currentId vindo do servidor: ${_userContract['status']}');
+           
            final sTime = await _sgpService!.getServerTime();
            if (sTime != null) AppConfig.setServerTime(sTime);
            final invoices = await _sgpService!.getInvoices(_cpf!);
@@ -508,6 +510,11 @@ class AppProvider with ChangeNotifier {
                      _userContract['last_invoice_due'] = dueStr.split('-').reversed.join('/');
                      _userContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
                   }
+              } else {
+                 // Nenhuma fatura aberta para este contrato
+                 _userContract['invoice_status_code'] = 'paid';
+                 _userContract['last_invoice_value'] = '0,00';
+                 _userContract['last_invoice_due'] = 'N/A';
               }
            }
            notifyListeners();

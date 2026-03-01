@@ -18,7 +18,8 @@ class _ConsumptionScreenState extends State<ConsumptionScreen> {
   DateTime _selectedDate = DateTime.now();
 
   // Colors based on the new design
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color accentCyan = const Color(0xFF00E5FF);
   final Color darkBackground = const Color(0xFF121212); // Almost black background
   final Color cardBackground = const Color(0xFF1E1E1E); // Dark Grey for cards
   final Color textGrey = const Color(0xFFAAAAAA);
@@ -57,7 +58,7 @@ class _ConsumptionScreenState extends State<ConsumptionScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Sessão expirada ou senha não encontrada. Por favor, faça login novamente.'),
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFF1A237E),
             ),
           );
         }
@@ -138,12 +139,12 @@ class _ConsumptionScreenState extends State<ConsumptionScreen> {
       appBar: AppBar(
         title: const Text('CONSUMO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         centerTitle: true,
-        backgroundColor: primaryRed,
+        backgroundColor: primaryNavy,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: _isLoading 
-        ? Center(child: CircularProgressIndicator(color: primaryRed))
+        ? Center(child: CircularProgressIndicator(color: primaryNavy))
         : SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -231,7 +232,7 @@ class _ConsumptionScreenState extends State<ConsumptionScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem('Download', primaryRed),
+              _buildLegendItem('Download', primaryNavy),
               const SizedBox(width: 16),
               _buildLegendItem('Upload', Colors.white),
             ],
@@ -311,13 +312,13 @@ class _ConsumptionScreenState extends State<ConsumptionScreen> {
                       LineChartBarData(
                         spots: _getSpots('download'),
                         isCurved: true,
-                        color: primaryRed,
+                        color: primaryNavy,
                         barWidth: 2,
                         isStrokeCapRound: true,
                         dotData: const FlDotData(show: false),
                         belowBarData: BarAreaData(
                           show: true,
-                          color: primaryRed.withOpacity(0.1),
+                          color: primaryNavy.withOpacity(0.1),
                         ),
                       ),
                       // Upload Line
@@ -342,7 +343,7 @@ class _ConsumptionScreenState extends State<ConsumptionScreen> {
                              return LineTooltipItem(
                                '${spot.y.toStringAsFixed(2)} GB',
                                TextStyle(
-                                 color: isDownload ? primaryRed : Colors.white,
+                                 color: isDownload ? primaryNavy : Colors.white,
                                  fontWeight: FontWeight.bold,
                                ),
                              );
@@ -409,7 +410,7 @@ class _ConsumptionScreenState extends State<ConsumptionScreen> {
                     formattedDate,
                     style: TextStyle(color: textGrey, fontSize: 12),
                   ),
-                  Icon(Icons.bar_chart, color: primaryRed, size: 20),
+                  Icon(Icons.bar_chart, color: primaryNavy, size: 20),
                 ],
               ),
               const SizedBox(height: 12),

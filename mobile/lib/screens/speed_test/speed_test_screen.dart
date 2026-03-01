@@ -48,7 +48,7 @@ class _SpeedTestScreenState extends State<SpeedTestScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFF0000),
+        backgroundColor: const Color(0xFF1A237E),
         title: const Text(
           'Teste sua conexão',
           style: TextStyle(
@@ -76,7 +76,7 @@ class _SpeedTestScreenState extends State<SpeedTestScreen> {
           if (_isLoading)
             const Center(
               child: CircularProgressIndicator(
-                color: Color(0xFFFF0000),
+                color: Color(0xFF1A237E),
               ),
             ),
         ],

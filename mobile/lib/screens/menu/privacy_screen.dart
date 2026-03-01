@@ -71,7 +71,7 @@ class PrivacyScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18, 
               fontWeight: FontWeight.bold,
-              color: Color(0xFFFF0000),
+              color: Color(0xFF1A237E),
             ),
           ),
           const SizedBox(height: 8),

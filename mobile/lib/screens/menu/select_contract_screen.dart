@@ -64,7 +64,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao alterar contrato: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Erro ao alterar contrato: $e'), backgroundColor: const Color(0xFF1A237E)),
         );
       }
     } finally {
@@ -76,7 +76,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final primaryRed = const Color(0xFFFF0000);
+    final primaryNavy = const Color(0xFF1A237E);
     final provider = context.watch<AppProvider>();
     
     final List<dynamic> contratos = provider.userInfo['contratos'] ?? [];
@@ -85,7 +85,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: primaryRed,
+        backgroundColor: primaryNavy,
         elevation: 0,
         title: const Text(
           'ALTERAR CONTRATO',
@@ -117,7 +117,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
                     
                     final isSuspended = status.contains('SUSPENSO');
                     final isCanceled = status.contains('CANCELADO') || status == '3';
-                    final Color statusColor = (isSuspended || isCanceled) ? Colors.red : Colors.green;
+                    final Color statusColor = (isSuspended || isCanceled) ? const Color(0xFF1A237E) : Colors.green;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
@@ -125,7 +125,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
                         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? primaryRed : (isDark ? Colors.white10 : Colors.black12),
+                          color: isSelected ? primaryNavy : (isDark ? Colors.white10 : Colors.black12),
                           width: isSelected ? 2 : 1,
                         ),
                         boxShadow: [
@@ -149,7 +149,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? primaryRed : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[200]),
+                                    color: isSelected ? primaryNavy : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[200]),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: SvgPicture.string(
@@ -182,13 +182,13 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                               decoration: BoxDecoration(
-                                                color: primaryRed.withOpacity(0.1),
+                                                color: primaryNavy.withOpacity(0.1),
                                                 borderRadius: BorderRadius.circular(4),
                                               ),
                                               child: Text(
                                                 'ATUAL',
                                                 style: TextStyle(
-                                                  color: primaryRed,
+                                                  color: primaryNavy,
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -233,7 +233,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
                                 ),
                                 if (!isSelected) ...[
                                   const SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward_ios, color: primaryRed, size: 16),
+                                  Icon(Icons.arrow_forward_ios, color: primaryNavy, size: 16),
                                 ],
                               ],
                             ),
@@ -250,7 +250,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: primaryRed),
+                    CircularProgressIndicator(color: primaryNavy),
                     const SizedBox(height: 16),
                     const Text(
                       'Alterando contrato...',

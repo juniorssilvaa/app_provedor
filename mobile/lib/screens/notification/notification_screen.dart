@@ -20,7 +20,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final primaryRed = const Color(0xFFFF0000);
+    final primaryNavy = const Color(0xFF1A237E);
     final provider = context.watch<AppProvider>();
     final notifications = provider.notifications;
 
@@ -34,12 +34,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
         title: const Text('Notificações', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: primaryRed,
+        backgroundColor: const Color(0xFF1A237E),
         foregroundColor: Colors.white,
       ),
       body: RefreshIndicator(
         onRefresh: () => provider.fetchNotifications(),
-        color: primaryRed,
+        color: const Color(0xFF1A237E),
         child: notifications.isEmpty
             ? Center(
                 child: Column(
@@ -116,7 +116,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                               height: 8,
                                               margin: const EdgeInsets.only(right: 8),
                                               decoration: BoxDecoration(
-                                                color: primaryRed,
+                                                color: const Color(0xFF1A237E),
                                                 shape: BoxShape.circle,
                                               ),
                                             ),
@@ -138,7 +138,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                         provider.dismissNotification(notif['id'].toString());
                                                         Navigator.pop(ctx);
                                                       },
-                                                      child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+                                                      child: const Text('Excluir', style: TextStyle(color: Colors.grey)),
                                                     ),
                                                   ],
                                                 ),
@@ -191,7 +191,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       case 'warning':
         return Colors.orange;
       case 'critical':
-        return Colors.red;
+        return const Color(0xFF1A237E);
       case 'success':
         return Colors.green;
       default:

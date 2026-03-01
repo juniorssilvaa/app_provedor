@@ -15,7 +15,7 @@ class _SupportScreenState extends State<SupportScreen> {
   bool _isLoading = false;
   List<dynamic> _tickets = [];
 
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryNavy = const Color(0xFF1A237E);
   final Color darkBackground = const Color(0xFF121212);
   final Color cardBackground = const Color(0xFF1E1E1E);
   final Color textGrey = const Color(0xFFAAAAAA);
@@ -128,7 +128,7 @@ class _SupportScreenState extends State<SupportScreen> {
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao abrir chamado: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('Erro ao abrir chamado: $e'), backgroundColor: const Color(0xFF1A237E)),
       );
     } finally {
       setState(() => _isSubmitting = false);
@@ -150,11 +150,11 @@ class _SupportScreenState extends State<SupportScreen> {
                 value: _selectedType,
                 dropdownColor: cardBackground,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Tipo de Ocorrência',
-                  labelStyle: TextStyle(color: Colors.grey),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                  labelStyle: const TextStyle(color: Colors.grey),
+                  enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: primaryNavy)),
                 ),
                 items: const [
                   DropdownMenuItem(value: '1', child: Text('Sem Acesso')),
@@ -170,11 +170,11 @@ class _SupportScreenState extends State<SupportScreen> {
               TextFormField(
                 controller: _messageController,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Mensagem',
-                  labelStyle: TextStyle(color: Colors.grey),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                  labelStyle: const TextStyle(color: Colors.grey),
+                  enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: primaryNavy)),
                 ),
                 maxLines: 3,
                 validator: (value) => value == null || value.isEmpty ? 'Informe a mensagem' : null,
@@ -189,7 +189,7 @@ class _SupportScreenState extends State<SupportScreen> {
           ),
           ElevatedButton(
             onPressed: _submitTicket,
-            style: ElevatedButton.styleFrom(backgroundColor: primaryRed),
+            style: ElevatedButton.styleFrom(backgroundColor: primaryNavy),
             child: const Text('Enviar', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -202,7 +202,7 @@ class _SupportScreenState extends State<SupportScreen> {
     return Scaffold(
       backgroundColor: darkBackground,
       appBar: AppBar(
-        backgroundColor: primaryRed,
+        backgroundColor: primaryNavy,
         title: const Text('SUPORTE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
         leading: IconButton(
@@ -211,7 +211,7 @@ class _SupportScreenState extends State<SupportScreen> {
         ),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: primaryRed))
+          ? Center(child: CircularProgressIndicator(color: primaryNavy))
           : _tickets.isEmpty
               ? Center(child: Text('Nenhum chamado encontrado.', style: TextStyle(color: textGrey)))
               : ListView.builder(
@@ -238,7 +238,7 @@ class _SupportScreenState extends State<SupportScreen> {
                 ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openNewTicketDialog,
-        backgroundColor: primaryRed,
+        backgroundColor: primaryNavy,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('NOVO CHAMADO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
@@ -258,7 +258,7 @@ class _SupportScreenState extends State<SupportScreen> {
         color: cardBackground,
         borderRadius: BorderRadius.circular(12),
         border: Border(
-            left: BorderSide(color: primaryRed, width: 4),
+            left: BorderSide(color: primaryNavy, width: 4),
         ),
         boxShadow: [
           BoxShadow(

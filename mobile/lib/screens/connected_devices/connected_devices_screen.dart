@@ -13,7 +13,7 @@ class _ConnectedDevicesScreenState extends State<ConnectedDevicesScreen> {
   bool _isLoading = true;
   String? _error;
 
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryNavy = const Color(0xFF1A237E);
 
   @override
   void initState() {
@@ -87,7 +87,7 @@ class _ConnectedDevicesScreenState extends State<ConnectedDevicesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        backgroundColor: primaryRed,
+        backgroundColor: primaryNavy,
         elevation: 0,
         title: const Text('Dispositivos Conectados', 
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
@@ -107,7 +107,7 @@ class _ConnectedDevicesScreenState extends State<ConnectedDevicesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(color: Color(0xFFFF0000)),
+            const CircularProgressIndicator(color: Color(0xFF1A237E)),
             const SizedBox(height: 20),
             Text('Escaneando sua rede...', 
               style: TextStyle(color: Colors.grey[400], fontSize: 14)),
@@ -137,7 +137,7 @@ class _ConnectedDevicesScreenState extends State<ConnectedDevicesScreen> {
                 child: ElevatedButton(
                   onPressed: _fetchConnectedDevices,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryRed,
+                    backgroundColor: primaryNavy,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -167,7 +167,7 @@ class _ConnectedDevicesScreenState extends State<ConnectedDevicesScreen> {
 
     return RefreshIndicator(
       onRefresh: _fetchConnectedDevices,
-      color: primaryRed,
+      color: primaryNavy,
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         itemCount: _devices.length,
@@ -199,11 +199,11 @@ class _ConnectedDevicesScreenState extends State<ConnectedDevicesScreen> {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: active ? primaryRed.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                  color: active ? primaryNavy.withOpacity(0.1) : Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(_getDeviceIcon(hostname), 
-                  color: active ? primaryRed : Colors.grey[600], size: 28),
+                  color: active ? primaryNavy : Colors.grey[600], size: 28),
               ),
               title: Row(
                 children: [

@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 
 /// Configurações do aplicativo - Versão Sincronizada
 class AppConfig {
-  static const int providerId = 1;
-  static const String providerName = 'NANET TELECOM';
+  static const int providerId = 2;
+  static const String providerName = 'JOCA NET';
   static String? _runtimeApiBaseUrl;
   
   static void setRuntimeApiBaseUrl(String? baseUrl) {
@@ -21,7 +21,7 @@ class AppConfig {
   );
 
   static String get apiToken => _rawApiToken.replaceAll('+', '');
-  static const String supportPhone = '+558182337720';
+  static const String supportPhone = '+5594992178654';
   static const String _envApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://apis.niochat.com.br/');
 
   static String get apiBaseUrl {

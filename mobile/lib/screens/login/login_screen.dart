@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _savedCpf;
   String? _savedPassword;
 
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryNavy = const Color(0xFF1A237E);
 
   @override
   void initState() {
@@ -293,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             final isCanceled = status.contains('CANCELADO') || status == '3';
                             
                             // Define a cor e o texto do status
-                            final Color statusColor = (isSuspended || isCanceled) ? Colors.red : Colors.green;
+                            final Color statusColor = (isSuspended || isCanceled) ? const Color(0xFF1A237E) : Colors.green;
                             final String statusText = isCanceled ? 'CANCELADO' : status;
 
                             return Container(
@@ -315,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         Container(
                                           padding: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFFF0000),
+                                            color: const Color(0xFF1A237E),
                                             borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: SvgPicture.string(
@@ -374,7 +374,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                         ),
                                         const SizedBox(width: 8),
-                                        Icon(Icons.arrow_forward_ios, color: primaryRed, size: 16),
+                                        Icon(Icons.arrow_forward_ios, color: primaryNavy, size: 16),
                                       ],
                                     ),
                                   ),
@@ -567,7 +567,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (first['valor'] != null) valor = first['valor'].toString();
 
           clientData = {
-            'nome': first['sacado'] ?? 'Cliente Nanet',
+            'nome': first['sacado'] ?? 'Cliente JOCA NET',
             'contratos': [
               {
                 'id': first['contrato_id']?.toString() ?? '1',
@@ -614,7 +614,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final String contractId = contract['id']?.toString() ?? '';
       if (contractId.isEmpty || contractId == 'N/A') {
          debugPrint('LOGIN: Falha na validação do contrato: ID=$contractId');
-         throw Exception('Não foi possível identificar um contrato válido vinculado a este CPF.');
+         throw Exception('Não foi possível identificar um contrato válido vinculado a este CPF/CNPJ.');
       }
 
       await provider.login(
@@ -755,7 +755,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryRed,
+                      backgroundColor: const Color(0xFF1A237E),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -797,7 +797,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         'Preciso de ajuda?',
                         style: TextStyle(
-                          color: primaryRed,
+                          color: primaryNavy,
                           fontSize: 14,
                           decoration: TextDecoration.none,
                         ),
@@ -885,7 +885,7 @@ class _LoginScreenState extends State<LoginScreen> {
               });
             },
             style: TextButton.styleFrom(
-              foregroundColor: Color(0xFFFF0000),
+              foregroundColor: primaryNavy,
               padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
             child: const Text(
@@ -907,16 +907,12 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             labelText: 'CPF/CNPJ',
-            labelStyle: TextStyle(color: primaryRed),
+            labelStyle: TextStyle(color: primaryNavy),
             hintStyle: const TextStyle(color: Colors.grey),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: primaryRed),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: primaryRed, width: 2),
+              borderSide: BorderSide(color: primaryNavy, width: 2),
             ),
           ),
         ),
@@ -933,7 +929,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     _rememberMe = value ?? false;
                   });
                 },
-                activeColor: primaryRed,
+                activeColor: primaryNavy,
                 checkColor: Colors.white,
                 side: const BorderSide(color: Colors.grey),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),

@@ -20,7 +20,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
   List<dynamic> _invoices = [];
   bool _allPaid = false;
   
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryNavy = const Color(0xFF1A237E);
   final Color cardBg = const Color(0xFF111111);
 
   @override
@@ -114,13 +114,13 @@ class _FaturaScreenState extends State<FaturaScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFF0000),
+        backgroundColor: const Color(0xFF1A237E),
         title: const Text('Minhas Faturas', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: primaryRed))
+          ? Center(child: CircularProgressIndicator(color: primaryNavy))
           : (_invoices.isEmpty && !_allPaid)
               ? _buildEmptyState()
               : ListView.builder(
@@ -271,7 +271,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
     }
 
     String statusLabel = isPaid ? 'PAGO' : (isLate ? 'ATRASADO' : 'ABERTO');
-    Color statusColor = isPaid ? Colors.green : (isLate ? Colors.red : Colors.orange);
+    Color statusColor = isPaid ? Colors.green : (isLate ? primaryNavy : Colors.orange);
 
     // Valor Original e Corrigido
     double valOriginal = double.tryParse(fatura['valor']?.toString() ?? '0') ?? 0.0;
@@ -351,7 +351,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                     colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                   ),
                   label: 'COPIAR PIX',
-                  backgroundColor: const Color(0xFFFF0000),
+                  backgroundColor: const Color(0xFF1A237E),
                   textColor: Colors.white,
                   onTap: () {
                     final pix = fatura['codigoPix'] ?? fatura['pix_copia_e_cola'] ?? fatura['pix_code'] ?? '';
@@ -372,7 +372,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                     colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                   ),
                   label: 'COPIAR CÓDIGO',
-                  backgroundColor: const Color(0xFFFF0000),
+                  backgroundColor: const Color(0xFF1A237E),
                   textColor: Colors.white,
                   onTap: () {
                      final barcode = fatura['linhaDigitavel'] ?? fatura['linha_digitavel'] ?? fatura['codigoBarras'] ?? fatura['barcode'] ?? '';
@@ -388,7 +388,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                 _buildActionButton(
                   iconWidget: const Icon(Icons.picture_as_pdf, size: 24),
                   label: 'BAIXAR BOLETO',
-                  backgroundColor: const Color(0xFFFF0000),
+                  backgroundColor: const Color(0xFF1A237E),
                   textColor: Colors.white,
                   onTap: () {
                     String? link = fatura['link'] ?? fatura['link_cobranca'] ?? fatura['link_boleto'];
@@ -521,7 +521,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle),
-              child: Icon(icon, color: primaryRed),
+              child: Icon(icon, color: primaryNavy),
             ),
             const SizedBox(width: 16),
             Expanded(

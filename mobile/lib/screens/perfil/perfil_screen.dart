@@ -81,7 +81,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final primaryRed = const Color(0xFFFF0000);
+    final primaryNavy = const Color(0xFF1A237E);
+    final accentCyan = const Color(0xFF00E5FF);
     final cardBg = isDark ? const Color(0xFF111111) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black;
     final subTextColor = isDark ? Colors.grey : Colors.grey[700];
@@ -107,7 +108,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     decoration: BoxDecoration(
                       color: cardBg,
                       shape: BoxShape.circle,
-                      border: Border.all(color: primaryRed, width: 2),
+                      border: Border.all(color: primaryNavy, width: 2),
                     ),
                     child: Icon(Icons.person, color: textColor, size: 60),
                   ),
@@ -116,7 +117,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     right: 0,
                     child: Container(
                       padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: primaryRed, shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: primaryNavy, shape: BoxShape.circle),
                       child: const Icon(Icons.edit, color: Colors.white, size: 16),
                     ),
                   ),
@@ -125,7 +126,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              provider.userName ?? 'Usuário Nanet',
+              provider.userName ?? 'Usuário JOCA NET',
               style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold),
             ),
             Text(
@@ -157,7 +158,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     const Spacer(),
                     Switch(
                       value: isDark,
-                      activeColor: primaryRed,
+                      activeColor: primaryNavy,
                       onChanged: (val) {
                         provider.toggleTheme(val);
                       },
@@ -179,7 +180,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         const Spacer(),
                         Switch(
                           value: _useLocalBackend,
-                          activeColor: primaryRed,
+                          activeColor: primaryNavy,
                           onChanged: (val) async {
                             setState(() => _useLocalBackend = val);
                             await _saveApiOverride();
@@ -201,7 +202,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: primaryRed),
+                          borderSide: BorderSide(color: primaryNavy),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
@@ -213,10 +214,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       child: OutlinedButton(
                         onPressed: _saveApiOverride,
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: primaryRed),
+                          side: BorderSide(color: primaryNavy),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: Text('Aplicar', style: TextStyle(color: primaryRed, fontWeight: FontWeight.bold)),
+                        child: Text('Aplicar', style: TextStyle(color: primaryNavy, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -227,10 +228,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
             _buildInfoSection('Sobre', cardBg, textColor, subTextColor, [
               _buildActionItem(Icons.info_outline, 'Versão do App', () {}, textColor, subTextColor, trailingText: _appVersion),
               _buildActionItem(Icons.article_outlined, 'Termos de Uso', () {
-                _launchUrl('https://nanet.com.br/termos');
+                _launchUrl('https://jocanet.com.br/termos');
               }, textColor, subTextColor),
               _buildActionItem(Icons.privacy_tip_outlined, 'Política de Privacidade', () {
-                _launchUrl('https://nanet.com.br/privacidade');
+                _launchUrl('https://jocanet.com.br/privacidade');
               }, textColor, subTextColor),
             ]),
             const SizedBox(height: 40),
@@ -244,8 +245,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 icon: const Icon(Icons.logout),
                 label: const Text('SAIR DA CONTA'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: primaryRed,
-                  side: BorderSide(color: primaryRed),
+                  foregroundColor: primaryNavy,
+                  side: BorderSide(color: primaryNavy),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),

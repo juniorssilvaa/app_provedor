@@ -24,7 +24,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
   bool _obscure5g = true;
   bool _isLoading = false;
 
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryNavy = const Color(0xFF1A237E);
   final Color cardBg = const Color(0xFF1E1E1E);
 
   @override
@@ -56,10 +56,10 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         content: Row(
-          children: const [
-            CircularProgressIndicator(color: Color(0xFFFF0000)),
-            SizedBox(width: 20),
-            Expanded(
+          children: [
+            CircularProgressIndicator(color: primaryNavy),
+            const SizedBox(width: 20),
+            const Expanded(
               child: Text(
                 'Atualizando configurações de Wi-Fi, aguarde...',
                 style: TextStyle(color: Colors.white),
@@ -118,7 +118,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
                     Navigator.pop(context); // Close dialog
                     Navigator.pop(context); // Go back to info screen
                   },
-                  child: const Text('OK', style: TextStyle(color: Color(0xFFFF0000))),
+                  child: const Text('OK', style: TextStyle(color: Color(0xFF1A237E))),
                 ),
               ],
             ),
@@ -135,7 +135,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFF1A237E),
           ),
         );
       }
@@ -147,7 +147,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: primaryRed,
+        backgroundColor: primaryNavy,
         title: const Text('Configurar Wi-Fi', style: TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -202,7 +202,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _saveChanges,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryRed,
+                    backgroundColor: primaryNavy,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -225,7 +225,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
   Widget _buildSectionTitle(String title) {
     return Row(
       children: [
-        Icon(Icons.wifi_tethering, color: primaryRed, size: 20),
+        Icon(Icons.wifi_tethering, color: primaryNavy, size: 20),
         const SizedBox(width: 8),
         Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
       ],
@@ -268,7 +268,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
             decoration: InputDecoration(
               labelText: label,
               labelStyle: const TextStyle(color: Colors.grey),
-              prefixIcon: Icon(icon, color: primaryRed),
+              prefixIcon: Icon(icon, color: primaryNavy),
               suffixIcon: isPassword
                   ? IconButton(
                       icon: Icon(

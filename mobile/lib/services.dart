@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:nanet_app/config.dart';
+import 'package:jocanet_app/config.dart';
 
 class ApiService {
   static String get baseUrl => AppConfig.apiBaseUrl;

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:nanet_app/config.dart';
+import 'package:jocanet_app/config.dart';
 
 class AIService {
   final String providerToken;

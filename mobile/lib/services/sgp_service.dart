@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:nanet_app/config.dart';
+import 'package:jocanet_app/config.dart';
 
 class SGPService {
   final String providerToken;

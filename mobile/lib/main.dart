@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'config.dart';
 
 import 'provider.dart';
@@ -26,7 +27,6 @@ import 'screens/menu/privacy_screen.dart';
 import 'screens/menu/select_contract_screen.dart';
 import 'screens/notification/notification_screen.dart';
 import 'screens/notification/notification_detail_screen.dart';
-import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,15 +52,28 @@ void main() async {
     debugPrint("Firebase inicializado com sucesso.");
   } catch (e) {
     debugPrint("⚠️ ALERTA: Erro ao inicializar Firebase: $e");
-    debugPrint("O app continuará sem recursos de Push.");
   }
 
-  // Sincronização de Tempo e Logs de Identificação
+  // Inicialização do Provider antes do App começar
+  final AppProvider provider = AppProvider();
+  await provider.initialize();
+  
+  // Opcional: inicializar push logo após
+  try {
+    await provider.initPushService();
+  } catch (_) {}
+
+  // Sincronização de Tempo
   try {
     await AppConfig.syncTime();
   } catch (_) {}
 
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider.value(
+      value: provider,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -68,82 +81,90 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AppProvider(),
-      child: Consumer<AppProvider>(
-        builder: (context, provider, child) {
-          return MaterialApp(
-            title: 'Nanet',
-            debugShowCheckedModeBanner: false,
-            themeMode: provider.themeMode,
-            theme: ThemeData(
-              brightness: Brightness.light,
-              primaryColor: const Color(0xFFFF0000),
-              scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-              useMaterial3: true,
-              colorScheme: const ColorScheme.light(
-                primary: Color(0xFFFF0000),
-                secondary: Color(0xFFFFFFFF),
-                background: Color(0xFFF5F5F5),
-                surface: Colors.white,
-                error: Color(0xFFB00020),
-                onPrimary: Colors.white,
-                onSecondary: Colors.black,
-                onBackground: Colors.black,
-                onSurface: Colors.black,
-                onError: Colors.white,
-              ),
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Color(0xFFFF0000),
-                foregroundColor: Colors.white,
-              ),
+    return Consumer<AppProvider>(
+      builder: (context, provider, child) {
+        return MaterialApp(
+          title: 'JOCA NET',
+          debugShowCheckedModeBanner: false,
+          themeMode: provider.themeMode,
+          // Configuração de Localização para PT-BR
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('pt', 'BR'),
+          ],
+          locale: const Locale('pt', 'BR'),
+          theme: ThemeData(
+            brightness: Brightness.light,
+            primaryColor: const Color(0xFF1A237E),
+            scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+            useMaterial3: true,
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1A237E),
+              secondary: Color(0xFF00E5FF),
+              background: Color(0xFFF5F5F5),
+              surface: Colors.white,
+              error: Color(0xFFB00020),
+              onPrimary: Colors.white,
+              onSecondary: Colors.black,
+              onBackground: Colors.black,
+              onSurface: Colors.black,
+              onError: Colors.white,
             ),
-            darkTheme: ThemeData(
-              brightness: Brightness.dark,
-              primaryColor: const Color(0xFFFF0000),
-              scaffoldBackgroundColor: const Color(0xFF000000),
-              useMaterial3: true,
-              colorScheme: const ColorScheme.dark(
-                primary: Color(0xFFFF0000),
-                secondary: Color(0xFF222222),
-                background: Color(0xFF000000),
-                surface: Color(0xFF111111),
-                error: Color(0xFFCF6679),
-                onPrimary: Colors.white,
-                onSecondary: Colors.white,
-                onBackground: Colors.white,
-                onSurface: Colors.white,
-                onError: Colors.black,
-              ),
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Color(0xFFFF0000),
-                foregroundColor: Colors.white,
-              ),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF1A237E),
+              foregroundColor: Colors.white,
             ),
-            home: const SplashScreen(),
-            routes: {
-              '/login': (context) => const LoginScreen(),
-              '/home': (context) => HomeScreen(),
-              '/fatura': (context) => const FaturaScreen(),
-              '/ai_chat': (context) => const AIChatScreen(),
-              '/planos': (context) => const PlanosScreen(),
-              '/perfil': (context) => const PerfilScreen(),
-              '/contratos': (context) => const ContratosScreen(),
-              '/consumo': (context) => ConsumptionScreen(),
-              '/support': (context) => const SupportScreen(),
-              '/wifi': (context) => const ModemInfoScreen(),
-              '/speedtest': (context) => const SpeedTestScreen(),
-              '/connected_devices': (context) => const ConnectedDevicesScreen(),
-              '/menu': (context) => const MenuScreen(),
-              '/select_contract': (context) => const SelectContractScreen(),
-              '/terms': (context) => const TermsScreen(),
-              '/privacy': (context) => const PrivacyScreen(),
-              '/notifications': (context) => const NotificationScreen(),
-              '/notification_detail': (context) => const NotificationDetailScreen(),
-            },
-          );
-        },
-      ),
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            primaryColor: const Color(0xFF1A237E),
+            scaffoldBackgroundColor: const Color(0xFF000000),
+            useMaterial3: true,
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF1A237E),
+              secondary: Color(0xFF00E5FF),
+              background: Color(0xFF000000),
+              surface: Color(0xFF111111),
+              error: Color(0xFFCF6679),
+              onPrimary: Colors.white,
+              onSecondary: Colors.white,
+              onBackground: Colors.white,
+              onSurface: Colors.white,
+              onError: Colors.black,
+            ),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF1A237E),
+              foregroundColor: Colors.white,
+            ),
+          ),
+          // Decide a tela inicial aqui mesmo
+          home: provider.isLoggedIn ? HomeScreen() : const LoginScreen(),
+          routes: {
+            '/login': (context) => const LoginScreen(),
+            '/home': (context) => HomeScreen(),
+            '/fatura': (context) => const FaturaScreen(),
+            '/ai_chat': (context) => const AIChatScreen(),
+            '/planos': (context) => const PlanosScreen(),
+            '/perfil': (context) => const PerfilScreen(),
+            '/contratos': (context) => const ContratosScreen(),
+            '/consumo': (context) => ConsumptionScreen(),
+            '/support': (context) => const SupportScreen(),
+            '/wifi': (context) => const ModemInfoScreen(),
+            '/speedtest': (context) => const SpeedTestScreen(),
+            '/connected_devices': (context) => const ConnectedDevicesScreen(),
+            '/menu': (context) => const MenuScreen(),
+            '/select_contract': (context) => const SelectContractScreen(),
+            '/terms': (context) => const TermsScreen(),
+            '/privacy': (context) => const PrivacyScreen(),
+            '/notifications': (context) => const NotificationScreen(),
+            '/notification_detail': (context) => const NotificationDetailScreen(),
+          },
+        );
+      },
     );
   }
 }

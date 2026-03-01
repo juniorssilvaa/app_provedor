@@ -30,12 +30,12 @@ class TermsScreen extends StatelessWidget {
             
             _buildSection(
               '1. Aceitação dos Termos',
-              'Ao baixar e utilizar o aplicativo Nanet, você concorda com estes termos de uso. Este aplicativo destina-se exclusivamente a clientes ativos do provedor para gerenciamento de serviços de internet.',
+              'Ao baixar e utilizar o aplicativo JOCA NET, você concorda com estes termos de uso. Este aplicativo destina-se exclusivamente a clientes ativos do provedor para gerenciamento de serviços de internet.',
               isDark
             ),
             _buildSection(
               '2. Acesso e Segurança',
-              'O acesso ao aplicativo é feito através do seu CPF ou CNPJ. Você é responsável pelo uso do aplicativo em seu dispositivo, enquanto a Nanet garante a segurança e confidencialidade dos seus dados em nossos sistemas.',
+              'O acesso ao aplicativo é feito através do seu CPF ou CNPJ. Você é responsável pelo uso do aplicativo em seu dispositivo, enquanto a JOCA NET garante a segurança e confidencialidade dos seus dados em nossos sistemas.',
               isDark
             ),
             _buildSection(
@@ -50,7 +50,7 @@ class TermsScreen extends StatelessWidget {
             ),
             _buildSection(
               '5. Alterações no Serviço',
-              'A Nanet reserva-se o direito de modificar, suspender ou descontinuar funcionalidades do aplicativo a qualquer momento, visando melhorias ou manutenção.',
+              'A JOCA NET reserva-se o direito de modificar, suspender ou descontinuar funcionalidades do aplicativo a qualquer momento, visando melhorias ou manutenção.',
               isDark
             ),
             const SizedBox(height: 40),
@@ -71,7 +71,7 @@ class TermsScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18, 
               fontWeight: FontWeight.bold,
-              color: Color(0xFFFF0000),
+              color: Color(0xFF1A237E),
             ),
           ),
           const SizedBox(height: 8),

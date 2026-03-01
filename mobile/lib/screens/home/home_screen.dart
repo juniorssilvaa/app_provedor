@@ -24,22 +24,28 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _ssid = 'Carregando...';
   int _signalStrength = 0;
   String _ipAddress = '-';
   bool _isConnected = false;
+  bool _hideSuspensionGuide = false;
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color accentCyan = const Color(0xFF00E5FF);
   // Colors removed here, defined in build
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _initWifiListener();
       final provider = context.read<AppProvider>();
+      
+      // Sincroniza dados com o servidor ao abrir para garantir status correto
+      provider.refreshData();
       provider.fetchAppConfig();
       // Inicializar serviço de Push Notifications e garantir registro do token
       provider.initPushService(); 
@@ -47,7 +53,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Quando o app volta do background para o foreground, forçamos um refresh
+      debugPrint('App retomado: Forçando atualização de dados...');
+      final provider = context.read<AppProvider>();
+      provider.refreshData();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _connectivitySubscription?.cancel();
     super.dispose();
   }
@@ -169,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                   }
                 },
-                color: primaryRed,
+                color: accentCyan,
                 backgroundColor: cardBg,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -204,57 +221,64 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildAppBar(bool isDark) {
     final provider = context.watch<AppProvider>();
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.only(left: 0, right: 16, top: 8, bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
-              Image.asset(
-                'assets/logo.png',
-                height: 148,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'NA',
-                            style: TextStyle(
-                              color: primaryRed,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -1,
+              Transform.translate(
+                offset: const Offset(-20, 0),
+                child: Image.asset(
+                  'assets/logo.png',
+                  height: 148,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.centerLeft,
+                  errorBuilder: (context, error, stackTrace) => Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'NA',
+                              style: TextStyle(
+                                color: accentCyan,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -1,
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: 'NET',
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -1,
+                            TextSpan(
+                              text: 'NET',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -1,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    Text(
-                      'TELECOM',
-                      style: TextStyle(
-                        color: isDark ? Colors.white : Colors.grey[700],
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
+                      Text(
+                        'TELECOM',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.grey[700],
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
           Stack(
             children: [
               IconButton(
@@ -267,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(color: primaryRed, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: accentCyan, shape: BoxShape.circle),
                     constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                     child: Text(
                       '${provider.unreadNotificationsCount}',
@@ -290,10 +314,10 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (c) => AlertDialog(
         backgroundColor: Colors.white,
         content: Row(
-          children: const [
-            CircularProgressIndicator(color: Color(0xFFFF0000)),
-            SizedBox(width: 20),
-            Expanded(
+          children: [
+            CircularProgressIndicator(color: primaryNavy),
+            const SizedBox(width: 20),
+            const Expanded(
               child: Text(
                 'Realizando desbloqueio...',
                 style: TextStyle(color: Colors.black87),
@@ -311,6 +335,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) Navigator.pop(context); // Pop loading
 
       if (result['status'] == 1 || result['liberado'] == true) {
+         // Atualiza status localmente para resposta imediata
+         provider.updateContract({...provider.userContract, 'status': 'ATIVO'});
+         
          final dias = result['liberado_dias']?.toString() ?? 'alguns';
          // Limpar mensagem para remover espaços extras e quebras de linha
          String msg = result['msg']?.toString() ?? 'Desbloqueio realizado com sucesso!';
@@ -342,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
          if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text(result['msg']?.toString() ?? 'Erro ao desbloquear'), backgroundColor: Colors.red)
+             SnackBar(content: Text(result['msg']?.toString() ?? 'Erro ao desbloquear'), backgroundColor: const Color(0xFF1A237E))
            );
          }
       }
@@ -350,7 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red)
+           SnackBar(content: Text('Erro: $e'), backgroundColor: const Color(0xFF1A237E))
         );
       }
     }
@@ -386,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: primaryRed,
+                  color: primaryNavy,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(Icons.person, color: Colors.white, size: 36),
@@ -425,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: isSuspended ? Colors.red.withOpacity(0.2) : Colors.green.withOpacity(0.2),
+                                color: isSuspended ? Colors.red.withValues(alpha: 0.15) : Colors.green.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -649,7 +676,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryRed,
+                    backgroundColor: primaryNavy,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -708,7 +735,7 @@ class _HomeScreenState extends State<HomeScreen> {
           width: 54,
           height: 54,
           decoration: BoxDecoration(
-            color: primaryRed,
+            color: primaryNavy,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(child: content),
@@ -729,7 +756,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.wifi, color: primaryRed, size: 24),
+              Icon(Icons.wifi, color: primaryNavy, size: 24),
               const SizedBox(width: 8),
               Text('WI-FI', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
             ],
@@ -757,7 +784,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.wifi, color: primaryRed, size: 12),
+                      Icon(Icons.wifi, color: primaryNavy, size: 12),
                       const SizedBox(width: 4),
                       Text('5 GHz', style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.bold)),
                     ],
@@ -767,7 +794,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Icon(Icons.gps_fixed, color: primaryRed, size: 24),
+                  Icon(Icons.gps_fixed, color: primaryNavy, size: 24),
                   Text('IP Local', style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.bold)),
                   Text(_ipAddress, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
                 ],
@@ -809,7 +836,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              Icon(FontAwesomeIcons.robot, color: primaryRed, size: 26),
+              Icon(FontAwesomeIcons.robot, color: primaryNavy, size: 26),
               const SizedBox(width: 12),
               Text(
                 'Assistente IA',
@@ -840,7 +867,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryRed,
+                    backgroundColor: primaryNavy,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -905,7 +932,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildActionIconButton(IconData icon, VoidCallback onTap) {
     return Material(
-      color: primaryRed,
+      color: primaryNavy,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -1038,11 +1065,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 70,
                       height: 70,
                       decoration: BoxDecoration(
-                        color: primaryRed,
+                        color: primaryNavy,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: primaryRed.withOpacity(0.3),
+                            color: primaryNavy.withOpacity(0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                             spreadRadius: 0,
@@ -1136,7 +1163,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNavItem(IconData icon, String label, bool isSelected, VoidCallback onTap) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = isSelected 
-        ? const Color(0xFFFF0000) 
+        ? const Color(0xFF00E5FF) 
         : (isDark ? Colors.white : Colors.black); // Alto contraste para ícones não selecionados
 
     return InkWell(
@@ -1201,15 +1228,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: const Color(0xFF1A237E).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.logout_rounded, color: Colors.red),
+                  child: const Icon(Icons.logout_rounded, color: Colors.grey),
                 ),
                 title: const Text(
                   'Sair do App',
                   style: TextStyle(
-                    color: Colors.red,
+                    color: Colors.grey,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1241,7 +1268,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sair', style: TextStyle(color: Colors.red)),
+            child: const Text('Sair', style: TextStyle(color: Colors.grey)),
           ),
         ],
       ),
@@ -1260,31 +1287,94 @@ class _HomeScreenState extends State<HomeScreen> {
     final status = provider.userContract['status'] ?? 'ATIVO';
     final isSuspended = status.toString().toUpperCase().contains('SUSPENSO');
 
-    // Design "3D Grosso" High-End
-    return Transform.translate(
-      offset: const Offset(0, 8), // Baixado um pouco mais para alinhar com a barra
-      child: Container(
-        width: 72,
-        height: 80, // Mantém área suficiente sem cortar
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            // 1. Camada Base (Sombra e Espessura) - REMOVIDA
-            /*
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: isSuspended ? const Color(0xFF4B0000) : const Color(0xFF144618),
-                shape: BoxShape.circle,
-                boxShadow: [],
+    return SizedBox(
+      width: 200,
+      height: 220, // Mantém área para a mensagem
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          if (isSuspended && !_hideSuspensionGuide)
+            Positioned(
+              top: 45, // Segue o botão para baixo
+              left: 0,
+              right: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    alignment: Alignment.topRight,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC62828),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                        ),
+                        child: const Text(
+                          'DESBLOQUEIE AQUI',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      // Botão de fechar (X)
+                      Positioned(
+                        right: -12,
+                        top: -12,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              debugPrint('CLICK FIX: Fechando guia');
+                              setState(() => _hideSuspensionGuide = true);
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              alignment: Alignment.center,
+                              child: Container(
+                                width: 26,
+                                height: 26,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                                ),
+                                child: const Icon(Icons.close, size: 14, color: Color(0xFFC62828)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Icon(
+                    Icons.arrow_drop_down_rounded,
+                    color: Color(0xFFC62828),
+                    size: 40,
+                  ),
+                ],
               ),
             ),
-            */
-            
-            // 2. Camada Face (O botão em si)
-            Positioned(
-              bottom: 0, // Encostado no fundo já que não tem base
+          // 2. O botão em si - Ajustado para encaixar na barra
+          Positioned(
+            bottom: 22, // Mais baixo para encaixar melhor na barra
+            left: 0,
+            right: 0,
+            child: Center(
               child: GestureDetector(
                 onTap: () {
                   if (isSuspended) {
@@ -1298,11 +1388,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Recurso não disponível. Seu contrato está ativo.'),
-                        backgroundColor: Colors.grey,
+                      SnackBar(
+                        content: const Text(
+                          'Recurso não disponível. Seu contrato está ativo.',
+                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                        backgroundColor: accentCyan,
                         behavior: SnackBarBehavior.floating,
-                        duration: Duration(seconds: 2),
+                        duration: const Duration(seconds: 2),
                       )
                     );
                   }
@@ -1312,28 +1405,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    // Gradiente rico para dar volume à superfície
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: isSuspended 
-                        ? [const Color(0xFFEF5350), const Color(0xFFC62828)] // Vermelho se suspenso
-                        : [const Color(0xFF66BB6A), const Color(0xFF2E7D32)], // Verde normal
+                        ? [const Color(0xFFEF5350), const Color(0xFFC62828)]
+                        : [const Color(0xFF66BB6A), const Color(0xFF2E7D32)],
                     ),
-                    // Borda sutil para definição
                     border: Border.all(
                       color: Colors.white.withOpacity(0.15),
                       width: 1,
                     ),
                     boxShadow: [
-                      // Highlight interno (Borda brilhante superior)
                       BoxShadow(
                         color: Colors.white.withOpacity(0.4),
                         blurRadius: 0,
-                        offset: const Offset(0, 2), // Brilho "hard" no topo
+                        offset: const Offset(0, 2),
                         spreadRadius: 0,
                       ),
-                      // Sombra interna suave para arredondar
                       BoxShadow(
                         color: Colors.black.withOpacity(0.2),
                         blurRadius: 10,
@@ -1344,7 +1433,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Center(
                     child: Container(
-                       // Círculo decorativo ao redor do ícone
                        width: 42,
                        height: 42,
                        decoration: BoxDecoration(
@@ -1375,8 +1463,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

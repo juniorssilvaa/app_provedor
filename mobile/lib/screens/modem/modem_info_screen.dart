@@ -16,7 +16,7 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
   CpeInfo? _cpeInfo;
   String? _error;
 
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryNavy = const Color(0xFF1A237E);
   final Color cardBg = const Color(0xFF111111);
 
   // State for password visibility
@@ -79,7 +79,7 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: primaryRed,
+        backgroundColor: primaryNavy,
         title: const Text('Meu Modem', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
         leading: IconButton(
@@ -93,7 +93,7 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFFF0000)));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF1A237E)));
     }
 
     if (_error != null) {
@@ -106,10 +106,10 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: primaryRed.withOpacity(0.1),
+                  color: primaryNavy.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.wifi_off, size: 64, color: primaryRed),
+                child: Icon(Icons.wifi_off, size: 64, color: primaryNavy),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -138,12 +138,12 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _fetchModemInfo,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryRed,
+                    backgroundColor: primaryNavy,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 8,
-                    shadowColor: primaryRed.withOpacity(0.4),
+                    shadowColor: primaryNavy.withOpacity(0.4),
                   ),
                   icon: const Icon(Icons.refresh, color: Colors.white),
                   label: const Text(
@@ -183,14 +183,14 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: primaryRed.withOpacity(0.5),
+                        color: primaryNavy.withOpacity(0.5),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
                     ],
-                    border: Border.all(color: primaryRed.withOpacity(0.3), width: 1),
+                    border: Border.all(color: primaryNavy.withOpacity(0.3), width: 1),
                   ),
-                  child: Icon(Icons.router, color: primaryRed, size: 50),
+                  child: Icon(Icons.router, color: primaryNavy, size: 50),
                 ),
                 const SizedBox(height: 16),
                 const Text('Modem', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
@@ -225,7 +225,7 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
                   _buildWifiRow('5 GHz', _cpeInfo!.ssid5g!, _cpeInfo?.password5g, '5g'),
               ],
             ),
-            trailing: Icon(Icons.edit, color: primaryRed, size: 20),
+            trailing: Icon(Icons.edit, color: primaryNavy, size: 20),
           ),
           const SizedBox(height: 16),
 
@@ -261,7 +261,7 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: primaryRed, fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(color: primaryNavy, fontSize: 12, fontWeight: FontWeight.bold)),
         const SizedBox(height: 2),
         Row(
           children: [
@@ -320,7 +320,7 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
           children: [
             Row(
               children: [
-                Icon(icon, color: primaryRed, size: 24),
+                Icon(icon, color: primaryNavy, size: 24),
                 const SizedBox(width: 12),
                 Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 if (trailing != null) ...[

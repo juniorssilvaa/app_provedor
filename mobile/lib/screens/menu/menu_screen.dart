@@ -79,7 +79,7 @@ class _MenuScreenState extends State<MenuScreen> {
               icon: const Icon(Icons.settings),
               label: const Text('Abrir configurações do app'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF0000),
+                backgroundColor: const Color(0xFF1A237E),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -96,7 +96,7 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final primaryRed = const Color(0xFFFF0000);
+    final primaryNavy = const Color(0xFF1A237E);
     final provider = context.watch<AppProvider>();
 
     return Scaffold(
@@ -182,7 +182,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   secondary: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF0000), // Fundo vermelho sólido
+                      color: const Color(0xFF1A237E), // Fundo azul marinho sólido
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: SvgPicture.string(
@@ -194,7 +194,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                   // Customização da Chave (Switch)
                   activeColor: Colors.white, // Bolinha branca quando ativo
-                  activeTrackColor: primaryRed, // Trilho vermelho forte quando ativo
+                  activeTrackColor: primaryNavy, // Trilho azul marinho forte quando ativo
                   inactiveThumbColor: Colors.grey[400],
                   inactiveTrackColor: isDark ? Colors.grey[800] : Colors.grey[300],
                   contentPadding: EdgeInsets.zero,
@@ -215,12 +215,12 @@ class _MenuScreenState extends State<MenuScreen> {
                   icon: const Icon(Icons.logout_rounded, color: Colors.white),
                   label: const Text('Sair do App', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryRed,
+                    backgroundColor: primaryNavy,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 4,
-                    shadowColor: primaryRed.withOpacity(0.4),
+                    shadowColor: primaryNavy.withOpacity(0.4),
                   ),
                 ),
               ),
@@ -275,7 +275,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF0000), // Fundo vermelho sólido
+                    color: const Color(0xFF1A237E), // Fundo azul marinho sólido
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: SvgPicture.string(

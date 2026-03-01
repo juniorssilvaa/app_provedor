@@ -19,7 +19,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryBlue = const Color(0xFF1A237E);
   final Color cardBg = const Color(0xFF111111);
   String? _sessionId;
 
@@ -40,7 +40,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     // Mensagem de boas-vindas inicial
     _messages.add(ChatMessage(
       role: 'assistant',
-      content: '$greeting! Sou seu assistente Nanet. Como posso ajudar com sua conexão ou faturas hoje?',
+      content: '$greeting! Sou seu assistente JOCA NET. Como posso ajudar com sua conexão ou faturas hoje?',
       timestamp: DateTime.now(),
     ));
     
@@ -190,13 +190,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: primaryRed,
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Assistente Nanet', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Assistente JOCA NET', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: Column(
@@ -214,7 +214,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
           if (_isLoading)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: LinearProgressIndicator(color: primaryRed, backgroundColor: Colors.white10),
+              child: LinearProgressIndicator(color: const Color(0xFF1A237E), backgroundColor: Colors.white10),
             ),
           _buildInputArea(),
         ],
@@ -261,11 +261,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: primaryRed, 
+                color: const Color(0xFF1A237E), 
                 shape: BoxShape.circle,
                 boxShadow: [ // Sombra para dar destaque flutuante
                   BoxShadow(
-                    color: primaryRed.withOpacity(0.4),
+                    color: const Color(0xFF1A237E).withOpacity(0.4),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   )
@@ -296,7 +296,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isUser ? primaryRed : cardBg,
+                    color: isUser ? const Color(0xFF1A237E) : cardBg,
                     borderRadius: BorderRadius.circular(20).copyWith(
                       bottomLeft: isUser ? null : const Radius.circular(0),
                       bottomRight: isUser ? const Radius.circular(0) : null,
@@ -326,7 +326,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       width: 40,
       height: 40,
       decoration: const BoxDecoration(color: Color(0xFF222222), shape: BoxShape.circle),
-      child: Icon(Icons.smart_toy, color: primaryRed, size: 24),
+      child: Icon(Icons.smart_toy, color: const Color(0xFF1A237E), size: 24),
     );
   }
 
@@ -400,7 +400,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 ),
                 label: const Text('Copiar Chave Pix'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryRed,
+                  backgroundColor: const Color(0xFF1A237E),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -426,7 +426,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 ),
                 label: const Text('Copiar Código de Barras'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryRed,
+                  backgroundColor: const Color(0xFF1A237E),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   padding: const EdgeInsets.symmetric(vertical: 12),

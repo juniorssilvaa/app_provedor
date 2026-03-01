@@ -12,7 +12,8 @@ class PlanosScreen extends StatefulWidget {
 }
 
 class _PlanosScreenState extends State<PlanosScreen> {
-  final Color primaryRed = const Color(0xFFFF0000);
+  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color accentCyan = const Color(0xFF00E5FF);
   final Color cardBg = const Color(0xFF111111);
   
   List<dynamic> _plans = [];
@@ -76,7 +77,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: primaryRed,
+        backgroundColor: primaryNavy,
         title: const Text('Planos', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
         leading: IconButton(
@@ -90,7 +91,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator(color: primaryRed));
+      return Center(child: CircularProgressIndicator(color: primaryNavy));
     }
 
     if (_error != null) {
@@ -98,7 +99,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, color: primaryRed, size: 48),
+            Icon(Icons.error_outline, color: primaryNavy, size: 48),
             const SizedBox(height: 16),
             Text(_error!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center),
             const SizedBox(height: 16),
@@ -110,7 +111,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
                 });
                 _fetchPlans();
               },
-              style: ElevatedButton.styleFrom(backgroundColor: primaryRed),
+              style: ElevatedButton.styleFrom(backgroundColor: primaryNavy),
               child: const Text('Tentar Novamente', style: TextStyle(color: Colors.white)),
             )
           ],
@@ -179,14 +180,16 @@ class _PlanosScreenState extends State<PlanosScreen> {
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
+                child: ElevatedButton(
                   onPressed: () => _contactConsultant(),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: primaryRed),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentCyan,
+                    foregroundColor: primaryNavy,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
                   ),
-                  child: Text('Falar com consultor', style: TextStyle(color: primaryRed, fontWeight: FontWeight.bold)),
+                  child: const Text('Falar com consultor', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -226,7 +229,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: primaryRed,
+                    color: primaryNavy,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.wifi, color: Colors.white, size: 32),
@@ -248,7 +251,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          color: primaryRed,
+                          color: primaryNavy,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -293,7 +296,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
                   decoration: BoxDecoration(
-                    color: primaryRed,
+                    color: primaryNavy,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Text(
@@ -316,7 +319,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
                       Text(
                         isExpanded ? 'Ocultar detalhes' : 'Detalhes',
                         style: TextStyle(
-                          color: primaryRed,
+                          color: primaryNavy,
                           fontSize: 14,
                           decoration: TextDecoration.underline,
                         ),
@@ -324,7 +327,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
                       const SizedBox(width: 4),
                       Icon(
                         isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                        color: primaryRed,
+                        color: primaryNavy,
                         size: 16,
                       ),
                     ],
@@ -344,7 +347,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.check_circle, color: primaryRed, size: 18),
+                            Icon(Icons.check_circle, color: accentCyan, size: 18),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
@@ -367,7 +370,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
                   child: ElevatedButton(
                     onPressed: () => _contactConsultant(planName: name),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryRed,
+                      backgroundColor: primaryNavy,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -414,7 +417,7 @@ class _PlanosScreenState extends State<PlanosScreen> {
   Widget _buildSpeedItem(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, color: primaryRed, size: 16),
+        Icon(icon, color: accentCyan, size: 16),
         const SizedBox(width: 8),
         Text(
           text,

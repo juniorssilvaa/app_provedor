@@ -1,5 +1,5 @@
-name: nanet_app
-description: App Nanet - Aplicativo de gestão de internet.
+name: jocanet_app
+description: App JOCA NET - Aplicativo de gestão de internet.
 publish_to: 'none'
 version: 1.0.2+4
 
@@ -9,12 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.2
   fl_chart: ^0.66.0
   provider: ^6.0.5
   shared_preferences: ^2.2.1
   http: ^1.1.0
-  intl: ^0.18.0
+  intl: ^0.20.2
   path_provider: ^2.1.1
   permission_handler: ^11.0.1
   connectivity_plus: ^5.0.1
@@ -34,17 +36,28 @@ dependencies:
   
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.7
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
   image_path: "assets/icon.png"
-  min_sdk_android: 21
-  adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/splash-icon.png"
+  adaptive_icon_foreground: "assets/icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/icon.png
+  android: true
+  ios: true
+  android_12:
+    image: assets/icon.png
+    color: "#FFFFFF"
 
 flutter:
   uses-material-design: true

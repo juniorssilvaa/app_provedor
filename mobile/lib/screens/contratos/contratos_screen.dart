@@ -164,13 +164,13 @@ class _ContratosScreenState extends State<ContratosScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final primaryRed = const Color(0xFFFF0000);
+    final primaryNavy = const Color(0xFF1A237E);
     const backgroundColor = Color(0xFF121212);
 
     return Scaffold(
       backgroundColor: isDark ? backgroundColor : Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: primaryRed,
+        backgroundColor: primaryNavy,
         elevation: 0,
         title: const Text(
           'CONTRATOS ASSINADOS', 
@@ -183,14 +183,14 @@ class _ContratosScreenState extends State<ContratosScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: primaryRed))
+          ? Center(child: CircularProgressIndicator(color: primaryNavy))
           : _errorMessage != null
                ? Center(child: Text(_errorMessage!, style: TextStyle(color: isDark ? Colors.white : Colors.black)))
-               : _buildList(isDark, primaryRed),
+               : _buildList(isDark, primaryNavy),
     );
   }
 
-  Widget _buildList(bool isDark, Color primaryRed) {
+  Widget _buildList(bool isDark, Color primaryNavy) {
     if (_signatures.isEmpty) {
       return Center(
         child: Text(
@@ -237,12 +237,12 @@ class _ContratosScreenState extends State<ContratosScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: primaryRed.withOpacity(0.1),
+                        color: primaryNavy.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         Icons.description_rounded,
-                        color: primaryRed,
+                        color: primaryNavy,
                         size: 24,
                       ),
                     ),
@@ -337,7 +337,7 @@ class _ContratosScreenState extends State<ContratosScreen> {
                           child: ElevatedButton.icon(
                             onPressed: () => _launchUrl(urlAssinatura),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryRed,
+                              backgroundColor: primaryNavy,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 10),
@@ -356,7 +356,7 @@ class _ContratosScreenState extends State<ContratosScreen> {
                           child: ElevatedButton.icon(
                             onPressed: () => _launchUrl(urlAssinado),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryRed,
+                              backgroundColor: primaryNavy,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 10),
