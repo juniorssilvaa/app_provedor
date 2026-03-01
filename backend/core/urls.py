@@ -37,6 +37,9 @@ urlpatterns = [
     path('super-admin/providers/<int:pk>/edit/', views.provider_edit, name='provider_edit'),
     path('super-admin/providers/<int:pk>/toggle-status/', views.provider_toggle_status, name='provider_toggle_status'),
     path('super-admin/ai-config/', views.super_admin_ai_config, name='super_admin_ai_config'),
+    path('super-admin/contacts/', views.super_admin_contacts, name='super_admin_contacts'),
+    path('super-admin/contacts/<int:pk>/delete/', views.super_admin_contact_delete, name='super_admin_contact_delete'),
+    path('super-admin/providers/<int:pk>/cleanup/', views.super_admin_provider_cleanup, name='super_admin_provider_cleanup'),
 
     # Provider Panel
     path('panel/dashboard/', views.dashboard, name='provider_dashboard'), # Assuming 'dashboard' is the provider dashboard
