@@ -152,6 +152,8 @@ class AppUser(models.Model):
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='app_users', null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     cpf = models.CharField(max_length=14)
     external_id = models.CharField(max_length=100, blank=True, null=True)
     customer_id = models.CharField(max_length=50, blank=True, null=True, db_index=True, help_text="ID do cliente no SGP")

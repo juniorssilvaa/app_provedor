@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import logout, authenticate
 from django.contrib.auth.views import LoginView
@@ -12,6 +12,7 @@ from api.push_service import send_push_notification_core
 from django.http import FileResponse, HttpResponseNotFound
 from django.conf import settings
 from pathlib import Path
+from functools import wraps
 
 
 def check_active(request):
@@ -23,6 +24,19 @@ def check_active(request):
             logout(request)
             return render(request, 'blocked.html')
     return None
+
+
+def provider_only(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if request.user.is_superuser:
+            messages.warning(request, "Esta página é restrita a administradores de provedor.")
+            return redirect('super_admin_dashboard')
+        if not getattr(request.user, 'provider', None):
+            messages.error(request, "Seu usuário não possui um provedor associado.")
+            return redirect('login')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 
 class CustomAuthenticationForm(AuthenticationForm):
@@ -75,13 +89,11 @@ def login_redirect(request):
         return redirect('dashboard')
 
 @login_required
+@provider_only
 def dashboard(request):
     blocked = check_active(request)
     if blocked: return blocked
     
-    if request.user.is_superuser:
-        return redirect('super_admin_dashboard')
-        
     provider = request.user.provider
     if not provider:
         return render(request, 'base.html', {'segment': 'dashboard'})
@@ -173,6 +185,7 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 @login_required
+@provider_only
 def panel_user_list(request):
     blocked = check_active(request)
     if blocked: return blocked
@@ -234,6 +247,7 @@ def panel_user_list(request):
     })
 
 @login_required
+@provider_only
 def panel_user_delete(request, pk):
     blocked = check_active(request)
     if blocked: return blocked
@@ -251,6 +265,7 @@ def panel_user_delete(request, pk):
     return redirect('panel_user_list')
 
 @login_required
+@provider_only
 def user_list(request):
     blocked = check_active(request)
     if blocked: return blocked
@@ -299,6 +314,7 @@ def user_list(request):
     return render(request, 'users.html', {'segment': 'users', 'users': page_obj})
 
 @login_required
+@provider_only
 def notification_list(request):
     blocked = check_active(request)
     if blocked: return blocked
@@ -453,6 +469,7 @@ def notification_list(request):
 
 
 @login_required
+@provider_only
 def notification_template_create(request):
     """Criar novo template de notificação"""
     blocked = check_active(request)
@@ -484,6 +501,7 @@ def notification_template_create(request):
 
 
 @login_required
+@provider_only
 def notification_template_edit(request, pk):
     """Editar template de notificação"""
     blocked = check_active(request)
@@ -509,6 +527,7 @@ def notification_template_edit(request, pk):
 
 
 @login_required
+@provider_only
 def notification_template_delete(request, pk):
     """Deletar template de notificação"""
     blocked = check_active(request)
@@ -522,6 +541,7 @@ def notification_template_delete(request, pk):
     return redirect('notification_list')
 
 @login_required
+@provider_only
 def in_app_warnings(request):
     blocked = check_active(request)
     if blocked: return blocked
@@ -560,6 +580,7 @@ def in_app_warnings(request):
     return render(request, 'in_app_warnings.html', {'segment': 'in_app_warnings', 'warnings': warnings})
 
 @login_required
+@provider_only
 def delete_in_app_warning(request, pk):
     # Check active status
     blocked = check_active(request)
@@ -570,6 +591,7 @@ def delete_in_app_warning(request, pk):
     return redirect('in_app_warnings')
 
 @login_required
+@provider_only
 def app_config(request):
     blocked = check_active(request)
     if blocked: return blocked
@@ -610,6 +632,7 @@ def app_config(request):
     })
 
 @login_required
+@provider_only
 def profile_settings(request):
     blocked = check_active(request)
     if blocked: return blocked
@@ -693,6 +716,44 @@ def super_admin_users(request):
     if blocked:
         return blocked
     
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        user_id = request.POST.get('user_id')
+        user_to_manage = get_object_or_404(CustomUser, pk=user_id, is_superuser=False)
+        
+        if action == 'edit':
+            new_username = request.POST.get('username')
+            new_email = request.POST.get('email')
+            
+            if new_username:
+                if CustomUser.objects.filter(username=new_username).exclude(pk=user_id).exists():
+                    messages.error(request, f'O nome de usuário "{new_username}" já está em uso.')
+                else:
+                    user_to_manage.username = new_username
+            
+            if new_email is not None:
+                user_to_manage.email = new_email
+                
+            user_to_manage.save()
+            messages.success(request, f'Usuário {user_to_manage.username} atualizado com sucesso!')
+            
+        elif action == 'toggle_status':
+            user_to_manage.is_active = not user_to_manage.is_active
+            user_to_manage.save()
+            status_str = "ativado" if user_to_manage.is_active else "desativado"
+            messages.success(request, f'Usuário {user_to_manage.username} {status_str} com sucesso!')
+            
+        elif action == 'reset_password':
+            new_password = request.POST.get('password')
+            if new_password:
+                user_to_manage.set_password(new_password)
+                user_to_manage.save()
+                messages.success(request, f'Senha do usuário {user_to_manage.username} redefinida com sucesso!')
+            else:
+                messages.error(request, 'A nova senha não pode estar vazia.')
+                
+        return redirect('super_admin_users')
+
     # Get all admins (non-superusers but staff members/provider admins)
     admins = CustomUser.objects.filter(is_superuser=False).select_related('provider').order_by('-date_joined')
     
@@ -842,7 +903,50 @@ def provider_toggle_status(request, pk):
     provider.save()
     return redirect('super_admin_dashboard')
 
+@user_passes_test(is_superuser)
+def super_admin_provider_cleanup(request, pk):
+    """Limpeza granular de dados de um provedor."""
+    provider = get_object_or_404(Provider, pk=pk)
+    
+    if request.method == 'POST':
+        clean_push = request.POST.get('clean_push') == 'on'
+        clean_warnings = request.POST.get('clean_warnings') == 'on'
+        clean_plans = request.POST.get('clean_plans') == 'on'
+        clean_users = request.POST.get('clean_users') == 'on'
+        
+        deleted_info = []
+        
+        if clean_push:
+            Notification.objects.filter(provider=provider).delete()
+            NotificationLog.objects.filter(provider=provider).delete()
+            from .models import ScheduledNotification, NotificationTemplate
+            ScheduledNotification.objects.filter(provider=provider).delete()
+            NotificationTemplate.objects.filter(provider=provider).delete()
+            deleted_info.append("Notificações Push")
+            
+        if clean_warnings:
+            InAppWarning.objects.filter(provider=provider).delete()
+            deleted_info.append("Avisos no App")
+            
+        if clean_plans:
+            Plan.objects.filter(provider=provider).delete()
+            deleted_info.append("Planos")
+            
+        if clean_users:
+            # Ao deletar AppUser, Device e ChatSessions/Telemetria devem ser deletados por CASCADE se configurado,
+            # mas vamos garantir.
+            AppUser.objects.filter(provider=provider).delete()
+            deleted_info.append("Clientes e Dispositivos")
+            
+        if deleted_info:
+            messages.success(request, f"Limpeza concluída para o provedor {provider.name}: {', '.join(deleted_info)}.")
+        else:
+            messages.info(request, "Nenhuma opção de limpeza foi selecionada.")
+            
+    return redirect('super_admin_providers')
+
 @login_required
+@provider_only
 def provider_sgp_integrations(request):
     """
     Renderiza a página de configurações de integração SGP para o provedor.
@@ -851,9 +955,6 @@ def provider_sgp_integrations(request):
     blocked = check_active(request)
     if blocked:
         return blocked
-
-    if not hasattr(request.user, 'provider') or request.user.is_superuser:
-        return redirect('login')
 
     provider = request.user.provider
 
@@ -908,14 +1009,12 @@ def provider_sgp_integrations(request):
     return render(request, 'pages/provider/integrations_sgp.html', context)
 
 @login_required
+@provider_only
 def provider_regenerate_token(request):
     """Gera um novo token de integração para o provedor."""
     blocked = check_active(request)
     if blocked:
         return blocked
-
-    if not hasattr(request.user, 'provider') or request.user.is_superuser:
-        return redirect('login')
 
     provider = request.user.provider
     try:
@@ -949,6 +1048,7 @@ def super_admin_ai_config(request):
     })
 
 @login_required
+@provider_only
 def provider_plans(request):
     blocked = check_active(request)
     if blocked: return blocked
@@ -1000,6 +1100,7 @@ def provider_plans(request):
     })
 
 @login_required
+@provider_only
 def delete_plan(request, pk):
     blocked = check_active(request)
     if blocked: return blocked
@@ -1008,3 +1109,48 @@ def delete_plan(request, pk):
     plan.delete()
     messages.success(request, 'Plano excluído com sucesso!')
     return redirect('provider_plans')
+
+@user_passes_test(is_superuser)
+def super_admin_contacts(request):
+    blocked = check_active(request)
+    if blocked: return blocked
+    
+    from .models import AppUser, Provider
+    from django.db.models import Q
+    
+    contacts_qs = AppUser.objects.select_related('provider').order_by('-created_at')
+    
+    provider_id = request.GET.get('provider_id')
+    if provider_id:
+        contacts_qs = contacts_qs.filter(provider_id=provider_id)
+        
+    q = request.GET.get('q')
+    if q:
+        contacts_qs = contacts_qs.filter(
+            Q(name__icontains=q) | 
+            Q(email__icontains=q) | 
+            Q(cpf__icontains=q) |
+            Q(phone__icontains=q)
+        )
+        
+    all_provedores = Provider.objects.all().order_by('name')
+    
+    return render(request, 'super_admin/contacts.html', {
+        'segment': 'super_admin_contacts',
+        'contacts': contacts_qs,
+        'all_provedores': all_provedores
+    })
+
+@user_passes_test(is_superuser)
+def super_admin_contact_delete(request, pk):
+    blocked = check_active(request)
+    if blocked: return blocked
+    
+    if request.method == 'POST':
+        from .models import AppUser
+        contact = get_object_or_404(AppUser, pk=pk)
+        name = contact.name or contact.cpf
+        contact.delete()
+        messages.success(request, f'Cliente {name} excluído com sucesso!')
+        
+    return redirect('super_admin_contacts')
