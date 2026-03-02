@@ -8,6 +8,11 @@
 !mobile/
 !.github/
 !.github/workflows/
+!backend/
+!backend/**
+!docker-compose.yml
+!Dockerfile
+!Dockerfile.webhook
 
 # Allow mobile directory content
 !mobile/**
