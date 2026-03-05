@@ -497,6 +497,57 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildExemptCard(Color cardBg, Color textColor, Color subTextColor) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.withOpacity(0.2), cardBg],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.star_rounded, color: Colors.blue, size: 32),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CLIENTE ISENTO',
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Você possui isenção de fatura neste contrato.',
+                  style: TextStyle(
+                    color: subTextColor,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCongratsCard(Color cardBg, Color textColor, Color subTextColor) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -559,6 +610,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = Provider.of<AppProvider>(context);
     final contract = provider.userContract;
     
+    // Verifica status especial: Isento
+    if (contract['invoice_status_code'] == 'exempt') {
+      return _buildExemptCard(cardBg, textColor, subTextColor);
+    }
+
     // Verifica se está tudo pago (definido no LoginScreen)
     if (contract['invoice_status_code'] == 'paid') {
       return _buildCongratsCard(cardBg, textColor, subTextColor);
@@ -963,6 +1019,12 @@ class _HomeScreenState extends State<HomeScreen> {
         'icon': Icons.description_rounded,
         'label': 'Contrato Assinado',
         'route': '/contratos'
+      },
+      {
+        'ids': ['nota_fiscal', 'NOTA FISCAL', 'notas', 'NOTAS'],
+        'icon': Icons.receipt_long_rounded,
+        'label': 'Nota Fiscal',
+        'route': '/nota_fiscal'
       },
       {
         'ids': ['connected_devices', 'CONNECTED_DEVICES', 'dispositivos', 'DISPOSITIVOS CONECTADOS'], 

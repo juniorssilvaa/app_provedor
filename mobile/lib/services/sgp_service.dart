@@ -221,6 +221,19 @@ class SGPService {
     }
   }
 
+  Future<List<dynamic>> getFiscalNotes(String cpfCnpj) async {
+    try {
+      final data = await _proxyPost('central/notafiscal/list/', {
+        'cpfcnpj': cpfCnpj,
+      });
+      if (data is List) return data;
+      return [];
+    } catch (e) {
+      debugPrint('Erro ao buscar notas fiscais: $e');
+      return [];
+    }
+  }
+
   Future<Map<String, dynamic>> openSupportTicket(String cpfCnpj, String password, String contractId, String typeId, String message) async {
     try {
       final data = await _proxyPost('ura/chamado/', {

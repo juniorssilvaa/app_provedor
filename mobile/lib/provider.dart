@@ -475,6 +475,12 @@ class AppProvider with ChangeNotifier {
                  'registration_date': c['data_cadastro'] ?? '24/10/2024',
                  'address': enderecoCompleto,
                  'login': c['login'],
+                 'is_exempt': (c['isento'] == true || 
+                              c['cobPermuta'] == true || 
+                              c['isento_mensalidade'] == true ||
+                              c['isento_aluguel'] == true ||
+                              c['cobIsento'] == true ||
+                              c['isentoMensalidade'] == true),
                });
            }
            final currentId = (_userContract['id'] ?? _userContract['contrato'])?.toString().trim();
@@ -483,6 +489,11 @@ class AppProvider with ChangeNotifier {
            final sTime = await _sgpService!.getServerTime();
            if (sTime != null) AppConfig.setServerTime(sTime);
            final invoices = await _sgpService!.getInvoices(_cpf!);
+           
+           // Limpa dados de fatura anterior para evitar lixo se não encontrar nada
+           _userContract['last_invoice_value'] = null;
+           _userContract['last_invoice_due'] = null;
+           
            if (invoices.isNotEmpty) {
               // Filtrar faturas específicas para este contrato
               final List<Map<String, dynamic>> contractInvoices = invoices.where((inv) {
@@ -490,25 +501,44 @@ class AppProvider with ChangeNotifier {
                 return invContractId == currentId && inv['status']?.toString().toLowerCase() == 'aberto';
               }).map((e) => Map<String, dynamic>.from(e)).toList();
 
-              final Map<String, dynamic>? priority = contractInvoices.firstOrNull;
-              if (priority != null) {
-                  final dueStr = priority['dataVencimento'] ?? priority['data_vencimento'];
-                  if (dueStr != null) {
-                     final due = DateTime.parse(dueStr);
-                     final today = AppConfig.getToday();
-                     bool isOverdue = due.isBefore(DateTime(today.year, today.month, today.day));
-                     
-                     double valor = double.tryParse(priority['valor']?.toString() ?? '0') ?? 0;
-                     double valorCorrigido = double.tryParse(priority['valorCorrigido']?.toString() ?? priority['valor_corrigido']?.toString() ?? priority['valor']?.toString() ?? '0') ?? valor;
-                     
-                     debugPrint('REFRESH: Fatura encontrada para contrato $currentId: Vencimento=$dueStr, Valor=$valor, Corrigido=$valorCorrigido, Atrasada=$isOverdue');
-                     _userContract['last_invoice_value'] = valor.toStringAsFixed(2).replaceFirst('.', ',');
-                     _userContract['last_invoice_corrected_value'] = valorCorrigido.toStringAsFixed(2).replaceFirst('.', ',');
-                     _userContract['last_invoice_interest'] = (valorCorrigido - valor).toStringAsFixed(2).replaceFirst('.', ',');
-                     _userContract['last_invoice_due'] = dueStr.split('-').reversed.join('/');
-                     _userContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
-                  }
+              if (contractInvoices.isNotEmpty) {
+                 // Ordenar por data de vencimento (mais antiga primeiro) para garantir prioridade na Home
+                 contractInvoices.sort((a, b) {
+                   final dateA = DateTime.tryParse((a['dataVencimento'] ?? a['data_vencimento'] ?? '').toString()) ?? DateTime(2099);
+                   final dateB = DateTime.tryParse((b['dataVencimento'] ?? b['data_vencimento'] ?? '').toString()) ?? DateTime(2099);
+                   return dateA.compareTo(dateB);
+                 });
+
+                 final priority = contractInvoices.first;
+                 final dueStr = priority['dataVencimento'] ?? priority['data_vencimento'];
+                 if (dueStr != null) {
+                    final due = DateTime.parse(dueStr);
+                    final today = AppConfig.getToday();
+                    bool isOverdue = due.isBefore(DateTime(today.year, today.month, today.day));
+                    
+                    double valor = double.tryParse(priority['valor']?.toString() ?? '0') ?? 0;
+                    double valorCorrigido = double.tryParse(priority['valorCorrigido']?.toString() ?? priority['valor_corrigido']?.toString() ?? priority['valor']?.toString() ?? '0') ?? valor;
+                    
+                    debugPrint('REFRESH: Fatura encontrada para contrato $currentId: Vencimento=$dueStr, Valor=$valor, Corrigido=$valorCorrigido, Atrasada=$isOverdue');
+                    _userContract['last_invoice_value'] = valor.toStringAsFixed(2).replaceFirst('.', ',');
+                    _userContract['last_invoice_corrected_value'] = valorCorrigido.toStringAsFixed(2).replaceFirst('.', ',');
+                    _userContract['last_invoice_interest'] = (valorCorrigido - valor).toStringAsFixed(2).replaceFirst('.', ',');
+                    _userContract['last_invoice_due'] = dueStr.split('-').reversed.join('/');
+                    _userContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
+                 }
+              } else {
+                 if (_userContract['is_exempt'] == true) {
+                   _userContract['invoice_status_code'] = 'exempt';
+                 } else {
+                   _userContract['invoice_status_code'] = 'paid';
+                 }
               }
+           } else {
+               if (_userContract['is_exempt'] == true) {
+                   _userContract['invoice_status_code'] = 'exempt';
+               } else {
+                   _userContract['invoice_status_code'] = 'paid';
+               }
            }
            notifyListeners();
       }
