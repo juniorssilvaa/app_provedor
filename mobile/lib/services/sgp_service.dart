@@ -221,10 +221,12 @@ class SGPService {
     }
   }
 
-  Future<List<dynamic>> getFiscalNotes(String cpfCnpj) async {
+  Future<List<dynamic>> getFiscalNotes(String cpfCnpj, String password, String contractId) async {
     try {
       final data = await _proxyPost('central/notafiscal/list/', {
         'cpfcnpj': cpfCnpj,
+        'senha': password,
+        'contrato': contractId,
       });
       if (data is List) return data;
       return [];

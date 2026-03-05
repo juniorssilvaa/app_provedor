@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'config.dart';
 
 import 'provider.dart';
@@ -77,6 +78,14 @@ class MyApp extends StatelessWidget {
             title: 'Nanet',
             debugShowCheckedModeBanner: false,
             themeMode: provider.themeMode,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('pt', 'BR'),
+            ],
             theme: ThemeData(
               brightness: Brightness.light,
               primaryColor: const Color(0xFFFF0000),

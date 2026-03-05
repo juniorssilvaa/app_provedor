@@ -33,6 +33,8 @@ class _NotaFiscalScreenState extends State<NotaFiscalScreen> {
         if (contractId != null) {
           final notes = await provider.sgpService?.getFiscalNotes(
             provider.cpf!,
+            provider.centralPassword!,
+            contractId,
           );
           
           if (notes != null) {

@@ -483,7 +483,7 @@ class AppProvider with ChangeNotifier {
                               c['isentoMensalidade'] == true),
                });
            }
-           final currentId = (_userContract['id'] ?? _userContract['contrato'])?.toString().trim();
+           final currentId = (_userContract['id'] ?? _userContract['contrato'] ?? _userContract['contract_id'])?.toString().trim();
            _userContract = allMappedContracts.firstWhere((c) => c['id'].toString().trim() == currentId, orElse: () => allMappedContracts.first);
            
            final sTime = await _sgpService!.getServerTime();
@@ -495,17 +495,27 @@ class AppProvider with ChangeNotifier {
            _userContract['last_invoice_due'] = null;
            
            if (invoices.isNotEmpty) {
-              // Filtrar faturas específicas para este contrato
+              // Filtrar faturas específicas para este contrato (Mesma lógica da FaturaScreen)
               final List<Map<String, dynamic>> contractInvoices = invoices.where((inv) {
-                final invContractId = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'])?.toString().trim();
-                return invContractId == currentId && inv['status']?.toString().toLowerCase() == 'aberto';
+                if (inv is! Map) return false;
+                final invContractId = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'] ?? inv['id_contrato'] ?? inv['numero_contrato'])?.toString().trim();
+                if (invContractId != currentId) return false;
+                
+                final status = inv['status']?.toString().toUpperCase() ?? '';
+                return status != 'PAGO' && status != 'BAIXADO' && status != 'CANCELADO';
               }).map((e) => Map<String, dynamic>.from(e)).toList();
 
               if (contractInvoices.isNotEmpty) {
-                 // Ordenar por data de vencimento (mais antiga primeiro) para garantir prioridade na Home
+                 // Ordenar por data de vencimento (mais antiga primeiro)
                  contractInvoices.sort((a, b) {
-                   final dateA = DateTime.tryParse((a['dataVencimento'] ?? a['data_vencimento'] ?? '').toString()) ?? DateTime(2099);
-                   final dateB = DateTime.tryParse((b['dataVencimento'] ?? b['data_vencimento'] ?? '').toString()) ?? DateTime(2099);
+                   DateTime dateA;
+                   DateTime dateB;
+                   try {
+                     dateA = DateTime.parse((a['dataVencimento'] ?? a['data_vencimento'] ?? '').toString());
+                   } catch (_) { dateA = DateTime(2099); }
+                   try {
+                     dateB = DateTime.parse((b['dataVencimento'] ?? b['data_venc_original'] ?? b['data_vencimento'] ?? '').toString());
+                   } catch (_) { dateB = DateTime(2099); }
                    return dateA.compareTo(dateB);
                  });
 
