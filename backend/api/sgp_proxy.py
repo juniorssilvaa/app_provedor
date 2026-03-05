@@ -108,6 +108,8 @@ def proxy_sgp_request(request, endpoint):
             'ura/liberacaopromessa/': 'api/ura/liberacaopromessa',
             'wifi/config': 'api/wifi/config',
             'wifi/config/': 'api/wifi/config',
+            'central/notafiscal/list': 'api/central/notafiscal/list',
+            'central/notafiscal/list/': 'api/central/notafiscal/list',
         }
         
         # Mapeamento reverso manual se necessário
@@ -148,7 +150,7 @@ def proxy_sgp_request(request, endpoint):
         else:
             # POST Logic
             content_type = request.content_type or ''
-            force_form_data = 'api/ura/titulos' in target_url or 'api/central/extratouso' in target_url or 'api/central/chamado' in target_url or 'api/ura/chamado' in target_url or 'api/ura/liberacaopromessa' in target_url or 'api/ura/consultacliente' in target_url
+            force_form_data = 'api/ura/titulos' in target_url or 'api/central/extratouso' in target_url or 'api/central/chamado' in target_url or 'api/ura/chamado' in target_url or 'api/ura/liberacaopromessa' in target_url or 'api/ura/consultacliente' in target_url or 'api/central/notafiscal/list' in target_url
 
             if 'application/json' in content_type and not force_form_data:
                 response = requests.post(target_url, json=payload, timeout=30)

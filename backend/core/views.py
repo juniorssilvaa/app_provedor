@@ -624,7 +624,7 @@ def app_config(request):
         'segment': 'app_config',
         'config': config,
         'all_shortcuts': [
-            'PLANOS', 'CONSUMO', 'CONTRATO ASSINADO'
+            'PLANOS', 'CONSUMO', 'CONTRATO ASSINADO', 'NOTA FISCAL'
         ],
         'all_tools': [
             'MEU WI-FI', 'FAST TEST', 'CÂMERAS'
