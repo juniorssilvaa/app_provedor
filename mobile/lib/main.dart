@@ -27,6 +27,7 @@ import 'screens/menu/privacy_screen.dart';
 import 'screens/menu/select_contract_screen.dart';
 import 'screens/notification/notification_screen.dart';
 import 'screens/notification/notification_detail_screen.dart';
+import 'screens/nota_fiscal/nota_fiscal_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -162,6 +163,7 @@ class MyApp extends StatelessWidget {
             '/privacy': (context) => const PrivacyScreen(),
             '/notifications': (context) => const NotificationScreen(),
             '/notification_detail': (context) => const NotificationDetailScreen(),
+            '/nota_fiscal': (context) => const NotaFiscalScreen(),
           },
         );
       },

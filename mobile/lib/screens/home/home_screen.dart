@@ -599,7 +599,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Determina o status da fatura
     final isOverdue = contract['invoice_status_code'] == 'overdue';
     final statusText = isOverdue ? 'FATURA ATRASADA' : 'FATURA ABERTA';
-    final statusColor = isOverdue ? const Color(0xFFFF3333) : Colors.orange[700];
+    final statusColor = isOverdue ? Colors.red : Colors.orange[700];
     final statusIcon = isOverdue ? Icons.warning_amber_rounded : Icons.check_circle_outline;
 
     return Container(
@@ -654,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
              ),
           Text(
             'Vencimento $invoiceDue',
-            style: TextStyle(color: isOverdue ? const Color(0xFFFF3333) : Colors.grey, fontSize: 14, fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal),
+            style: TextStyle(color: isOverdue ? Colors.red : Colors.grey, fontSize: 14, fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal),
           ),
           const SizedBox(height: 20),
           Row(
@@ -996,6 +996,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         'icon': Icons.devices_other_rounded, 
         'label': 'Dispositivos', 
         'route': '/connected_devices'
+      },
+      {
+        'ids': ['nota_fiscal', 'NOTA_FISCAL', 'NOTA FISCAL', 'notas_fiscais'], 
+        'icon': Icons.receipt_long_rounded, 
+        'label': 'Nota Fiscal', 
+        'route': '/nota_fiscal'
       },
     ];
 

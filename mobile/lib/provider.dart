@@ -98,7 +98,8 @@ class AppProvider with ChangeNotifier {
   Future<void> initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      // _isLoggedIn = prefs.getBool('isLoggedIn') ?? false; // Comentado para forçar login sempre que o app abrir
+      _isLoggedIn = false; 
       _cpf = prefs.getString('cpf');
       _token = prefs.getString('token');
       _providerToken = AppConfig.apiToken; 
@@ -492,6 +493,13 @@ class AppProvider with ChangeNotifier {
                 return invContractId == currentId && inv['status']?.toString().toLowerCase() == 'aberto';
               }).map((e) => Map<String, dynamic>.from(e)).toList();
 
+              // Sort by date (oldest first) to prioritize overdue invoices
+              contractInvoices.sort((a, b) {
+                final dateA = DateTime.tryParse(a['dataVencimento'] ?? a['data_vencimento'] ?? '') ?? DateTime(2099);
+                final dateB = DateTime.tryParse(b['dataVencimento'] ?? b['data_vencimento'] ?? '') ?? DateTime(2099);
+                return dateA.compareTo(dateB);
+              });
+
               final Map<String, dynamic>? priority = contractInvoices.firstOrNull;
               if (priority != null) {
                   final dueStr = priority['dataVencimento'] ?? priority['data_vencimento'];
@@ -509,6 +517,10 @@ class AppProvider with ChangeNotifier {
                      _userContract['last_invoice_interest'] = (valorCorrigido - valor).toStringAsFixed(2).replaceFirst('.', ',');
                      _userContract['last_invoice_due'] = dueStr.split('-').reversed.join('/');
                      _userContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
+                     
+                     // Adiciona códigos de pagamento para acesso rápido na Home
+                     _userContract['pix_code'] = priority['codigoPix'] ?? priority['pix_copia_e_cola'] ?? priority['pix_code'] ?? '';
+                     _userContract['barcode'] = priority['linhaDigitavel'] ?? priority['linha_digitavel'] ?? priority['codigoBarras'] ?? priority['barcode'] ?? '';
                   }
               } else {
                  // Nenhuma fatura aberta para este contrato

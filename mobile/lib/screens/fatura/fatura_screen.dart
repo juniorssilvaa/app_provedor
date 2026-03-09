@@ -270,8 +270,8 @@ class _FaturaScreenState extends State<FaturaScreen> {
         }
     }
 
-    String statusLabel = isPaid ? 'PAGO' : (isLate ? 'ATRASADO' : 'ABERTO');
-    Color statusColor = isPaid ? Colors.green : (isLate ? primaryNavy : Colors.orange);
+    String statusLabel = isPaid ? 'PAGO' : (isLate ? 'ATRASADA' : 'ABERTO');
+    Color statusColor = isPaid ? Colors.green : (isLate ? Colors.red : Colors.orange);
 
     // Valor Original e Corrigido
     double valOriginal = double.tryParse(fatura['valor']?.toString() ?? '0') ?? 0.0;
