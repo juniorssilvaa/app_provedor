@@ -24,6 +24,7 @@ class AppProvider with ChangeNotifier {
   String? _centralPassword;
   Map<String, dynamic> _userContract = {};
   Map<String, dynamic> _userInfo = {};
+  bool _isBlocked = false;
 
   // Services
   SGPService? _sgpService;
@@ -60,6 +61,7 @@ class AppProvider with ChangeNotifier {
   List<String> get activeShortcuts => _activeShortcuts;
   List<String> get activeTools => _activeTools;
   bool get appConfigLoaded => _appConfigLoaded;
+  bool get isBlocked => _isBlocked;
 
   AppProvider();
 
@@ -172,7 +174,8 @@ class AppProvider with ChangeNotifier {
       final tokenToUse = _providerToken ?? AppConfig.apiToken;
       final url = AppConfig.apiUrl('public/config/?provider_token=$tokenToUse');
       final response = await http.get(url).timeout(const Duration(seconds: 3));
-
+      debugPrint('NETWORK: fetchAppConfig status=${response.statusCode} for token=${tokenToUse.substring(0, 10)}...');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['active_shortcuts'] != null) {
@@ -187,9 +190,13 @@ class AppProvider with ChangeNotifier {
           }
         }
         _appConfigLoaded = true;
+        _isBlocked = false;
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('activeShortcuts', jsonEncode(_activeShortcuts));
         await prefs.setString('activeTools', jsonEncode(_activeTools));
+        notifyListeners();
+      } else if (response.statusCode == 403) {
+        _isBlocked = true;
         notifyListeners();
       }
     } catch (_) {}
@@ -327,6 +334,7 @@ class AppProvider with ChangeNotifier {
     _userInfo = {};
     _sgpService = null;
     _aiService = null;
+    _isBlocked = false;
     
     notifyListeners();
   }

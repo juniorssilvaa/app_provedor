@@ -28,6 +28,10 @@ import 'screens/menu/select_contract_screen.dart';
 import 'screens/notification/notification_screen.dart';
 import 'screens/notification/notification_detail_screen.dart';
 import 'screens/nota_fiscal/nota_fiscal_screen.dart';
+import 'screens/blocked_screen.dart';
+
+// Chave global para navegação fora do contexto
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,6 +89,7 @@ class MyApp extends StatelessWidget {
     return Consumer<AppProvider>(
       builder: (context, provider, child) {
         return MaterialApp(
+          navigatorKey: navigatorKey,
           title: 'JOCA NET',
           debugShowCheckedModeBanner: false,
           themeMode: provider.themeMode,
@@ -142,8 +147,16 @@ class MyApp extends StatelessWidget {
               foregroundColor: Colors.white,
             ),
           ),
+          builder: (context, child) {
+            if (provider.isBlocked) {
+              return const BlockedScreen();
+            }
+            return child!;
+          },
           // Decide a tela inicial aqui mesmo
-          home: provider.isLoggedIn ? HomeScreen() : const LoginScreen(),
+          home: provider.isBlocked 
+              ? const BlockedScreen() 
+              : (provider.isLoggedIn ? HomeScreen() : const LoginScreen()),
           routes: {
             '/login': (context) => const LoginScreen(),
             '/home': (context) => HomeScreen(),
@@ -164,6 +177,7 @@ class MyApp extends StatelessWidget {
             '/notifications': (context) => const NotificationScreen(),
             '/notification_detail': (context) => const NotificationDetailScreen(),
             '/nota_fiscal': (context) => const NotaFiscalScreen(),
+            '/blocked': (context) => const BlockedScreen(),
           },
         );
       },
