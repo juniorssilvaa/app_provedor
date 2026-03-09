@@ -129,10 +129,10 @@ def get_plans(request):
         provider = token_obj.provider
     else:
         # Fallback legado
-        provider = Provider.objects.filter(sgp_token=provider_token, is_active=True).first()
+        provider = Provider.objects.filter(sgp_token=provider_token).first()
 
-    if not provider:
-        return Response({'error': 'Token de provedor inválido ou inativo.'}, status=403)
+    if not provider or not provider.is_active:
+        return Response({'error': 'Acesso desativado. Entre em contato com o suporte.'}, status=403)
 
     try:
         plans = Plan.objects.filter(provider=provider, is_active=True).order_by('price')
@@ -431,10 +431,10 @@ def get_app_configuration(request):
         provider = token_obj.provider
     else:
         # Fallback legado
-        provider = Provider.objects.filter(sgp_token=provider_token, is_active=True).first()
+        provider = Provider.objects.filter(sgp_token=provider_token).first()
 
-    if not provider:
-        return Response({'error': 'Token de provedor inválido ou inativo.'}, status=403)
+    if not provider or not provider.is_active:
+        return Response({'error': 'Acesso desativado. Entre em contato com o suporte.'}, status=403)
 
     try:
         # Tenta obter a config, se não existir, cria uma default
@@ -515,10 +515,10 @@ def register_app_user(request):
             provider = token_obj.provider
         else:
             # Fallback legado
-            provider = Provider.objects.filter(sgp_token=provider_token, is_active=True).first()
+            provider = Provider.objects.filter(sgp_token=provider_token).first()
             
-        if not provider:
-            return Response({'error': 'Token de provedor inválido ou inativo.'}, status=403)
+        if not provider or not provider.is_active:
+            return Response({'error': 'Acesso desativado. Entre em contato com o suporte.'}, status=403)
         
         import re
         cpf_limpo = re.sub(r'\D', '', str(cpf))

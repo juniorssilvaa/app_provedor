@@ -624,7 +624,7 @@ def app_config(request):
         'segment': 'app_config',
         'config': config,
         'all_shortcuts': [
-            'PLANOS', 'CONSUMO', 'CONTRATO ASSINADO'
+            'PLANOS', 'CONSUMO', 'CONTRATO ASSINADO', 'NOTA FISCAL'
         ],
         'all_tools': [
             'MEU WI-FI', 'FAST TEST', 'CÂMERAS'
@@ -718,6 +718,31 @@ def super_admin_users(request):
     
     if request.method == 'POST':
         action = request.POST.get('action')
+        
+        if action == 'create':
+            username = request.POST.get('username')
+            email = request.POST.get('email')
+            password = request.POST.get('password')
+            provider_id = request.POST.get('provider_id')
+            
+            if CustomUser.objects.filter(username=username).exists():
+                messages.error(request, f'O nome de usuário "{username}" já está em uso.')
+            else:
+                provider = get_object_or_404(Provider, pk=provider_id) if provider_id else None
+                new_user = CustomUser.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    is_staff=True,
+                    is_superuser=False
+                )
+                if provider:
+                    new_user.provider = provider
+                    new_user.save()
+                messages.success(request, f'Usuário {username} criado com sucesso e associado ao provedor {provider.name if provider else "Nenhum"}.')
+                
+            return redirect('super_admin_users')
+            
         user_id = request.POST.get('user_id')
         user_to_manage = get_object_or_404(CustomUser, pk=user_id, is_superuser=False)
         
@@ -756,10 +781,12 @@ def super_admin_users(request):
 
     # Get all admins (non-superusers but staff members/provider admins)
     admins = CustomUser.objects.filter(is_superuser=False).select_related('provider').order_by('-date_joined')
+    providers = Provider.objects.all().order_by('name')
     
     return render(request, 'super_admin/users.html', {
         'segment': 'super_admin_users',
-        'admins': admins
+        'admins': admins,
+        'providers': providers
     })
 
 @user_passes_test(is_superuser)
