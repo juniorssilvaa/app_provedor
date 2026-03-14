@@ -13,28 +13,39 @@ Aplicativo de autoatendimento desenvolvido em Flutter para clientes da WR TELECO
 
 ## ⚙️ Configuração de Ambiente
 
-- Para rodar o app:
+Este aplicativo agora utiliza **Flavors** (perfis de compilação) para separar as configurações específicas do provedor. 
+
+Para rodar o app no seu emulador ou dispositivo físico em modo de desenvolvimento, utilize sempre o comando com o flavor designado:
+
 ```bash
-flutter run
+flutter run --flavor wrtelecom
 ```
 
+### 🌐 URLs da API (Back-end)
+
+A URL base da API fica configurada no arquivo `lib/core/app_config.dart`.
+
+- **🔗 Produção (Oficial):** `https://apis.niochat.com.br/`
+- **💻 Desenvolvimento Local:** `http://10.0.2.2:8000/` *(usado para rodar a API de testes na própria máquina junto com o emulador Android)*
+
 ### Android (Release)
-Para gerar os arquivos de produção:
+Para gerar os arquivos de produção para as lojas, você também deve especificar o flavor:
 ```bash
 # Gerar APK
-flutter build apk --release
+flutter build apk --flavor wrtelecom --release
 
 # Gerar AAB (para Google Play)
-flutter build appbundle --release
+flutter build appbundle --flavor wrtelecom --release
 ```
 
 ### iOS
-Requer macOS e Xcode configurado.
+Requer macOS e Xcode configurado. O esquema de compilação acompanha o flavor.
 ```bash
-flutter build ios --release
+flutter build ios --flavor wrtelecom --release
 ```
 
 ## 🏗 Estrutura de Pastas
-- `lib/provider.dart`: Cérebro do app, gerencia login e dados globais.
+- `lib/providers/`: Cérebro do app, gerencia login e dados globais (ex: `app_provider.dart`).
 - `lib/screens/`: Todas as telas divididas por funcionalidade.
 - `lib/services/`: Conectores de API (SGP, AI, Telemetria).
+- `lib/core/app_config.dart`: Fica armazenado as configurações de URL da API e Tokens.
