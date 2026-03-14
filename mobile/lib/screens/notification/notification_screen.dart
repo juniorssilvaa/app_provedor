@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 import 'package:intl/intl.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final primaryNavy = const Color(0xFF1A237E);
+    final primaryNavy = const Color(0xFF0073B7);
     final provider = context.watch<AppProvider>();
     final notifications = provider.notifications;
 
@@ -34,12 +34,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
         title: const Text('Notificações', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: const Color(0xFF1A237E),
+        backgroundColor: const Color(0xFF0073B7),
         foregroundColor: Colors.white,
       ),
       body: RefreshIndicator(
         onRefresh: () => provider.fetchNotifications(),
-        color: const Color(0xFF1A237E),
+        color: const Color(0xFF0073B7),
         child: notifications.isEmpty
             ? Center(
                 child: Column(
@@ -116,7 +116,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                               height: 8,
                                               margin: const EdgeInsets.only(right: 8),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFF1A237E),
+                                                color: const Color(0xFF0073B7),
                                                 shape: BoxShape.circle,
                                               ),
                                             ),
@@ -191,7 +191,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       case 'warning':
         return Colors.orange;
       case 'critical':
-        return const Color(0xFF1A237E);
+        return const Color(0xFF0073B7);
       case 'success':
         return Colors.green;
       default:

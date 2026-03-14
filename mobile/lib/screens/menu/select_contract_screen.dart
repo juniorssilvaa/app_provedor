@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 
 class SelectContractScreen extends StatefulWidget {
   const SelectContractScreen({super.key});
@@ -64,7 +64,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao alterar contrato: $e'), backgroundColor: const Color(0xFF1A237E)),
+          SnackBar(content: Text('Erro ao alterar contrato: $e'), backgroundColor: const Color(0xFF0073B7)),
         );
       }
     } finally {
@@ -76,7 +76,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final primaryNavy = const Color(0xFF1A237E);
+    final primaryNavy = const Color(0xFF0073B7);
     final provider = context.watch<AppProvider>();
     
     final List<dynamic> contratos = provider.userInfo['contratos'] ?? [];
@@ -117,7 +117,7 @@ class _SelectContractScreenState extends State<SelectContractScreen> {
                     
                     final isSuspended = status.contains('SUSPENSO');
                     final isCanceled = status.contains('CANCELADO') || status == '3';
-                    final Color statusColor = (isSuspended || isCanceled) ? const Color(0xFF1A237E) : Colors.green;
+                    final Color statusColor = (isSuspended || isCanceled) ? const Color(0xFF0073B7) : Colors.green;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),

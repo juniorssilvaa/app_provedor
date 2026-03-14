@@ -1,9 +1,0 @@
-flutter_launcher_icons:
-  android: "ic_launcher"
-  ios: true
-  image_path: "assets/logo.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/logo.png"
-  # Reduzindo o padding efetivo para o ícone parecer maior
-  adaptive_icon_foreground_scale: 1.15
-  min_sdk_android: 21

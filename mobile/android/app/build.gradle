@@ -32,7 +32,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.jocanet.app.niochat"
+    namespace "com.wrtelecom.app.niochat"
     compileSdkVersion 36
     ndkVersion flutter.ndkVersion
 
@@ -42,31 +42,38 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
-    flavorDimensions "provider"
-
-    productFlavors {
-        jocanet {
-            dimension "provider"
-            applicationId "com.jocanet.app.niochat"
-            resValue "string", "app_name", "JOCA NET"
-        }
+    kotlinOptions {
+        jvmTarget = '17'
     }
 
+
     defaultConfig {
-        // applicationId removido pois é definido nos flavors
+        applicationId "com.wrtelecom.app.niochat"
+        resValue "string", "app_name", "WR TELECOM"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+    }
+
+    flavorDimensions "client"
+
+    productFlavors {
+        wrtelecom {
+            dimension "client"
+            applicationId "com.wrtelecom.app.niochat"
+            resValue "string", "app_name", "WR TELECOM"
+        }
+        jocanet {
+            dimension "client"
+            applicationId "com.wrtelecom.app.niochat" // Ajustar se necessário
+            resValue "string", "app_name", "Joca Net"
+        }
     }
 
     signingConfigs {

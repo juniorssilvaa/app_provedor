@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 import '../../services/sgp_service.dart';
 
 class ConsumptionScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class _ConsumptionScreenState extends State<ConsumptionScreen> {
   DateTime _selectedDate = DateTime.now();
 
   // Colors based on the new design
-  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color primaryNavy = const Color(0xFF0073B7);
   final Color accentCyan = const Color(0xFF00E5FF);
   final Color darkBackground = const Color(0xFF121212); // Almost black background
   final Color cardBackground = const Color(0xFF1E1E1E); // Dark Grey for cards
@@ -58,7 +58,7 @@ class _ConsumptionScreenState extends State<ConsumptionScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Sessão expirada ou senha não encontrada. Por favor, faça login novamente.'),
-              backgroundColor: const Color(0xFF1A237E),
+              backgroundColor: const Color(0xFF0073B7),
             ),
           );
         }

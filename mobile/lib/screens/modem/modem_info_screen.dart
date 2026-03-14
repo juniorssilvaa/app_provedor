@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 import '../../models/cpe_info.dart';
 import 'wifi_config_screen.dart';
 
@@ -16,7 +16,7 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
   CpeInfo? _cpeInfo;
   String? _error;
 
-  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color primaryNavy = const Color(0xFF0073B7);
   final Color cardBg = const Color(0xFF111111);
 
   // State for password visibility
@@ -93,7 +93,7 @@ class _ModemInfoScreenState extends State<ModemInfoScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF1A237E)));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF0073B7)));
     }
 
     if (_error != null) {

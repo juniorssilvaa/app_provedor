@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class MenuScreen extends StatefulWidget {
@@ -79,7 +79,7 @@ class _MenuScreenState extends State<MenuScreen> {
               icon: const Icon(Icons.settings),
               label: const Text('Abrir configurações do app'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A237E),
+                backgroundColor: const Color(0xFF0073B7),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -96,7 +96,7 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final primaryNavy = const Color(0xFF1A237E);
+    final primaryNavy = const Color(0xFF0073B7);
     final provider = context.watch<AppProvider>();
 
     return Scaffold(
@@ -182,7 +182,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   secondary: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A237E), // Fundo azul marinho sólido
+                      color: const Color(0xFF0073B7), // Fundo azul marinho sólido
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: SvgPicture.string(
@@ -275,7 +275,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A237E), // Fundo azul marinho sólido
+                    color: const Color(0xFF0073B7), // Fundo azul marinho sólido
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: SvgPicture.string(

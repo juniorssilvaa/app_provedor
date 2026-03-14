@@ -23,19 +23,19 @@ class TermsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Última atualização: 11 de Fevereiro de 2026',
+              'Última atualização: 13 de Março de 2026',
               style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
             const SizedBox(height: 24),
             
             _buildSection(
               '1. Aceitação dos Termos',
-              'Ao baixar e utilizar o aplicativo JOCA NET, você concorda com estes termos de uso. Este aplicativo destina-se exclusivamente a clientes ativos do provedor para gerenciamento de serviços de internet.',
+              'Ao baixar e utilizar o aplicativo WR TELECOM, você concorda com estes termos de uso. Este aplicativo destina-se exclusivamente a clientes ativos do provedor para gerenciamento de serviços de internet.',
               isDark
             ),
             _buildSection(
               '2. Acesso e Segurança',
-              'O acesso ao aplicativo é feito através do seu CPF ou CNPJ. Você é responsável pelo uso do aplicativo em seu dispositivo, enquanto a JOCA NET garante a segurança e confidencialidade dos seus dados em nossos sistemas.',
+              'O acesso ao aplicativo é feito através do seu CPF ou CNPJ. Você é responsável pelo uso do aplicativo em seu dispositivo, enquanto a WR TELECOM garante a segurança e confidencialidade dos seus dados em nossos sistemas.',
               isDark
             ),
             _buildSection(
@@ -50,7 +50,7 @@ class TermsScreen extends StatelessWidget {
             ),
             _buildSection(
               '5. Alterações no Serviço',
-              'A JOCA NET reserva-se o direito de modificar, suspender ou descontinuar funcionalidades do aplicativo a qualquer momento, visando melhorias ou manutenção.',
+              'A WR TELECOM reserva-se o direito de modificar, suspender ou descontinuar funcionalidades do aplicativo a qualquer momento, visando melhorias ou manutenção.',
               isDark
             ),
             const SizedBox(height: 40),
@@ -71,7 +71,7 @@ class TermsScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18, 
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A237E),
+              color: Color(0xFF0073B7),
             ),
           ),
           const SizedBox(height: 8),

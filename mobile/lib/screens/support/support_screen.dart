@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 import '../../services/sgp_service.dart';
 
 class SupportScreen extends StatefulWidget {
@@ -15,7 +15,7 @@ class _SupportScreenState extends State<SupportScreen> {
   bool _isLoading = false;
   List<dynamic> _tickets = [];
 
-  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color primaryNavy = const Color(0xFF0073B7);
   final Color darkBackground = const Color(0xFF121212);
   final Color cardBackground = const Color(0xFF1E1E1E);
   final Color textGrey = const Color(0xFFAAAAAA);
@@ -128,7 +128,7 @@ class _SupportScreenState extends State<SupportScreen> {
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao abrir chamado: $e'), backgroundColor: const Color(0xFF1A237E)),
+        SnackBar(content: Text('Erro ao abrir chamado: $e'), backgroundColor: const Color(0xFF0073B7)),
       );
     } finally {
       setState(() => _isSubmitting = false);

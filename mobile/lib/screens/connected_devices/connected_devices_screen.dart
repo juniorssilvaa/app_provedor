@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 
 class ConnectedDevicesScreen extends StatefulWidget {
   const ConnectedDevicesScreen({super.key});
@@ -13,7 +13,7 @@ class _ConnectedDevicesScreenState extends State<ConnectedDevicesScreen> {
   bool _isLoading = true;
   String? _error;
 
-  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color primaryNavy = const Color(0xFF0073B7);
 
   @override
   void initState() {
@@ -107,7 +107,7 @@ class _ConnectedDevicesScreenState extends State<ConnectedDevicesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(color: Color(0xFF1A237E)),
+            const CircularProgressIndicator(color: Color(0xFF0073B7)),
             const SizedBox(height: 20),
             Text('Escaneando sua rede...', 
               style: TextStyle(color: Colors.grey[400], fontSize: 14)),

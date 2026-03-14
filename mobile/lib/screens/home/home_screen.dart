@@ -8,14 +8,13 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:network_info_plus/network_info_plus.dart' as network_plus;
 import 'package:wifi_iot/wifi_iot.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../services.dart';
 import '../../main.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 import 'barcode_painter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../config.dart';
+import '../../core/app_config.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _hideSuspensionGuide = false;
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   
-  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color primaryNavy = const Color(0xFF0073B7);
   final Color accentCyan = const Color(0xFF00E5FF);
   // Colors removed here, defined in build
 
@@ -228,10 +227,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           Row(
             children: [
               Transform.translate(
-                offset: const Offset(-20, 0),
+                offset: const Offset(0, 0),
                 child: Image.asset(
                   'assets/logo.png',
-                  height: 148,
+                  height: 180,
                   fit: BoxFit.contain,
                   alignment: Alignment.centerLeft,
                   errorBuilder: (context, error, stackTrace) => Padding(
@@ -369,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       } else {
          if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text(result['msg']?.toString() ?? 'Erro ao desbloquear'), backgroundColor: const Color(0xFF1A237E))
+             SnackBar(content: Text(result['msg']?.toString() ?? 'Erro ao desbloquear'), backgroundColor: const Color(0xFF0073B7))
            );
          }
       }
@@ -377,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Erro: $e'), backgroundColor: const Color(0xFF1A237E))
+           SnackBar(content: Text('Erro: $e'), backgroundColor: const Color(0xFF0073B7))
         );
       }
     }
@@ -1228,7 +1227,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A237E).withOpacity(0.1),
+                    color: const Color(0xFF0073B7).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.logout_rounded, color: Colors.grey),

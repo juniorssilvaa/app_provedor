@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../provider.dart';
-import '../../config.dart';
+import '../../providers/app_provider.dart';
+import '../../core/app_config.dart';
 
 class FaturaScreen extends StatefulWidget {
   const FaturaScreen({super.key});
@@ -20,7 +20,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
   List<dynamic> _invoices = [];
   bool _allPaid = false;
   
-  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color primaryNavy = const Color(0xFF0073B7);
   final Color cardBg = const Color(0xFF111111);
 
   @override
@@ -114,7 +114,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A237E),
+        backgroundColor: const Color(0xFF0073B7),
         title: const Text('Minhas Faturas', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -322,7 +322,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                 ),
               Text(
                 'Venc. $vencimento',
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ],
           ),
@@ -351,7 +351,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                     colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                   ),
                   label: 'COPIAR PIX',
-                  backgroundColor: const Color(0xFF1A237E),
+                  backgroundColor: const Color(0xFF0073B7),
                   textColor: Colors.white,
                   onTap: () {
                     final pix = fatura['codigoPix'] ?? fatura['pix_copia_e_cola'] ?? fatura['pix_code'] ?? '';
@@ -372,7 +372,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                     colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                   ),
                   label: 'COPIAR CÓDIGO',
-                  backgroundColor: const Color(0xFF1A237E),
+                  backgroundColor: const Color(0xFF0073B7),
                   textColor: Colors.white,
                   onTap: () {
                      final barcode = fatura['linhaDigitavel'] ?? fatura['linha_digitavel'] ?? fatura['codigoBarras'] ?? fatura['barcode'] ?? '';
@@ -388,7 +388,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                 _buildActionButton(
                   iconWidget: const Icon(Icons.picture_as_pdf, size: 24),
                   label: 'BAIXAR BOLETO',
-                  backgroundColor: const Color(0xFF1A237E),
+                  backgroundColor: const Color(0xFF0073B7),
                   textColor: Colors.white,
                   onTap: () {
                     String? link = fatura['link'] ?? fatura['link_cobranca'] ?? fatura['link_boleto'];

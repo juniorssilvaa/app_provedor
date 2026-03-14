@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 
 class ContratosScreen extends StatefulWidget {
   const ContratosScreen({super.key});
@@ -164,7 +164,7 @@ class _ContratosScreenState extends State<ContratosScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final primaryNavy = const Color(0xFF1A237E);
+    final primaryNavy = const Color(0xFF0073B7);
     const backgroundColor = Color(0xFF121212);
 
     return Scaffold(

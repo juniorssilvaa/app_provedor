@@ -26,8 +26,7 @@
 -keep class com.google.android.apps.common.google.services.** { *; }
 
 # App Specific (Models etc if needed)
--keep class com.nanettelecom.app.niochat.models.** { *; }
--keep class com.jocanet.app.niochat.models.** { *; }
+-keep class com.wrtelecom.app.niochat.models.** { *; }
 
 # react-native-reanimated (Mantido por segurança caso existam libs legadas)
 -keep class com.swmansion.reanimated.** { *; }

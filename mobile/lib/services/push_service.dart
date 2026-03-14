@@ -7,7 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../config.dart';
+import '../core/app_config.dart';
 
 // Background handler must be top-level
 @pragma('vm:entry-point')
@@ -83,7 +83,7 @@ class PushService {
 
   Future<void> _setupLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('ic_notification');
+        AndroidInitializationSettings('ic_stat_incon_push');
 
     final DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
@@ -134,7 +134,7 @@ class PushService {
               'high_importance_channel',
               'High Importance Notifications',
               channelDescription: 'This channel is used for important notifications.',
-              icon: 'ic_notification',
+              icon: 'ic_stat_incon_push',
               largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
               importance: Importance.max,
               priority: Priority.high,

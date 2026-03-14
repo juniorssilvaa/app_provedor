@@ -7,7 +7,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Jocanet App</string>
+		<string>WR TELECOM</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>jocanet_app</string>
+		<string>WR TELECOM</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -67,6 +67,18 @@
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
 		<key>UIStatusBarHidden</key>
+		<true/>
+		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Precisamos da sua localização para mapear chamados técnicos e identificar instabilidades de rede na sua região.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Precisamos acessar a câmera para que você possa enviar fotos de equipamentos e comprovantes via chat de suporte.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Precisamos acessar a galeria para que você possa selecionar boletos salvos em imagem ou enviar comprovantes.</string>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>whatsapp</string>
+		</array>
 	</dict>
 </plist>

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../provider.dart';
+import '../../providers/app_provider.dart';
 import '../../models/cpe_info.dart';
 
 class WifiConfigScreen extends StatefulWidget {
@@ -24,7 +24,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
   bool _obscure5g = true;
   bool _isLoading = false;
 
-  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color primaryNavy = const Color(0xFF0073B7);
   final Color cardBg = const Color(0xFF1E1E1E);
 
   @override
@@ -118,7 +118,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
                     Navigator.pop(context); // Close dialog
                     Navigator.pop(context); // Go back to info screen
                   },
-                  child: const Text('OK', style: TextStyle(color: Color(0xFF1A237E))),
+                  child: const Text('OK', style: TextStyle(color: Color(0xFF0073B7))),
                 ),
               ],
             ),
@@ -135,7 +135,7 @@ class _WifiConfigScreenState extends State<WifiConfigScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: $e'),
-            backgroundColor: const Color(0xFF1A237E),
+            backgroundColor: const Color(0xFF0073B7),
           ),
         );
       }

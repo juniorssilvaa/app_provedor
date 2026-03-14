@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../config.dart';
-import '../../provider.dart';
+import '../../core/app_config.dart';
+import '../../providers/app_provider.dart';
 
 import '../../services/sgp_service.dart';
 
@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _savedCpf;
   String? _savedPassword;
 
-  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color primaryNavy = const Color(0xFF0073B7);
 
   @override
   void initState() {
@@ -293,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             final isCanceled = status.contains('CANCELADO') || status == '3';
                             
                             // Define a cor e o texto do status
-                            final Color statusColor = (isSuspended || isCanceled) ? const Color(0xFF1A237E) : Colors.green;
+                            final Color statusColor = (isSuspended || isCanceled) ? const Color(0xFF0073B7) : Colors.green;
                             final String statusText = isCanceled ? 'CANCELADO' : status;
 
                             return Container(
@@ -315,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         Container(
                                           padding: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF1A237E),
+                                            color: const Color(0xFF0073B7),
                                             borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: SvgPicture.string(
@@ -567,7 +567,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (first['valor'] != null) valor = first['valor'].toString();
 
           clientData = {
-            'nome': first['sacado'] ?? 'Cliente JOCA NET',
+            'nome': first['sacado'] ?? 'Cliente WR TELECOM',
             'contratos': [
               {
                 'id': first['contrato_id']?.toString() ?? '1',
@@ -714,35 +714,42 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
                   // Logo
-                  Center(
-                    child: Image.asset(
-                      'assets/login.png',
-                      height: 180,
-                      fit: BoxFit.contain,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Transform.translate(
+                      offset: const Offset(0, -20),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: Image.asset(
+                          'assets/logo.png',
+                          height: 320,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 0),
                   // Título
                   const Text(
                     'Acesse sua conta',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 22,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   // Subtítulo
                   const Text(
                     'Informe seu CPF ou CNPJ para começar',
                     style: TextStyle(
                       color: Colors.grey,
-                      fontSize: 13,
+                      fontSize: 16,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 4),
                   
                   // Card de Usuário Salvo ou Campo de Texto
                   if (_savedCpf != null && _savedCpf!.isNotEmpty)
@@ -750,27 +757,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   else
                     _buildCpfInputField(),
                     
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   // Botão ENTRAR
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A237E),
+                      backgroundColor: const Color(0xFF0073B7),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       elevation: 0,
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                            height: 20,
-                            width: 20,
+                            height: 24,
+                            width: 24,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
                         : const Text(
                             'ENTRAR',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
                             ),
@@ -798,7 +805,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Preciso de ajuda?',
                         style: TextStyle(
                           color: primaryNavy,
-                          fontSize: 14,
+                          fontSize: 16,
                           decoration: TextDecoration.none,
                         ),
                       ),
@@ -814,7 +821,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Ver planos',
                         style: TextStyle(
                           color: Colors.grey,
-                          fontSize: 13,
+                          fontSize: 15,
                           decoration: TextDecoration.none,
                         ),
                       ),
@@ -846,26 +853,26 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           CircleAvatar(
             backgroundColor: Colors.white10,
-            radius: 24,
+            radius: 30,
             child: Text(
               initial,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _savedName ?? 'Cliente',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   _maskCpfCnpj(_savedCpf!),
-                  style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  style: const TextStyle(color: Colors.grey, fontSize: 16),
                 ),
               ],
             ),
@@ -904,13 +911,17 @@ class _LoginScreenState extends State<LoginScreen> {
         TextField(
           controller: _cpfController,
           keyboardType: TextInputType.number,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          style: const TextStyle(color: Colors.white, fontSize: 16),
           decoration: InputDecoration(
             labelText: 'CPF/CNPJ',
-            labelStyle: TextStyle(color: primaryNavy),
+            labelStyle: TextStyle(color: primaryNavy, fontSize: 16),
             hintStyle: const TextStyle(color: Colors.grey),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: primaryNavy, width: 2),
+            ),
+            focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: primaryNavy, width: 2),
             ),

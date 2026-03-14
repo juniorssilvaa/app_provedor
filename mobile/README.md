@@ -1,6 +1,6 @@
-# Nanet Telecom Mobile App
+# WR TELECOM Mobile App
 
-Aplicativo de autoatendimento desenvolvido em Flutter para clientes da Nanet Telecom.
+Aplicativo de autoatendimento desenvolvido em Flutter para clientes da WR TELECOM.
 
 ## ✨ Funcionalidades
 
@@ -13,45 +13,25 @@ Aplicativo de autoatendimento desenvolvido em Flutter para clientes da Nanet Tel
 
 ## ⚙️ Configuração de Ambiente
 
-O app utiliza **Product Flavors** para suportar múltiplos provedores (White-Label). Os sabores disponíveis são `nanet` e `jocanet`.
-
-### Firebase (Android)
-As credenciais do Firebase são separadas por sabor:
-- **Nanet**: `android/app/src/nanet/google-services.json` (ID: `com.nanettelecom.app.niochat`)
-- **Jocanet**: `android/app/src/jocanet/google-services.json` (ID: `com.jocanet.app.niochat`)
-
-### Variáveis de API
-As URLs e Tokens estão concentrados no arquivo `lib/config.dart`.
-- Para teste local (Emulador): Use `10.0.2.2`.
-- Para produção: Use as URLs da NIOCHAT.
-
-## 🚀 Como Rodar e Buildar
-
-### Execução Local
-Para rodar o app no emulador ou dispositivo físico:
+- Para rodar o app:
 ```bash
-# Para rodar a versão da Nanet
-flutter run --flavor nanet
-
-# Para rodar a versão da Jocanet
-flutter run --flavor jocanet
+flutter run
 ```
 
 ### Android (Release)
 Para gerar os arquivos de produção:
 ```bash
-# Gerar APK (Nanet)
-flutter build apk --flavor nanet --release
+# Gerar APK
+flutter build apk --release
 
-# Gerar AAB (Nanet - para Google Play)
-flutter build appbundle --flavor nanet --release
+# Gerar AAB (para Google Play)
+flutter build appbundle --release
 ```
 
 ### iOS
 Requer macOS e Xcode configurado.
 ```bash
-# Nanet
-flutter build ios --flavor nanet --release
+flutter build ios --release
 ```
 
 ## 🏗 Estrutura de Pastas

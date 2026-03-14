@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
-import '../../config.dart';
+import '../../core/app_config.dart';
 
 class PlanosScreen extends StatefulWidget {
   const PlanosScreen({super.key});
@@ -12,7 +12,7 @@ class PlanosScreen extends StatefulWidget {
 }
 
 class _PlanosScreenState extends State<PlanosScreen> {
-  final Color primaryNavy = const Color(0xFF1A237E);
+  final Color primaryNavy = const Color(0xFF0073B7);
   final Color accentCyan = const Color(0xFF00E5FF);
   final Color cardBg = const Color(0xFF111111);
   
@@ -183,8 +183,8 @@ class _PlanosScreenState extends State<PlanosScreen> {
                 child: ElevatedButton(
                   onPressed: () => _contactConsultant(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: accentCyan,
-                    foregroundColor: primaryNavy,
+                    backgroundColor: primaryNavy,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,

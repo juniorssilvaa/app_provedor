@@ -23,7 +23,7 @@ class PrivacyScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Última atualização: 11 de Fevereiro de 2026',
+              'Última atualização: 13 de Março de 2026',
               style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
             const SizedBox(height: 24),
@@ -71,7 +71,7 @@ class PrivacyScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18, 
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A237E),
+              color: Color(0xFF0073B7),
             ),
           ),
           const SizedBox(height: 8),

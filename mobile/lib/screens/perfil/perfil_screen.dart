@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../config.dart';
-import '../../provider.dart';
+import '../../core/app_config.dart';
+import '../../providers/app_provider.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -81,7 +81,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final primaryNavy = const Color(0xFF1A237E);
+    final primaryNavy = const Color(0xFF0073B7);
     final accentCyan = const Color(0xFF00E5FF);
     final cardBg = isDark ? const Color(0xFF111111) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black;
@@ -126,7 +126,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              provider.userName ?? 'Usuário JOCA NET',
+              provider.userName ?? 'Usuário WR TELECOM',
               style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold),
             ),
             Text(
@@ -228,10 +228,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
             _buildInfoSection('Sobre', cardBg, textColor, subTextColor, [
               _buildActionItem(Icons.info_outline, 'Versão do App', () {}, textColor, subTextColor, trailingText: _appVersion),
               _buildActionItem(Icons.article_outlined, 'Termos de Uso', () {
-                _launchUrl('https://jocanet.com.br/termos');
+                _launchUrl('https://wrtelecom.com.br/termos');
               }, textColor, subTextColor),
               _buildActionItem(Icons.privacy_tip_outlined, 'Política de Privacidade', () {
-                _launchUrl('https://jocanet.com.br/privacidade');
+                _launchUrl('https://wrtelecom.com.br/privacidade');
               }, textColor, subTextColor),
             ]),
             const SizedBox(height: 40),
