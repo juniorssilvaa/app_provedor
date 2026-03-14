@@ -996,6 +996,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         'label': 'Dispositivos', 
         'route': '/connected_devices'
       },
+      {
+        'ids': ['nota_fiscal', 'NOTA FISCAL', 'notafiscal'], 
+        'icon': Icons.receipt_long_rounded, 
+        'label': 'Nota Fiscal', 
+        'route': '/nota_fiscal'
+      },
     ];
 
     return Consumer<AppProvider>(

@@ -17,6 +17,7 @@ import '../screens/menu/privacy_screen.dart';
 import '../screens/menu/select_contract_screen.dart';
 import '../screens/notification/notification_screen.dart';
 import '../screens/notification/notification_detail_screen.dart';
+import '../screens/nota_fiscal/nota_fiscal_screen.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -37,6 +38,7 @@ class AppRoutes {
   static const String privacy = '/privacy';
   static const String notifications = '/notifications';
   static const String notificationDetail = '/notification_detail';
+  static const String notaFiscal = '/nota_fiscal';
 
   static Map<String, WidgetBuilder> get routes => {
     login: (context) => const LoginScreen(),
@@ -57,5 +59,6 @@ class AppRoutes {
     privacy: (context) => const PrivacyScreen(),
     notifications: (context) => const NotificationScreen(),
     notificationDetail: (context) => const NotificationDetailScreen(),
+    notaFiscal: (context) => const NotaFiscalScreen(),
   };
 }
