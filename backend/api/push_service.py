@@ -16,7 +16,7 @@ def _init_firebase():
     """Mantido apenas para compatibilidade de chamadas existentes e lazy init"""
     return initialize_firebase()
 
-def send_push_notification_core(provider_id, title, message, data=None, source='system', target_customer_id=None, segment_type='all', segment_tags=None, segment_search=None):
+def send_push_notification_core(provider_id, title, message, data=None, source='system', target_customer_id=None, segment_type='all', segment_tags=None, segment_search=None, target_cpfs=None):
     
     # Lazy init: garante que temos o app antes de enviar
     global _firebase_app
@@ -44,6 +44,15 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
             Q(user__external_id=target_customer_id) |
             Q(user__customer_id=target_customer_id)
         )
+    
+    if target_cpfs:
+        if isinstance(target_cpfs, str):
+            cpfs_list = [c.strip() for c in target_cpfs.split(',') if c.strip()]
+        else:
+            cpfs_list = target_cpfs
+        
+        if cpfs_list:
+            query = query.filter(user__cpf__in=cpfs_list)
 
     if segment_type == 'active':
         query = query.filter(user__active=True)

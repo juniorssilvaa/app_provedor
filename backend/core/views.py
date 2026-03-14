@@ -1,4 +1,4 @@
-﻿from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import logout, authenticate
 from django.contrib.auth.views import LoginView
@@ -344,6 +344,7 @@ def notification_list(request):
         segment_type = request.POST.get('segment_type', 'all')
         segment_tags = request.POST.get('segment_tags')
         segment_search = request.POST.get('segment_search')
+        selected_cpfs = request.POST.get('selected_cpfs')
         scheduled_at_str = request.POST.get('scheduled_at')
         
         # Verificar se há agendamento
@@ -410,7 +411,8 @@ def notification_list(request):
                 source='panel',
                 segment_type=segment_type,
                 segment_tags=segment_tags,
-                segment_search=segment_search
+                segment_search=segment_search,
+                target_cpfs=selected_cpfs
             )
             
             if result.get('status') == 'completed':
