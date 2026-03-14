@@ -491,6 +491,13 @@ class AppProvider with ChangeNotifier {
                 return invContractId == currentId && inv['status']?.toString().toLowerCase() == 'aberto';
               }).map((e) => Map<String, dynamic>.from(e)).toList();
 
+              // Ordena por data de vencimento (mais antiga primeiro)
+              contractInvoices.sort((a, b) {
+                final dateA = DateTime.tryParse(a['dataVencimento'] ?? a['data_vencimento'] ?? '') ?? DateTime(9999);
+                final dateB = DateTime.tryParse(b['dataVencimento'] ?? b['data_vencimento'] ?? '') ?? DateTime(9999);
+                return dateA.compareTo(dateB);
+              });
+
               final Map<String, dynamic>? priority = contractInvoices.firstOrNull;
               if (priority != null) {
                   final dueStr = priority['dataVencimento'] ?? priority['data_vencimento'];
