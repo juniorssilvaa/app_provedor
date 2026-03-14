@@ -11,15 +11,15 @@ Aplicativo de autoatendimento desenvolvido em Flutter para clientes da WR TELECO
 - **Gestão Wi-Fi**: Visualização de dispositivos conectados (via GenieACS).
 - **Notificações**: Alertas de faturas e avisos importantes via Firebase.
 
-## ⚙️ Configuração de Ambiente
+## 🚀 Como Rodar (Desenvolvimento)
 
-Este aplicativo agora utiliza **Flavors** (perfis de compilação) para separar as configurações específicas do provedor. 
-
-Para rodar o app no seu emulador ou dispositivo físico em modo de desenvolvimento, utilize sempre o comando com o flavor designado:
+Para rodar o app no seu emulador ou dispositivo físico, utilize o comando:
 
 ```bash
 flutter run --flavor wrtelecom
 ```
+
+## ⚙️ Configuração de Ambiente
 
 ### 🌐 URLs da API (Back-end)
 

@@ -341,10 +341,13 @@ class SGPService {
       debugPrint('Erro ao consultar cliente (ura/consultacliente): $e');
       return {};
     }
+  }
+
   Future<List<dynamic>> getFiscalNotes(String cpfCnpj, String password, String contractId) async {
     try {
-      final data = await _proxyPost('ura/notafiscal/', {
+      final data = await _proxyPost('central/notafiscal/list/', {
         'cpfcnpj': cpfCnpj,
+        'senha': password,
         'contrato': contractId,
       });
       
