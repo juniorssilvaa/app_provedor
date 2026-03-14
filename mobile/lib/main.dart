@@ -47,7 +47,8 @@ void main() async {
   } catch (_) {}
 
   try {
-    await AppConfig.syncTime();
+    // Roda em background para não travar o splash
+    AppConfig.syncTime();
   } catch (_) {}
 
   runApp(

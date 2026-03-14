@@ -152,9 +152,9 @@ class AppProvider with ChangeNotifier {
             debugPrint('Erro ao carregar info do usuário: $e');
           }
         }
-      }
-
-      refreshData();
+      // Roda a atualização de dados em background para não travar a splash screen
+      Future.microtask(() => refreshData());
+      
       notifyListeners();
     } catch (e) {
       debugPrint('Erro na inicialização do Provider: $e');
