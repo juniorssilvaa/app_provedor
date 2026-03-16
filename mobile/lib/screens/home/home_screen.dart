@@ -15,6 +15,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/app_config.dart';
+import '../../services/update_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,9 +46,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       
       // Sincroniza dados com o servidor ao abrir para garantir status correto
       provider.refreshData();
-      provider.fetchAppConfig();
       // Inicializar serviço de Push Notifications e garantir registro do token
       provider.initPushService(); 
+
+      // Verificar atualizações na Play Store
+      UpdateService.checkForUpdate();
     });
   }
 
@@ -1158,7 +1161,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _buildNavItem(Icons.home_rounded, "Início", true, () {}),
           _buildNavItem(Icons.receipt_long_rounded, "Faturas", false, () => Navigator.of(context).pushNamed('/fatura')),
           const SizedBox(width: 56), // Espaço ajustado para o botão central mais fino
-          _buildNavItem(Icons.headset_mic_rounded, "Suporte", false, () => Navigator.of(context).pushNamed('/support')),
+          _buildNavItem(Icons.speed_rounded, "Velocidade", false, () => Navigator.of(context).pushNamed('/speedtest')),
           _buildNavItem(Icons.menu_rounded, "Menu", false, () => Navigator.of(context).pushNamed('/menu')),
         ],
       ),

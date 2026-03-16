@@ -236,12 +236,12 @@ class _SupportScreenState extends State<SupportScreen> {
                     return _buildTicketCard(protocol, subject, description, date, status);
                   },
                 ),
-      floatingActionButton: FloatingActionButton.extended(
+      /* floatingActionButton: FloatingActionButton.extended(
         onPressed: _openNewTicketDialog,
         backgroundColor: primaryNavy,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('NOVO CHAMADO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
+      ), */
     );
   }
 

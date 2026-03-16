@@ -428,101 +428,124 @@ class AppProvider with ChangeNotifier {
   }
 
   Future<void> refreshData() async {
+    // Não precisa chamar fetchAppConfig e fetchNotifications aqui se já são chamados na inicialização/login
+    // mas mantemos para garantir consistência em refresh manual
     await fetchAppConfig();
     fetchNotifications();
+
     if (_cpf == null || _sgpService == null) return;
+
     try {
       Map<String, dynamic>? clientFullData = await _sgpService!.getClientByCpf(_cpf!);
       List contratos = [];
       if (_centralPassword != null && _centralPassword!.isNotEmpty) {
-          try { contratos = await _sgpService!.getContratos(_cpf!, _centralPassword!); } catch (_) {}
+        try {
+          contratos = await _sgpService!.getContratos(_cpf!, _centralPassword!);
+        } catch (_) {}
       }
       if (contratos.isEmpty && clientFullData != null && clientFullData['contratos'] != null) {
-           contratos = clientFullData['contratos'];
+        contratos = clientFullData['contratos'];
       }
 
       if (contratos.isNotEmpty) {
-           final List<Map<String, dynamic>> allMappedContracts = [];
-           for (var c in contratos) {
-               bool hasNoAddress = (c['endereco_logradouro'] == null || c['endereco_logradouro'].toString().trim().isEmpty) && (c['logradouro'] == null || c['logradouro'].toString().trim().isEmpty);
-               if (clientFullData != null && hasNoAddress) {
-                   var match;
-                   final String cId = (c['contrato'] ?? c['id'] ?? c['contratoId'])?.toString() ?? '';
-                   if (clientFullData['contratos'] is List && cId.isNotEmpty) {
-                       try {
-                           match = (clientFullData['contratos'] as List).firstWhere((element) => (element['contrato']?.toString() == cId) || (element['id']?.toString() == cId), orElse: () => null);
-                       } catch (_) {}
-                   }
-                   if (match != null) {
-                        c = <String, dynamic>{...match, ...c};
-                        c['logradouro'] = c['logradouro'] ?? match['logradouro'] ?? match['endereco_logradouro'];
-                        c['numero'] = c['numero'] ?? match['numero'] ?? match['endereco_numero'];
-                        c['bairro'] = c['bairro'] ?? match['bairro'] ?? match['endereco_bairro'];
-                    } else {
-                        c['logradouro'] = c['logradouro'] ?? clientFullData['logradouro'];
-                        c['numero'] = c['numero'] ?? clientFullData['numero'];
-                        c['bairro'] = c['bairro'] ?? clientFullData['bairro'];
-                    }
-               }
-               String logradouro = (c['endereco_logradouro'] ?? c['logradouro'] ?? '').toString().trim();
-               String numero = (c['endereco_numero'] ?? c['numero'] ?? 'S/N').toString().trim();
-               String bairro = (c['endereco_bairro'] ?? c['bairro'] ?? '').toString().trim();
-               String enderecoCompleto = logradouro.isNotEmpty ? '$logradouro, $numero - $bairro' : 'Endereço não cadastrado';
+        final List<Map<String, dynamic>> allMappedContracts = [];
+        for (var c in contratos) {
+          bool hasNoAddress = (c['endereco_logradouro'] == null || c['endereco_logradouro'].toString().trim().isEmpty) && 
+                             (c['logradouro'] == null || c['logradouro'].toString().trim().isEmpty);
+          
+          if (clientFullData != null && hasNoAddress) {
+            var match;
+            final String cId = (c['contrato'] ?? c['id'] ?? c['contratoId'])?.toString() ?? '';
+            if (clientFullData['contratos'] is List && cId.isNotEmpty) {
+              try {
+                match = (clientFullData['contratos'] as List).firstWhere(
+                  (element) => (element['contrato']?.toString() == cId) || (element['id']?.toString() == cId), 
+                  orElse: () => null
+                );
+              } catch (_) {}
+            }
+            if (match != null) {
+              c = <String, dynamic>{...match, ...c};
+              c['logradouro'] = c['logradouro'] ?? match['logradouro'] ?? match['endereco_logradouro'];
+              c['numero'] = c['numero'] ?? match['numero'] ?? match['endereco_numero'];
+              c['bairro'] = c['bairro'] ?? match['bairro'] ?? match['endereco_bairro'];
+            } else {
+              c['logradouro'] = c['logradouro'] ?? clientFullData['logradouro'];
+              c['numero'] = c['numero'] ?? clientFullData['numero'];
+              c['bairro'] = c['bairro'] ?? clientFullData['bairro'];
+            }
+          }
+          
+          String logradouro = (c['endereco_logradouro'] ?? c['logradouro'] ?? '').toString().trim();
+          String numero = (c['endereco_numero'] ?? c['numero'] ?? 'S/N').toString().trim();
+          String bairro = (c['endereco_bairro'] ?? c['bairro'] ?? '').toString().trim();
+          String enderecoCompleto = logradouro.isNotEmpty ? '$logradouro, $numero - $bairro' : 'Endereço não cadastrado';
 
-               allMappedContracts.add({
-                 'id': c['contratoId']?.toString() ?? c['contrato']?.toString() ?? '1',
-                 'status': c['contratoStatusDisplay'] ?? c['status'] ?? 'ATIVO',
-                 'plan_name': c['planointernet'] ?? 'PLANO INTERNET',
-                 'contract_due_day': c['cobVencimento']?.toString() ?? '30',
-                 'registration_date': c['data_cadastro'] ?? '24/10/2024',
-                 'address': enderecoCompleto,
-                 'login': c['login'],
-               });
-           }
-           final currentId = (_userContract['id'] ?? _userContract['contrato'])?.toString().trim();
-           _userContract = allMappedContracts.firstWhere((c) => c['id'].toString().trim() == currentId, orElse: () => allMappedContracts.first);
+          allMappedContracts.add({
+            'id': c['contratoId']?.toString() ?? c['contrato']?.toString() ?? '1',
+            'status': c['contratoStatusDisplay'] ?? c['status'] ?? 'ATIVO',
+            'plan_name': c['planointernet'] ?? 'PLANO INTERNET',
+            'contract_due_day': c['cobVencimento']?.toString() ?? '30',
+            'registration_date': c['data_cadastro'] ?? '24/10/2024',
+            'address': enderecoCompleto,
+            'login': c['login'],
+          });
+        }
 
-           final sTime = await _sgpService!.getServerTime();
-           if (sTime != null) AppConfig.setServerTime(sTime);
-           final invoices = await _sgpService!.getInvoices(_cpf!);
-           if (invoices.isNotEmpty) {
-              final List<Map<String, dynamic>> contractInvoices = invoices.where((inv) {
-                final invContractId = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'])?.toString().trim();
-                return invContractId == currentId && inv['status']?.toString().toLowerCase() == 'aberto';
-              }).map((e) => Map<String, dynamic>.from(e)).toList();
+        final currentId = (_userContract['id'] ?? _userContract['contrato'])?.toString().trim();
+        Map<String, dynamic> nextContract = allMappedContracts.firstWhere(
+          (c) => c['id'].toString().trim() == currentId, 
+          orElse: () => allMappedContracts.first
+        );
 
-              // Ordena por data de vencimento (mais antiga primeiro)
-              contractInvoices.sort((a, b) {
-                final dateA = DateTime.tryParse(a['dataVencimento'] ?? a['data_vencimento'] ?? '') ?? DateTime(9999);
-                final dateB = DateTime.tryParse(b['dataVencimento'] ?? b['data_vencimento'] ?? '') ?? DateTime(9999);
-                return dateA.compareTo(dateB);
-              });
+        // ATENÇÃO: Buscamos as faturas ANTES de atualizar o _userContract de fato
+        final invoices = await _sgpService!.getInvoices(_cpf!);
+        if (invoices.isNotEmpty) {
+          final List<Map<String, dynamic>> contractInvoices = invoices.where((inv) {
+            final invContractId = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'])?.toString().trim();
+            return invContractId == nextContract['id'].toString().trim() && inv['status']?.toString().toLowerCase() == 'aberto';
+          }).map((e) => Map<String, dynamic>.from(e)).toList();
 
-              final Map<String, dynamic>? priority = contractInvoices.firstOrNull;
-              if (priority != null) {
-                  final dueStr = priority['dataVencimento'] ?? priority['data_vencimento'];
-                  if (dueStr != null) {
-                     final due = DateTime.parse(dueStr);
-                     final today = AppConfig.getToday();
-                     bool isOverdue = due.isBefore(DateTime(today.year, today.month, today.day));
+          contractInvoices.sort((a, b) {
+            final dateA = DateTime.tryParse(a['dataVencimento'] ?? a['data_vencimento'] ?? '') ?? DateTime(9999);
+            final dateB = DateTime.tryParse(b['dataVencimento'] ?? b['data_vencimento'] ?? '') ?? DateTime(9999);
+            return dateA.compareTo(dateB);
+          });
 
-                     double valor = double.tryParse(priority['valor']?.toString() ?? '0') ?? 0;
-                     double valorCorrigido = double.tryParse(priority['valorCorrigido']?.toString() ?? priority['valor_corrigido']?.toString() ?? priority['valor']?.toString() ?? '0') ?? valor;
+          final Map<String, dynamic>? priority = contractInvoices.firstOrNull;
+          if (priority != null) {
+            final dueStr = priority['dataVencimento'] ?? priority['data_vencimento'];
+            if (dueStr != null) {
+              final due = DateTime.parse(dueStr);
+              final today = AppConfig.getToday();
+              bool isOverdue = due.isBefore(DateTime(today.year, today.month, today.day));
 
-                     _userContract['last_invoice_value'] = valor.toStringAsFixed(2).replaceFirst('.', ',');
-                     _userContract['last_invoice_corrected_value'] = valorCorrigido.toStringAsFixed(2).replaceFirst('.', ',');
-                     _userContract['last_invoice_interest'] = (valorCorrigido - valor).toStringAsFixed(2).replaceFirst('.', ',');
-                     _userContract['last_invoice_due'] = dueStr.split('-').reversed.join('/');
-                     _userContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
-                  }
-              } else {
-                 _userContract['invoice_status_code'] = 'paid';
-                 _userContract['last_invoice_value'] = '0,00';
-                 _userContract['last_invoice_due'] = 'N/A';
-              }
-           }
-           notifyListeners();
+              double valor = double.tryParse(priority['valor']?.toString() ?? '0') ?? 0;
+              double valorCorrigido = double.tryParse(priority['valorCorrigido']?.toString() ?? priority['valor_corrigido']?.toString() ?? priority['valor']?.toString() ?? '0') ?? valor;
+
+              nextContract['last_invoice_value'] = valor.toStringAsFixed(2).replaceFirst('.', ',');
+              nextContract['last_invoice_corrected_value'] = valorCorrigido.toStringAsFixed(2).replaceFirst('.', ',');
+              nextContract['last_invoice_interest'] = (valorCorrigido - valor).toStringAsFixed(2).replaceFirst('.', ',');
+              nextContract['last_invoice_due'] = dueStr.split('-').reversed.join('/');
+              nextContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
+            }
+          } else {
+            nextContract['invoice_status_code'] = 'paid';
+            nextContract['last_invoice_value'] = '0,00';
+            nextContract['last_invoice_due'] = 'N/A';
+          }
+        }
+
+        // Finalmente atualizamos o estado real e notificamos
+        _userContract = nextContract;
+
+        final sTime = await _sgpService!.getServerTime();
+        if (sTime != null) AppConfig.setServerTime(sTime);
+        
+        notifyListeners();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Erro ao atualizar dados: $e');
+    }
   }
 }
