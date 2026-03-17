@@ -271,7 +271,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
     }
 
     String statusLabel = isPaid ? 'PAGO' : (isLate ? 'ATRASADO' : 'ABERTO');
-    Color statusColor = isPaid ? Colors.green : (isLate ? primaryNavy : Colors.orange);
+    Color statusColor = isPaid ? Colors.green : (isLate ? Colors.red : Colors.orange);
 
     // Valor Original e Corrigido
     double valOriginal = double.tryParse(fatura['valor']?.toString() ?? '0') ?? 0.0;
@@ -318,7 +318,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
               if (jurosLabel != null)
                 Text(
                   '+ R\$ $jurosLabel de juros',
-                  style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               Text(
                 'Venc. $vencimento',

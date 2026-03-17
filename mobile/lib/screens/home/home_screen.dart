@@ -997,6 +997,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         'label': 'Dispositivos', 
         'route': '/connected_devices'
       },
+      {
+        'ids': ['faturas', 'FATURAS', 'fatura', 'FATURA', 'nota_fiscal', 'NOTA FISCAL', 'NOTAS FISCAIS', 'notas_fiscais', 'NF', 'nf', 'financeiro', 'FINANCEIRO'], 
+        'icon': Icons.receipt_long_rounded, 
+        'label': 'Nota Fiscal', 
+        'route': '/nota_fiscal'
+      },
     ];
 
     return Consumer<AppProvider>(
@@ -1027,13 +1033,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final activeKeys = <String>{
           ...provider.activeShortcuts,
           ...provider.activeTools,
-        };
+        }.map((k) => k.trim().toUpperCase()).toSet();
+        
+        debugPrint('HomeScreen: Filtering quick access. Active Keys: $activeKeys');
 
         // Filter items based on active keys (case-insensitive check against valid IDs)
         final items = masterItems.where((item) {
           final ids = item['ids'] as List<String>;
-          // Check if any of the item's IDs are present in the activeKeys set
-          return ids.any((id) => activeKeys.contains(id) || activeKeys.contains(id.toUpperCase()) || activeKeys.contains(id.toLowerCase()));
+          // Check if any of the item's IDs (normalized) are present in the activeKeys set
+          return ids.any((id) => activeKeys.contains(id.toUpperCase()));
         }).toList();
 
         if (items.isEmpty) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -39,6 +40,10 @@ class AppProvider with ChangeNotifier {
   // Notificações
   List<Map<String, dynamic>> _notifications = [];
   List<String> _readNotificationIds = [];
+
+  // Temporizador de Inatividade
+  Timer? _inactivityTimer;
+  static const int inactivityMinutes = 3;
 
   int get unreadNotificationsCount => _notifications.where((n) => n['read'] != true).length;
   List<Map<String, dynamic>> get notifications => _notifications;
@@ -98,7 +103,7 @@ class AppProvider with ChangeNotifier {
   Future<void> initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      _isLoggedIn = false; // Garante que começa deslogado (Sessão Volátil)
       _cpf = prefs.getString('cpf');
       _token = prefs.getString('token');
       _providerToken = AppConfig.apiToken; 
@@ -186,6 +191,7 @@ class AppProvider with ChangeNotifier {
           }
         }
         _appConfigLoaded = true;
+        debugPrint('AppProvider: Config loaded. Shortcuts: $_activeShortcuts, Tools: $_activeTools');
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('activeShortcuts', jsonEncode(_activeShortcuts));
         await prefs.setString('activeTools', jsonEncode(_activeTools));
@@ -204,7 +210,7 @@ class AppProvider with ChangeNotifier {
     Map<String, dynamic>? info,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
+    // NÃO salvamos isLoggedIn para garantir que a sessão feche ao fechar o app
     await prefs.setString('cpf', cpf);
     await prefs.setString('token', token);
     await prefs.setString('providerToken', providerToken);
@@ -299,9 +305,20 @@ class AppProvider with ChangeNotifier {
       }
       
       await refreshData();
+      resetInactivityTimer(); // Inicia o timer ao logar
     } catch (_) {}
 
     notifyListeners();
+  }
+
+  void resetInactivityTimer() {
+    if (!_isLoggedIn) return;
+    
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(const Duration(minutes: inactivityMinutes), () {
+      debugPrint('AppProvider: Logout por inatividade ($inactivityMinutes min)');
+      logout();
+    });
   }
 
   Future<void> logout() async {
@@ -326,6 +343,9 @@ class AppProvider with ChangeNotifier {
     _userInfo = {};
     _sgpService = null;
     _aiService = null;
+    
+    _inactivityTimer?.cancel();
+    _inactivityTimer = null;
     
     notifyListeners();
   }
@@ -433,92 +453,132 @@ class AppProvider with ChangeNotifier {
       Map<String, dynamic>? clientFullData = await _sgpService!.getClientByCpf(_cpf!);
       List contratos = [];
       if (_centralPassword != null && _centralPassword!.isNotEmpty) {
-          try { contratos = await _sgpService!.getContratos(_cpf!, _centralPassword!); } catch (_) {}
+        try {
+          contratos = await _sgpService!.getContratos(_cpf!, _centralPassword!);
+        } catch (_) {}
       }
       if (contratos.isEmpty && clientFullData != null && clientFullData['contratos'] != null) {
-           contratos = clientFullData['contratos'];
+        contratos = clientFullData['contratos'];
       }
 
       if (contratos.isNotEmpty) {
-           final List<Map<String, dynamic>> allMappedContracts = [];
-           for (var c in contratos) {
-               bool hasNoAddress = (c['endereco_logradouro'] == null || c['endereco_logradouro'].toString().trim().isEmpty) && (c['logradouro'] == null || c['logradouro'].toString().trim().isEmpty);
-               if (clientFullData != null && hasNoAddress) {
-                   var match;
-                   final String cId = (c['contrato'] ?? c['id'] ?? c['contratoId'])?.toString() ?? '';
-                   if (clientFullData['contratos'] is List && cId.isNotEmpty) {
-                       try {
-                           match = (clientFullData['contratos'] as List).firstWhere((element) => (element['contrato']?.toString() == cId) || (element['id']?.toString() == cId), orElse: () => null);
-                       } catch (_) {}
-                   }
-                   if (match != null) {
-                        c = <String, dynamic>{...match, ...c};
-                        c['logradouro'] = c['logradouro'] ?? match['logradouro'] ?? match['endereco_logradouro'];
-                        c['numero'] = c['numero'] ?? match['numero'] ?? match['endereco_numero'];
-                        c['bairro'] = c['bairro'] ?? match['bairro'] ?? match['endereco_bairro'];
-                    } else {
-                        c['logradouro'] = c['logradouro'] ?? clientFullData['logradouro'];
-                        c['numero'] = c['numero'] ?? clientFullData['numero'];
-                        c['bairro'] = c['bairro'] ?? clientFullData['bairro'];
-                    }
-               }
-               String logradouro = (c['endereco_logradouro'] ?? c['logradouro'] ?? '').toString().trim();
-               String numero = (c['endereco_numero'] ?? c['numero'] ?? 'S/N').toString().trim();
-               String bairro = (c['endereco_bairro'] ?? c['bairro'] ?? '').toString().trim();
-               String enderecoCompleto = logradouro.isNotEmpty ? '$logradouro, $numero - $bairro' : 'Endereço não cadastrado';
+        final List<Map<String, dynamic>> allMappedContracts = [];
+        for (var c in contratos) {
+          bool hasNoAddress = (c['endereco_logradouro'] == null || c['endereco_logradouro'].toString().trim().isEmpty) &&
+              (c['logradouro'] == null || c['logradouro'].toString().trim().isEmpty);
+          if (clientFullData != null && hasNoAddress) {
+            var match;
+            final String cId = (c['contrato'] ?? c['id'] ?? c['contratoId'])?.toString() ?? '';
+            if (clientFullData['contratos'] is List && cId.isNotEmpty) {
+              try {
+                match = (clientFullData['contratos'] as List).firstWhere(
+                    (element) => (element['contrato']?.toString() == cId) || (element['id']?.toString() == cId),
+                    orElse: () => null);
+              } catch (_) {}
+            }
+            if (match != null) {
+              c = <String, dynamic>{...match, ...c};
+              c['logradouro'] = c['logradouro'] ?? match['logradouro'] ?? match['endereco_logradouro'];
+              c['numero'] = c['numero'] ?? match['numero'] ?? match['endereco_numero'];
+              c['bairro'] = c['bairro'] ?? match['bairro'] ?? match['endereco_bairro'];
+            } else {
+              c['logradouro'] = c['logradouro'] ?? clientFullData['logradouro'];
+              c['numero'] = c['numero'] ?? clientFullData['numero'];
+              c['bairro'] = c['bairro'] ?? clientFullData['bairro'];
+            }
+          }
+          String logradouro = (c['endereco_logradouro'] ?? c['logradouro'] ?? '').toString().trim();
+          String numero = (c['endereco_numero'] ?? c['numero'] ?? 'S/N').toString().trim();
+          String bairro = (c['endereco_bairro'] ?? c['bairro'] ?? '').toString().trim();
+          String enderecoCompleto = logradouro.isNotEmpty ? '$logradouro, $numero - $bairro' : 'Endereço não cadastrado';
 
-               allMappedContracts.add({
-                 'id': c['contratoId']?.toString() ?? c['contrato']?.toString() ?? '1',
-                 'status': c['contratoStatusDisplay'] ?? c['status'] ?? 'ATIVO',
-                 'plan_name': c['planointernet'] ?? 'PLANO INTERNET',
-                 'contract_due_day': c['cobVencimento']?.toString() ?? '30',
-                 'registration_date': c['data_cadastro'] ?? '24/10/2024',
-                 'address': enderecoCompleto,
-                 'login': c['login'],
-               });
-           }
-           final currentId = (_userContract['id'] ?? _userContract['contrato'])?.toString().trim();
-           _userContract = allMappedContracts.firstWhere((c) => c['id'].toString().trim() == currentId, orElse: () => allMappedContracts.first);
-           
-           debugPrint('REFRESH: Status do contrato $currentId vindo do servidor: ${_userContract['status']}');
-           
-           final sTime = await _sgpService!.getServerTime();
-           if (sTime != null) AppConfig.setServerTime(sTime);
-           final invoices = await _sgpService!.getInvoices(_cpf!);
-           if (invoices.isNotEmpty) {
-              // Filtrar faturas específicas para este contrato
-              final List<Map<String, dynamic>> contractInvoices = invoices.where((inv) {
-                final invContractId = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'])?.toString().trim();
-                return invContractId == currentId && inv['status']?.toString().toLowerCase() == 'aberto';
-              }).map((e) => Map<String, dynamic>.from(e)).toList();
+          allMappedContracts.add({
+            'id': c['contratoId']?.toString() ?? c['contrato']?.toString() ?? '1',
+            'status': c['contratoStatusDisplay'] ?? c['status'] ?? 'ATIVO',
+            'plan_name': c['planointernet'] ?? 'PLANO INTERNET',
+            'contract_due_day': c['cobVencimento']?.toString() ?? '30',
+            'registration_date': c['data_cadastro'] ?? '24/10/2024',
+            'address': enderecoCompleto,
+            'login': c['login'],
+          });
+        }
+        final currentId = (_userContract['id'] ?? _userContract['contrato'])?.toString().trim();
+        Map<String, dynamic> nextContract = allMappedContracts.firstWhere((c) => c['id'].toString().trim() == currentId,
+            orElse: () => allMappedContracts.first);
 
-              final Map<String, dynamic>? priority = contractInvoices.firstOrNull;
-              if (priority != null) {
-                  final dueStr = priority['dataVencimento'] ?? priority['data_vencimento'];
-                  if (dueStr != null) {
-                     final due = DateTime.parse(dueStr);
-                     final today = AppConfig.getToday();
-                     bool isOverdue = due.isBefore(DateTime(today.year, today.month, today.day));
-                     
-                     double valor = double.tryParse(priority['valor']?.toString() ?? '0') ?? 0;
-                     double valorCorrigido = double.tryParse(priority['valorCorrigido']?.toString() ?? priority['valor_corrigido']?.toString() ?? priority['valor']?.toString() ?? '0') ?? valor;
-                     
-                     debugPrint('REFRESH: Fatura encontrada para contrato $currentId: Vencimento=$dueStr, Valor=$valor, Corrigido=$valorCorrigido, Atrasada=$isOverdue');
-                     _userContract['last_invoice_value'] = valor.toStringAsFixed(2).replaceFirst('.', ',');
-                     _userContract['last_invoice_corrected_value'] = valorCorrigido.toStringAsFixed(2).replaceFirst('.', ',');
-                     _userContract['last_invoice_interest'] = (valorCorrigido - valor).toStringAsFixed(2).replaceFirst('.', ',');
-                     _userContract['last_invoice_due'] = dueStr.split('-').reversed.join('/');
-                     _userContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
-                  }
-              } else {
-                 // Nenhuma fatura aberta para este contrato
-                 _userContract['invoice_status_code'] = 'paid';
-                 _userContract['last_invoice_value'] = '0,00';
-                 _userContract['last_invoice_due'] = 'N/A';
+        // Copia dados de fatura atuais para evitar limpeza momentânea enquanto busca novas
+        if (_userContract.containsKey('last_invoice_value')) {
+          nextContract['last_invoice_value'] = _userContract['last_invoice_value'];
+          nextContract['last_invoice_corrected_value'] = _userContract['last_invoice_corrected_value'];
+          nextContract['last_invoice_interest'] = _userContract['last_invoice_interest'];
+          nextContract['last_invoice_due'] = _userContract['last_invoice_due'];
+          nextContract['invoice_status_code'] = _userContract['invoice_status_code'];
+        }
+
+        debugPrint('REFRESH: Status do contrato $currentId vindo do servidor: ${nextContract['status']}');
+
+        final sTime = await _sgpService!.getServerTime();
+        if (sTime != null) AppConfig.setServerTime(sTime);
+        final invoices = await _sgpService!.getInvoices(_cpf!);
+        if (invoices.isNotEmpty) {
+          // Ordenar faturas por data de vencimento (Mais antigas primeiro) para garantir que a home mostre a mais atrasada
+          final List<Map<String, dynamic>> sortedInvoices = invoices.map((e) => Map<String, dynamic>.from(e)).toList();
+          sortedInvoices.sort((a, b) {
+            final aDue = a['dataVencimento'] ?? a['data_venc_original'] ?? a['data_vencimento'] ?? '';
+            final bDue = b['dataVencimento'] ?? b['data_venc_original'] ?? b['data_vencimento'] ?? '';
+            return aDue.compareTo(bDue);
+          });
+
+          // Filtrar faturas específicas para este contrato (já ordenadas)
+          final List<Map<String, dynamic>> contractInvoices = sortedInvoices.where((inv) {
+            final invContractId = (inv['clienteContrato'] ?? inv['contrato_id'] ?? inv['contrato'])?.toString().trim();
+            return invContractId == currentId && inv['status']?.toString().toLowerCase() == 'aberto';
+          }).toList();
+
+          final Map<String, dynamic>? priority = contractInvoices.firstOrNull;
+          if (priority != null) {
+            final dueStr = priority['dataVencimento'] ?? priority['data_venc_original'] ?? priority['data_vencimento'];
+            if (dueStr != null) {
+              DateTime due;
+              try {
+                due = DateTime.parse(dueStr);
+              } catch (_) {
+                due = AppConfig.getToday();
               }
-           }
-           notifyListeners();
+              final today = AppConfig.getToday();
+              bool isOverdue = due.isBefore(DateTime(today.year, today.month, today.day));
+
+              double valor = double.tryParse(priority['valor']?.toString() ?? '0') ?? 0;
+              double valorCorrigido = double.tryParse(priority['valorCorrigido']?.toString() ??
+                      priority['valor_corrigido']?.toString() ??
+                      priority['valor']?.toString() ??
+                      '0') ??
+                  valor;
+
+              debugPrint(
+                  'REFRESH: Fatura encontrada para contrato $currentId: Vencimento=$dueStr, Valor=$valor, Corrigido=$valorCorrigido, Atrasada=$isOverdue');
+              nextContract['last_invoice_value'] = valor.toStringAsFixed(2).replaceFirst('.', ',');
+              nextContract['last_invoice_corrected_value'] = valorCorrigido.toStringAsFixed(2).replaceFirst('.', ',');
+              nextContract['last_invoice_interest'] = (valorCorrigido - valor).toStringAsFixed(2).replaceFirst('.', ',');
+              nextContract['last_invoice_due'] = dueStr.toString().contains('-') 
+                  ? dueStr.split('-').reversed.join('/')
+                  : dueStr;
+              nextContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
+            }
+          } else {
+            // Nenhuma fatura aberta para este contrato
+            nextContract['invoice_status_code'] = 'paid';
+            nextContract['last_invoice_value'] = '0,00';
+            nextContract['last_invoice_due'] = 'N/A';
+          }
+        }
+        
+        // Atualiza o estado uma única vez ao final de todo o processamento
+        _userContract = nextContract;
+        notifyListeners();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Erro no refreshData: $e');
+    }
   }
 }
