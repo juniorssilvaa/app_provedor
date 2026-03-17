@@ -1,7 +1,7 @@
 name: jocanet_app
 description: App JOCA NET - Aplicativo de gestão de internet.
 publish_to: 'none'
-version: 1.0.2+4
+version: 1.1.0+6
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -33,6 +33,7 @@ dependencies:
   device_info_plus: ^12.3.0
   package_info_plus: ^8.0.0
   webview_flutter: ^4.13.1
+  in_app_update: ^4.2.1
   
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
