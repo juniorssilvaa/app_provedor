@@ -599,7 +599,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Determina o status da fatura
     final isOverdue = contract['invoice_status_code'] == 'overdue';
     final statusText = isOverdue ? 'FATURA ATRASADA' : 'FATURA ABERTA';
-    final statusColor = isOverdue ? Colors.red : Colors.orange[700];
+    final statusColor = isOverdue ? const Color(0xFFFF3333) : Colors.orange[700];
     final statusIcon = isOverdue ? Icons.warning_amber_rounded : Icons.check_circle_outline;
 
     return Container(
@@ -654,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
              ),
           Text(
             'Vencimento $invoiceDue',
-            style: TextStyle(color: isOverdue ? Colors.red : Colors.grey, fontSize: 14, fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal),
+            style: TextStyle(color: isOverdue ? const Color(0xFFFF3333) : Colors.grey, fontSize: 14, fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal),
           ),
           const SizedBox(height: 20),
           Row(
@@ -998,7 +998,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         'route': '/connected_devices'
       },
       {
-        'ids': ['nota_fiscal', 'NOTA_FISCAL', 'NOTA FISCAL', 'notas_fiscais'], 
+        'ids': ['faturas', 'FATURAS', 'fatura', 'FATURA', 'nota_fiscal', 'NOTA FISCAL', 'NOTAS FISCAIS', 'notas_fiscais', 'NF', 'nf', 'financeiro', 'FINANCEIRO'], 
         'icon': Icons.receipt_long_rounded, 
         'label': 'Nota Fiscal', 
         'route': '/nota_fiscal'
@@ -1033,13 +1033,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final activeKeys = <String>{
           ...provider.activeShortcuts,
           ...provider.activeTools,
-        };
+        }.map((k) => k.trim().toUpperCase()).toSet();
+        
+        debugPrint('HomeScreen: Filtering quick access. Active Keys: $activeKeys');
 
         // Filter items based on active keys (case-insensitive check against valid IDs)
         final items = masterItems.where((item) {
           final ids = item['ids'] as List<String>;
-          // Check if any of the item's IDs are present in the activeKeys set
-          return ids.any((id) => activeKeys.contains(id) || activeKeys.contains(id.toUpperCase()) || activeKeys.contains(id.toLowerCase()));
+          // Check if any of the item's IDs (normalized) are present in the activeKeys set
+          return ids.any((id) => activeKeys.contains(id.toUpperCase()));
         }).toList();
 
         if (items.isEmpty) {

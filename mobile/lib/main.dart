@@ -12,6 +12,7 @@ import 'services/push_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/fatura/fatura_screen.dart';
+import 'screens/fatura/nota_fiscal_screen.dart';
 import 'screens/ai/ai_chat_screen.dart';
 import 'screens/planos/planos_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
@@ -27,11 +28,7 @@ import 'screens/menu/privacy_screen.dart';
 import 'screens/menu/select_contract_screen.dart';
 import 'screens/notification/notification_screen.dart';
 import 'screens/notification/notification_detail_screen.dart';
-import 'screens/nota_fiscal/nota_fiscal_screen.dart';
-import 'screens/blocked_screen.dart';
-
-// Chave global para navegação fora do contexto
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+import 'services/update_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,6 +70,11 @@ void main() async {
     await AppConfig.syncTime();
   } catch (_) {}
 
+  // Verificação de Atualização (Android only)
+  try {
+    UpdateService.checkForUpdate();
+  } catch (_) {}
+
   runApp(
     ChangeNotifierProvider.value(
       value: provider,
@@ -88,97 +90,91 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppProvider>(
       builder: (context, provider, child) {
-        return MaterialApp(
-          navigatorKey: navigatorKey,
-          title: 'JOCA NET',
-          debugShowCheckedModeBanner: false,
-          themeMode: provider.themeMode,
-          // Configuração de Localização para PT-BR
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('pt', 'BR'),
-          ],
-          locale: const Locale('pt', 'BR'),
-          theme: ThemeData(
-            brightness: Brightness.light,
-            primaryColor: const Color(0xFF1A237E),
-            scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-            useMaterial3: true,
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A237E),
-              secondary: Color(0xFF00E5FF),
-              background: Color(0xFFF5F5F5),
-              surface: Colors.white,
-              error: Color(0xFFB00020),
-              onPrimary: Colors.white,
-              onSecondary: Colors.black,
-              onBackground: Colors.black,
-              onSurface: Colors.black,
-              onError: Colors.white,
+        return Listener(
+          onPointerDown: (_) => provider.resetInactivityTimer(),
+          onPointerMove: (_) => provider.resetInactivityTimer(),
+          child: MaterialApp(
+            title: 'JOCA NET',
+            debugShowCheckedModeBanner: false,
+            themeMode: provider.themeMode,
+            // Configuração de Localização para PT-BR
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('pt', 'BR'),
+            ],
+            locale: const Locale('pt', 'BR'),
+            theme: ThemeData(
+              brightness: Brightness.light,
+              primaryColor: const Color(0xFF1A237E),
+              scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+              useMaterial3: true,
+              colorScheme: const ColorScheme.light(
+                primary: Color(0xFF1A237E),
+                secondary: Color(0xFF00E5FF),
+                background: Color(0xFFF5F5F5),
+                surface: Colors.white,
+                error: Color(0xFFB00020),
+                onPrimary: Colors.white,
+                onSecondary: Colors.black,
+                onBackground: Colors.black,
+                onSurface: Colors.black,
+                onError: Colors.white,
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF1A237E),
+                foregroundColor: Colors.white,
+              ),
             ),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF1A237E),
-              foregroundColor: Colors.white,
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              primaryColor: const Color(0xFF1A237E),
+              scaffoldBackgroundColor: const Color(0xFF000000),
+              useMaterial3: true,
+              colorScheme: const ColorScheme.dark(
+                primary: Color(0xFF1A237E),
+                secondary: Color(0xFF00E5FF),
+                background: Color(0xFF000000),
+                surface: Color(0xFF111111),
+                error: Color(0xFFCF6679),
+                onPrimary: Colors.white,
+                onSecondary: Colors.white,
+                onBackground: Colors.white,
+                onSurface: Colors.white,
+                onError: Colors.black,
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF1A237E),
+                foregroundColor: Colors.white,
+              ),
             ),
+            // Decide a tela inicial aqui mesmo
+            home: provider.isLoggedIn ? HomeScreen() : const LoginScreen(),
+            routes: {
+              '/login': (context) => const LoginScreen(),
+              '/home': (context) => HomeScreen(),
+              '/fatura': (context) => const FaturaScreen(),
+              '/nota_fiscal': (context) => const NotaFiscalScreen(),
+              '/ai_chat': (context) => const AIChatScreen(),
+              '/planos': (context) => const PlanosScreen(),
+              '/perfil': (context) => const PerfilScreen(),
+              '/contratos': (context) => const ContratosScreen(),
+              '/consumo': (context) => ConsumptionScreen(),
+              '/support': (context) => const SupportScreen(),
+              '/wifi': (context) => const ModemInfoScreen(),
+              '/speedtest': (context) => const SpeedTestScreen(),
+              '/connected_devices': (context) => const ConnectedDevicesScreen(),
+              '/menu': (context) => const MenuScreen(),
+              '/select_contract': (context) => const SelectContractScreen(),
+              '/terms': (context) => const TermsScreen(),
+              '/privacy': (context) => const PrivacyScreen(),
+              '/notifications': (context) => const NotificationScreen(),
+              '/notification_detail': (context) => const NotificationDetailScreen(),
+            },
           ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            primaryColor: const Color(0xFF1A237E),
-            scaffoldBackgroundColor: const Color(0xFF000000),
-            useMaterial3: true,
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF1A237E),
-              secondary: Color(0xFF00E5FF),
-              background: Color(0xFF000000),
-              surface: Color(0xFF111111),
-              error: Color(0xFFCF6679),
-              onPrimary: Colors.white,
-              onSecondary: Colors.white,
-              onBackground: Colors.white,
-              onSurface: Colors.white,
-              onError: Colors.black,
-            ),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF1A237E),
-              foregroundColor: Colors.white,
-            ),
-          ),
-          builder: (context, child) {
-            if (provider.isBlocked) {
-              return const BlockedScreen();
-            }
-            return child!;
-          },
-          // Decide a tela inicial aqui mesmo
-          home: provider.isBlocked 
-              ? const BlockedScreen() 
-              : (provider.isLoggedIn ? HomeScreen() : const LoginScreen()),
-          routes: {
-            '/login': (context) => const LoginScreen(),
-            '/home': (context) => HomeScreen(),
-            '/fatura': (context) => const FaturaScreen(),
-            '/ai_chat': (context) => const AIChatScreen(),
-            '/planos': (context) => const PlanosScreen(),
-            '/perfil': (context) => const PerfilScreen(),
-            '/contratos': (context) => const ContratosScreen(),
-            '/consumo': (context) => ConsumptionScreen(),
-            '/support': (context) => const SupportScreen(),
-            '/wifi': (context) => const ModemInfoScreen(),
-            '/speedtest': (context) => const SpeedTestScreen(),
-            '/connected_devices': (context) => const ConnectedDevicesScreen(),
-            '/menu': (context) => const MenuScreen(),
-            '/select_contract': (context) => const SelectContractScreen(),
-            '/terms': (context) => const TermsScreen(),
-            '/privacy': (context) => const PrivacyScreen(),
-            '/notifications': (context) => const NotificationScreen(),
-            '/notification_detail': (context) => const NotificationDetailScreen(),
-            '/nota_fiscal': (context) => const NotaFiscalScreen(),
-            '/blocked': (context) => const BlockedScreen(),
-          },
         );
       },
     );
