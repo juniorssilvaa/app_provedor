@@ -58,8 +58,14 @@ done
 
 echo "✅ PostgreSQL disponível!"
 
+echo "Sincronizando histórico de migrações (Safe Fix)..."
+# Injeta manualmente a migração auth.0012 se core.0001 já existir, para evitar o erro InconsistentMigrationHistory sem apagar dados.
+export PGPASSWORD=$(echo $DATABASE_URL | sed -e 's|.*:||' -e 's|@.*||')
+DB_CLEAN_PWD=$(echo $DATABASE_URL | sed -e 's|:[^:]*@|:@|')
+psql "$DATABASE_URL" -c "INSERT INTO django_migrations (app, name, applied) SELECT 'auth', '0012_alter_user_first_name_max_length', now() WHERE EXISTS (SELECT 1 FROM django_migrations WHERE app='core' AND name='0001_initial') AND NOT EXISTS (SELECT 1 FROM django_migrations WHERE app='auth' AND name='0012_alter_user_first_name_max_length');" || echo "Aviso: Falha ao sincronizar via SQL, tentando via Django..."
+
 echo "Running migrations..."
-python manage.py migrate auth --fake --noinput && python manage.py migrate --fake-initial --noinput
+python manage.py migrate --fake-initial --noinput
 
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
