@@ -1,14 +1,34 @@
 # Root .gitignore
-# Ignore everything by default to keep the repository clean
 *
 
 # Allow essential project structure
 !.gitignore
 !README.md
-!mobile/
 !.github/
+!.github/**
 
-# Allow mobile directory content
+# Allow backend directory content
+!backend/
+!backend/**
+
+# Specific ignores inside backend
+backend/firebase-credentials.json
+backend/service_account*.json
+backend/*.json
+backend/db.sqlite3
+backend/.env
+backend/.env.*
+
+# Global ignores
+.env
+.env.*
+**/*.pyc
+__pycache__/
+*.log
+node_modules/
+
+# Allow mobile directory content (for future use)
+!mobile/
 !mobile/**
 
 # Specific ignores inside mobile
@@ -22,20 +42,6 @@ mobile/build/
 mobile/android/app/build/
 mobile/android/.gradle/
 mobile/android/local.properties
-
-# Backend and credential ignores (Security)
-backend/firebase-credentials.json
-backend/service_account*.json
-backend/*.json
-.env
-.env.*
-backend/.env
-backend/.env.*
-**/*.pyc
-__pycache__/
-*.log
-node_modules/
-backend/db.sqlite3
 
 # Explicitly allow google-services.json for flavors
 !mobile/android/app/src/nanet/google-services.json
