@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-lg">
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-white mb-2">Avisos In-App</h2>
+            <p class="text-sm text-gray-400">Crie comunicados para aparecer diretamente no aplicativo do cliente. Você pode destacar avisos importantes e oferecer contato rápido pelo WhatsApp.</p>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Title & Message -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Título</label>
+                    <input type="text" name="title" placeholder="Ex: Instabilidade programada" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Mensagem</label>
+                    <textarea name="message" rows="4" placeholder="Explique o que está acontecendo e como o cliente pode proceder." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+                    <p class="text-xs text-gray-500 mt-2">Recomendamos mensagens curtas, com foco na ação que o cliente precisa tomar.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Highlight Color (Type) -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-4">Cor de Destaque</label>
+                    <div class="space-y-3">
+                        <!-- Info -->
+                        <label class="type-selector flex items-center p-4 rounded-lg border border-gray-700 bg-gray-900 cursor-pointer hover:border-gray-600 transition-all" data-type="info">
+                            <input type="radio" name="type" value="info" checked class="hidden">
+                            <div class="w-8 h-8 rounded bg-blue-500 flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div>
+                                <span class="block text-sm font-bold text-white">Informativo</span>
+                                <span class="block text-xs text-gray-400">Use para comunicados gerais e lembretes simples.</span>
+                            </div>
+                            <div class="selector-circle ml-auto w-4 h-4 rounded-full border-2 border-gray-600"></div>
+                        </label>
+
+                        <!-- Success -->
+                        <label class="type-selector flex items-center p-4 rounded-lg border border-gray-700 bg-gray-900 cursor-pointer hover:border-gray-600 transition-all" data-type="success">
+                            <input type="radio" name="type" value="success" class="hidden">
+                            <div class="w-8 h-8 rounded bg-green-500 flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div>
+                                <span class="block text-sm font-bold text-white">Sucesso</span>
+                                <span class="block text-xs text-gray-400">Ideal para confirmações, boas notícias e novidades.</span>
+                            </div>
+                            <div class="selector-circle ml-auto w-4 h-4 rounded-full border-2 border-gray-600"></div>
+                        </label>
+
+                        <!-- Warning -->
+                        <label class="type-selector flex items-center p-4 rounded-lg border border-gray-700 bg-gray-900 cursor-pointer hover:border-gray-600 transition-all" data-type="warning">
+                            <input type="radio" name="type" value="warning" class="hidden">
+                            <div class="w-8 h-8 rounded bg-yellow-500 flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                            <div>
+                                <span class="block text-sm font-bold text-white">Aviso</span>
+                                <span class="block text-xs text-gray-400">Destaque prazos, manutenções e situações de atenção.</span>
+                            </div>
+                            <div class="selector-circle ml-auto w-4 h-4 rounded-full border-2 border-gray-600"></div>
+                        </label>
+
+                        <!-- Critical -->
+                        <label class="type-selector flex items-center p-4 rounded-lg border border-gray-700 bg-gray-900 cursor-pointer hover:border-gray-600 transition-all" data-type="critical">
+                            <input type="radio" name="type" value="critical" class="hidden">
+                            <div class="w-8 h-8 rounded bg-red-500 flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div>
+                                <span class="block text-sm font-bold text-white">Crítico</span>
+                                <span class="block text-xs text-gray-400">Para alertas importantes que exigem ação imediata.</span>
+                            </div>
+                            <div class="selector-circle ml-auto w-4 h-4 rounded-full border-2 border-gray-600"></div>
+                        </label>
+                    </div>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const selectors = document.querySelectorAll('.type-selector');
+                            
+                            const styles = {
+                                'info': {
+                                    active: 'border-blue-500 bg-blue-500/10',
+                                    circle: 'border-blue-500 bg-blue-500'
+                                },
+                                'success': {
+                                    active: 'border-green-500 bg-green-500/10',
+                                    circle: 'border-green-500 bg-green-500'
+                                },
+                                'warning': {
+                                    active: 'border-yellow-500 bg-yellow-500/10',
+                                    circle: 'border-yellow-500 bg-yellow-500'
+                                },
+                                'critical': {
+                                    active: 'border-red-500 bg-red-500/10',
+                                    circle: 'border-red-500 bg-red-500'
+                                }
+                            };
+
+                            const inactiveLabel = 'border-gray-700 bg-gray-900 hover:border-gray-600';
+                            const activeLabelBase = 'border-2';
+                            const inactiveCircle = 'border-gray-600';
+
+                            function updateSelection() {
+                                selectors.forEach(selector => {
+                                    const input = selector.querySelector('input');
+                                    const circle = selector.querySelector('.selector-circle');
+                                    const type = selector.dataset.type;
+                                    
+                                    // Reset classes
+                                    selector.className = 'type-selector flex items-center p-4 rounded-lg cursor-pointer transition-all border';
+                                    circle.className = 'selector-circle ml-auto w-4 h-4 rounded-full border-2';
+
+                                    if (input.checked) {
+                                        // Active state
+                                        selector.classList.add('border-2');
+                                        styles[type].active.split(' ').forEach(c => selector.classList.add(c));
+                                        
+                                        styles[type].circle.split(' ').forEach(c => circle.classList.add(c));
+                                    } else {
+                                        // Inactive state
+                                        inactiveLabel.split(' ').forEach(c => selector.classList.add(c));
+                                        inactiveCircle.split(' ').forEach(c => circle.classList.add(c));
+                                    }
+                                });
+                            }
+
+                            // Initialize
+                            updateSelection();
+
+                            // Add listeners
+                            selectors.forEach(selector => {
+                                selector.querySelector('input').addEventListener('change', updateSelection);
+                            });
+                        });
+                    </script>
+                </div>
+
+                <!-- WhatsApp & Options -->
+                <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded bg-green-600 flex items-center justify-center mr-3">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                            </div>
+                            <span class="font-bold text-white text-sm">Botão do WhatsApp</span>
+                        </div>
+                        <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="whatsapp_enabled" id="toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer checked:right-0 checked:border-green-400"/>
+                            <label for="toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer checked:bg-green-400"></label>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 mb-6">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-2">Acrescenta um atalho direto para o suporte dentro do aviso. O cliente toca e já abre o chat.</p>
+                            <input type="text" name="whatsapp_number" placeholder="Ex.: 5567999999999 (opcional)" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 pt-4 border-t border-gray-800">
+                        <label class="flex items-center space-x-3 cursor-pointer group">
+                            <input type="checkbox" name="sticky" class="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-offset-gray-900 focus:ring-blue-500 bg-gray-800">
+                            <div class="flex items-center text-sm text-gray-400 group-hover:text-white transition-colors">
+                                <svg class="w-4 h-4 mr-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+                                FIXAR ESTE AVISO NO TOPO DO APLICATIVO
+                            </div>
+                        </label>
+
+                        <label class="flex items-center space-x-3 cursor-pointer group">
+                            <input type="checkbox" name="show_home" class="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-offset-gray-900 focus:ring-blue-500 bg-gray-800">
+                            <div class="flex items-center text-sm text-gray-400 group-hover:text-white transition-colors">
+                                <svg class="w-4 h-4 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                MOSTRAR TAMBÉM NA TELA INICIAL DO APP
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Destinos por CPF (Opcional)</label>
+                            <textarea name="target_cpfs" rows="2" placeholder="Ex.: 01234567890, 98765432100" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Destinos por Contrato (Opcional)</label>
+                            <textarea name="target_contracts" rows="2" placeholder="Ex.: 123, 456" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex justify-end pt-4">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg shadow-blue-600/20">
+                    Publicar aviso
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Active Warnings List -->
+    <div class="mt-8">
+        <h3 class="text-lg font-bold text-white mb-4">Avisos Ativos</h3>
+        <div class="grid gap-4">
+            {% for warning in warnings %}
+            <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 flex justify-between items-start">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="px-2 py-0.5 rounded text-xs font-bold uppercase
+                            {% if warning.type == 'info' %}bg-blue-500/20 text-blue-400
+                            {% elif warning.type == 'success' %}bg-green-500/20 text-green-400
+                            {% elif warning.type == 'warning' %}bg-yellow-500/20 text-yellow-400
+                            {% elif warning.type == 'critical' %}bg-red-500/20 text-red-400{% endif %}">
+                            {{ warning.get_type_display }}
+                        </span>
+                        <h4 class="font-bold text-white">{{ warning.title }}</h4>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-2">{{ warning.message }}</p>
+                    <div class="flex gap-4 text-xs text-gray-500">
+                        {% if warning.sticky %}<span>📌 Fixado</span>{% endif %}
+                        {% if warning.show_home %}<span>🏠 Tela Inicial</span>{% endif %}
+                        <span>🕒 {{ warning.created_at|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+                <a href="{% url 'delete_in_app_warning' warning.pk %}" class="text-red-400 hover:text-red-300 p-2" onclick="return confirm('Tem certeza que deseja excluir este aviso?')">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </a>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 text-center py-4">Nenhum aviso ativo.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: #34D399;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+        background-color: #34D399;
+    }
+</style>
+{% endblock %}
