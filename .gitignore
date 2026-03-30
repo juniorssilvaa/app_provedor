@@ -7,7 +7,7 @@
 !.github/
 !.github/**
 
-# Allow backend directory content
+# Allow ONLY backend directory content
 !backend/
 !backend/**
 
@@ -27,29 +27,5 @@ __pycache__/
 *.log
 node_modules/
 
-# Allow mobile directory content (for future use)
-!mobile/
-!mobile/**
-
-# Specific ignores inside mobile
-mobile/ios/Flutter/Generated.xcconfig
-mobile/ios/Flutter/flutter_export_environment.sh
-mobile/.dart_tool/
-mobile/.packages
-mobile/.pub-cache/
-mobile/.pub/
-mobile/build/
-mobile/android/app/build/
-mobile/android/.gradle/
-mobile/android/local.properties
-
-# Explicitly allow google-services.json for flavors
-!mobile/android/app/src/nanet/google-services.json
-!mobile/android/app/src/jocanet/google-services.json
-
-# Explicitly allow Gradle wrapper for CI
-!mobile/android/gradlew
-!mobile/android/gradlew.bat
-!mobile/android/gradle/
-!mobile/android/gradle/wrapper/
-!mobile/android/gradle/wrapper/**
+# STRICTLY IGNORE mobile directory (User requested "apenas a pasta backend")
+mobile/
