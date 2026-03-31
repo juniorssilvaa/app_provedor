@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Django
+backend/db.sqlite3     
+
+# Secrets
+.env
+.env.*
+backend/firebase-credentials.json
+response.json
+
+# IDE
+.idea/
+.vscode/
+
+# Flutter / Android    
+mobile/.dart_tool/     
+mobile/build/
+mobile/**/build/       
+*.apk
+*.aab
+
+# Binários
+*.exe
+
+# OS
+.DS_Store
+Thumbs.db
