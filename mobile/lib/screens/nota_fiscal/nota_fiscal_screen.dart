@@ -32,15 +32,14 @@ class _NotaFiscalScreenState extends State<NotaFiscalScreen> {
       if (provider.cpf != null && provider.centralPassword != null) {
         final contractId = (provider.userContract['id'] ?? provider.userContract['contract_id'])?.toString();
         if (contractId != null) {
-          final notes = await provider.sgpService?.getFiscalNotes(
+          final result = await provider.sgpService?.getFiscalNotes(
             provider.cpf!,
             provider.centralPassword!,
             contractId,
           );
-          
-          if (notes != null) {
+          if (result != null) {
             setState(() {
-              _notes = notes;
+              _notes = result;
             });
           }
         }
@@ -52,25 +51,49 @@ class _NotaFiscalScreenState extends State<NotaFiscalScreen> {
     }
   }
 
+  Future<void> _openNoteLink(String? url) async {
+    if (url == null || url.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link da nota fiscal não disponível')));
+      }
+      return;
+    }
+    final uri = Uri.parse(url);
+    try {
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir a nota fiscal')));
+        }
+      }
+    } catch (e) {
+      debugPrint('Erro ao abrir link: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: primaryNavy,
-        title: const Text('Notas Fiscais', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        elevation: 0,
+        title: const Text('NOTAS FISCAIS', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 16, letterSpacing: 2)),
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: primaryNavy))
+          ? Center(child: CircularProgressIndicator(color: accentCyan))
           : _notes.isEmpty
               ? _buildEmptyState()
               : RefreshIndicator(
                   onRefresh: _loadNotes,
-                  color: primaryNavy,
+                  color: accentCyan,
+                  backgroundColor: cardBg,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: _notes.length,
                     itemBuilder: (context, index) {
                       return _buildNoteItem(_notes[index]);
@@ -85,7 +108,7 @@ class _NotaFiscalScreenState extends State<NotaFiscalScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.receipt_long, size: 80, color: Colors.white24),
+          Icon(Icons.description_outlined, size: 80, color: Colors.white24),
           const SizedBox(height: 16),
           const Text(
             'Nenhuma nota fiscal encontrada',
@@ -96,109 +119,168 @@ class _NotaFiscalScreenState extends State<NotaFiscalScreen> {
     );
   }
 
-  Future<void> _openNoteLink(String? url) async {
-    if (url == null || url.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link da nota não disponível')));
-      }
-      return;
-    }
-    final uri = Uri.parse(url);
-    try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        if (!await launchUrl(uri, mode: LaunchMode.platformDefault)) {
-           if (mounted) {
-             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir a nota fiscal')));
-           }
-        }
-      }
-    } catch (e) {
-      debugPrint('Erro ao abrir link: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro ao tentar abrir a nota fiscal')));
-      }
-    }
-  }
-
   Widget _buildNoteItem(Map<String, dynamic> note) {
+    final String numero = note['numero']?.toString() ?? 'S/N';
+    final String empresa = note['empresa_nome_fantasia'] ?? note['empresa_razao_social'] ?? 'JOCA NET';
+    
     // Formatação de Data
-    String dataEmissao = '--/--/----';
-    try {
-      final rawDate = note['data_emissao'];
-      if (rawDate != null) {
-        final parsedDate = DateTime.parse(rawDate);
-        dataEmissao = DateFormat('dd/MM/yyyy').format(parsedDate);
+    String dataRaw = note['data_emissao'] ?? note['data_cadastro'] ?? '';
+    String dataFormatada = '--/--/----';
+    if (dataRaw.isNotEmpty) {
+      try {
+        DateTime dt = DateTime.parse(dataRaw.split(' ')[0]);
+        dataFormatada = DateFormat('dd/MM/yyyy').format(dt);
+      } catch (_) {
+        dataFormatada = dataRaw;
       }
-    } catch (_) {}
+    }
 
-    final String numero = note['numero']?.toString() ?? 'N/A';
-    final String empresa = note['empresa_razao_social'] ?? 'Provedor de Internet';
-    final double valorRaw = double.tryParse(note['valortotal']?.toString() ?? '0') ?? 0.0;
-    final String valor = valorRaw.toStringAsFixed(2).replaceAll('.', ',');
+    // Formatação de Valor
+    double valorNum = double.tryParse(note['valortotal']?.toString() ?? note['valor']?.toString() ?? '0') ?? 0.0;
+    String valorFormatado = 'R\$ ${valorNum.toStringAsFixed(2).replaceAll('.', ',')}';
+    
+    final String? link = note['link'] ?? note['link_pdf'] ?? note['url'];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: accentCyan.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'NOTA FISCAL',
-                  style: TextStyle(
-                    color: accentCyan,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-              Text(
-                'Emissão $dataEmissao',
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Nº $numero',
-            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            empresa,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'R\$ $valor',
-            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: () => _openNoteLink(note['link']),
-            icon: const Icon(Icons.download_rounded),
-            label: const Text('VISUALIZAR NOTA FISCAL', style: TextStyle(fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryNavy,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // Cabeçalho Centralizado com Icone no Topo
+            Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(Icons.receipt_long_rounded, color: accentCyan, size: 28),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Nota Fiscal Nº $numero',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 200, // Força a quebra de linha se for longo
+                  child: Text(
+                    empresa.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: accentCyan,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // Informações: Data e Valor
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'DATA DE EMISSÃO',
+                      style: TextStyle(
+                        color: accentCyan.withOpacity(0.6),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      dataFormatada,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'VALOR TOTAL',
+                      style: TextStyle(
+                        color: accentCyan.withOpacity(0.6),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      valorFormatado,
+                      style: TextStyle(
+                        color: accentCyan,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // Botão de Download
+            ElevatedButton(
+              onPressed: () => _openNoteLink(link),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryNavy,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 58),
+                shape: const StadiumBorder(),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.download_rounded, size: 24),
+                  SizedBox(width: 12),
+                  Text(
+                    'BAIXAR DOCUMENTO FISCAL',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -88,9 +88,14 @@ class _LoginScreenState extends State<LoginScreen> {
         final configData = json.decode(configResponse.body);
         if (configData['is_active'] == false) {
            setState(() => _isLoading = false);
-           _showMaintenanceDialog(configData['provider_name'] ?? AppConfig.providerName);
+           Navigator.of(context).pushNamedAndRemoveUntil('/blocked', (route) => false);
            return;
         }
+      } else if (configResponse.statusCode == 403) {
+        // Bloqueio explícito pelo backend
+        setState(() => _isLoading = false);
+        Navigator.of(context).pushNamedAndRemoveUntil('/blocked', (route) => false);
+        return;
       }
     } catch (e) {
       debugPrint('Erro ao verificar status do provedor: $e');
@@ -100,6 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // Ocultar teclado
     FocusScope.of(context).unfocus();
 
+    final provider = context.read<AppProvider>();
     try {
       // 1. Salvar ou remover CPF das preferências (CPF salvamos logo no início se marcado)
       final prefs = await SharedPreferences.getInstance();
@@ -109,8 +115,6 @@ class _LoginScreenState extends State<LoginScreen> {
         await prefs.remove('saved_cpf');
         await prefs.remove('saved_name');
       }
-
-      final provider = context.read<AppProvider>();
       
       // Inicializar serviço SGP para consulta
       final sgpService = SGPService(
@@ -631,6 +635,10 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.of(context).pushReplacementNamed('/home');
       }
     } catch (e) {
+      if (provider.isProviderSuspended) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/blocked', (route) => false);
+        return;
+      }
       String errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Exception:', '');
       
       ScaffoldMessenger.of(context).showSnackBar(

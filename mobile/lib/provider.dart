@@ -11,6 +11,7 @@ import 'services/sgp_service.dart';
 import 'services/ai_service.dart';
 import 'services/telemetry_service.dart';
 import 'services/push_service.dart';
+import 'main.dart';
 
 class AppProvider with ChangeNotifier {
   // Theme
@@ -25,6 +26,9 @@ class AppProvider with ChangeNotifier {
   String? _centralPassword;
   Map<String, dynamic> _userContract = {};
   Map<String, dynamic> _userInfo = {};
+  String? _internetStatus;
+  String? _sgpAppName;
+  String? _sgpToken;
 
   // Services
   SGPService? _sgpService;
@@ -35,7 +39,10 @@ class AppProvider with ChangeNotifier {
   // Configuração do App (Atalhos e Ferramentas)
   List<String> _activeShortcuts = [];
   List<String> _activeTools = [];
+  bool _activeShortcuts_loaded = false;
+  bool _activeTools_loaded = false;
   bool _appConfigLoaded = false;
+  bool _isProviderSuspended = false;
 
   // Notificações
   List<Map<String, dynamic>> _notifications = [];
@@ -58,6 +65,9 @@ class AppProvider with ChangeNotifier {
   String? get centralPassword => _centralPassword;
   Map<String, dynamic> get userContract => _userContract;
   Map<String, dynamic> get userInfo => _userInfo;
+  String? get internetStatus => _internetStatus;
+  String? get sgpAppName => _sgpAppName;
+  String? get sgpToken => _sgpToken;
   SGPService? get sgpService => _sgpService;
   AIService? get aiService => _aiService;
   TelemetryService get telemetryService => _telemetryService;
@@ -65,6 +75,7 @@ class AppProvider with ChangeNotifier {
   List<String> get activeShortcuts => _activeShortcuts;
   List<String> get activeTools => _activeTools;
   bool get appConfigLoaded => _appConfigLoaded;
+  bool get isProviderSuspended => _isProviderSuspended;
 
   AppProvider();
 
@@ -156,6 +167,10 @@ class AppProvider with ChangeNotifier {
           }
         }
       }
+      
+      _sgpAppName = prefs.getString('sgpAppName') ?? '';
+      _sgpToken = prefs.getString('sgpToken');
+      _initServices(_providerToken!, appName: _sgpAppName, sgpToken: _sgpToken);
 
       // Inicia a sincronização com o servidor imediatamente (sem travar o boot)
       refreshData();
@@ -166,8 +181,12 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  void _initServices(String provToken) {
-    _sgpService = SGPService(providerToken: provToken);
+  void _initServices(String provToken, {String? appName, String? sgpToken}) {
+    _sgpService = SGPService(
+      providerToken: provToken,
+      sgpAppName: appName ?? _sgpAppName ?? '',
+      sgpToken: sgpToken ?? _sgpToken ?? '',
+    );
     _aiService = AIService(providerToken: provToken);
   }
 
@@ -177,27 +196,51 @@ class AppProvider with ChangeNotifier {
       final url = AppConfig.apiUrl('public/config/?provider_token=$tokenToUse');
       final response = await http.get(url).timeout(const Duration(seconds: 3));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['active_shortcuts'] != null) {
-          _activeShortcuts = List<String>.from(data['active_shortcuts']);
-        }
-        if (data['active_tools'] != null) {
-          if (data['active_tools'] is Map) {
-            final toolsMap = data['active_tools'] as Map;
-            _activeTools = toolsMap.entries.where((e) => e.value == true).map((e) => e.key.toString()).toList();
-          } else if (data['active_tools'] is List) {
-            _activeTools = List<String>.from(data['active_tools']);
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          
+          // Reset status de suspensao se conseguir ler a config
+          _isProviderSuspended = false;
+
+          if (data['active_shortcuts'] != null) {
+            _activeShortcuts = List<String>.from(data['active_shortcuts']);
           }
+          if (data['active_tools'] != null) {
+            if (data['active_tools'] is Map) {
+              final toolsMap = data['active_tools'] as Map;
+              _activeTools = toolsMap.entries.where((e) => e.value == true).map((e) => e.key.toString()).toList();
+            } else if (data['active_tools'] is List) {
+              _activeTools = List<String>.from(data['active_tools']);
+            }
+          }
+          _appConfigLoaded = true;
+          debugPrint('AppProvider: Config loaded. Shortcuts: $_activeShortcuts, Tools: $_activeTools');
+          final prefs = await SharedPreferences.getInstance();
+          
+          // SGP Credentials Dinâmicas
+          if (data['sgp_app_name'] != null) {
+            _sgpAppName = data['sgp_app_name'].toString();
+            await prefs.setString('sgpAppName', _sgpAppName!);
+          }
+          if (data['sgp_token'] != null) {
+            _sgpToken = data['sgp_token'].toString();
+            await prefs.setString('sgpToken', _sgpToken!);
+          }
+          
+          // Re-inicializa serviços com as novas credenciais
+          _initServices(_providerToken!);
+
+          await prefs.setString('activeShortcuts', jsonEncode(_activeShortcuts));
+          await prefs.setString('activeTools', jsonEncode(_activeTools));
+          notifyListeners();
+        } else if (response.statusCode == 403) {
+          // Captura bloqueio pelo backend
+          _isProviderSuspended = true;
+          notifyListeners();
         }
-        _appConfigLoaded = true;
-        debugPrint('AppProvider: Config loaded. Shortcuts: $_activeShortcuts, Tools: $_activeTools');
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('activeShortcuts', jsonEncode(_activeShortcuts));
-        await prefs.setString('activeTools', jsonEncode(_activeTools));
-        notifyListeners();
+      } catch (e) {
+          debugPrint('AppProvider: fetchAppConfig Error: $e');
       }
-    } catch (_) {}
   }
 
   Future<void> login({
@@ -220,7 +263,6 @@ class AppProvider with ChangeNotifier {
     if (contract != null) await prefs.setString('userContract', jsonEncode(contract));
     if (info != null) await prefs.setString('userInfo', jsonEncode(info));
 
-    _isLoggedIn = true;
     _cpf = cpf;
     _token = token;
     _providerToken = providerToken;
@@ -230,7 +272,20 @@ class AppProvider with ChangeNotifier {
     _userInfo = info ?? {};
     
     _initServices(providerToken);
+
+    // 1. Verificar Status do Provedor ANTES de autorizar a sessão
+    notifyListeners(); // Mostra progresso/atualização
     await fetchAppConfig();
+    
+    if (_isProviderSuspended) {
+      // Bloqueia o login e lança erro para a UI capturar
+      _isLoggedIn = false;
+      notifyListeners();
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/blocked', (route) => false);
+      throw Exception('Acesso desativado. Entre em contato com o suporte.');
+    }
+
+    _isLoggedIn = true;
     await fetchNotifications();
     
     try {
@@ -347,16 +402,24 @@ class AppProvider with ChangeNotifier {
     _inactivityTimer?.cancel();
     _inactivityTimer = null;
     
+    // Forçar redirecionamento para o login e limpar pilha de navegação
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+    
     notifyListeners();
   }
 
   Future<void> fetchNotifications() async {
     if (!_isLoggedIn || _cpf == null) return;
     try {
-      final notificationsResponse = await _sgpService?.apiGet('api/app/notifications/', {});
-      final warningsResponse = await _sgpService?.apiGet('api/app/warnings/', {});
+      // Busca avisos e histórico de notificações no endpoint unificado
+      final String? contractId = (_userContract['id'] ?? _userContract['contrato'])?.toString();
+      final warningsResponse = await _sgpService?.apiGet('api/public/warnings/', {
+        'cpf': _cpf!,
+        if (contractId != null) 'contract_id': contractId,
+      });
+
       List<Map<String, dynamic>> allFetched = [];
-      if (notificationsResponse is List) allFetched.addAll(List<Map<String, dynamic>>.from(notificationsResponse));
+      
       if (warningsResponse is List) {
         final mappedWarnings = warningsResponse.map((w) {
           final map = Map<String, dynamic>.from(w);
@@ -388,7 +451,7 @@ class AppProvider with ChangeNotifier {
       if (index == -1) return;
       final notif = _notifications[index];
       if (notif['is_warning'] == true && notif['backend_warning_id'] != null) {
-        await _sgpService?.apiPost('api/app/warnings/dismiss/', {'warning_id': notif['backend_warning_id'], 'cpf': _cpf});
+        await _sgpService?.apiPost('api/public/warnings/dismiss/', {'warning_id': notif['backend_warning_id'], 'cpf': _cpf});
       }
       _notifications.removeAt(index);
       if (!_readNotificationIds.contains(id)) _readNotificationIds.add(id);
@@ -449,6 +512,7 @@ class AppProvider with ChangeNotifier {
     await fetchAppConfig();
     fetchNotifications();
     if (_cpf == null || _sgpService == null) return;
+    
     try {
       Map<String, dynamic>? clientFullData = await _sgpService!.getClientByCpf(_cpf!);
       List contratos = [];
@@ -564,15 +628,32 @@ class AppProvider with ChangeNotifier {
                   ? dueStr.split('-').reversed.join('/')
                   : dueStr;
               nextContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
+
+              // Captura códigos de pagamento (PIX e Boleto) para a Home
+              nextContract['pix_code'] = priority['codigoPix'] ?? priority['pix_copia_e_cola'] ?? priority['pix_code'] ?? '';
+              nextContract['barcode'] = priority['linhaDigitavel'] ?? priority['linha_digitavel'] ?? priority['codigoBarras'] ?? priority['barcode'] ?? '';
             }
           } else {
             // Nenhuma fatura aberta para este contrato
             nextContract['invoice_status_code'] = 'paid';
             nextContract['last_invoice_value'] = '0,00';
             nextContract['last_invoice_due'] = 'N/A';
+            nextContract['pix_code'] = '';
+            nextContract['barcode'] = '';
           }
         }
         
+        // Buscar Status da Internet (Online/Offline) no final do processamento
+        final cId = (nextContract['id'] ?? nextContract['contrato'])?.toString().trim();
+        if (cId != null) {
+          try {
+            final statusRes = await _sgpService!.checkInternetStatus(cId);
+            if (statusRes != null && statusRes['msg'] != null) {
+              _internetStatus = statusRes['msg'].toString().replaceAll('Serviço ', '');
+            }
+          } catch (_) {}
+        }
+
         // Atualiza o estado uma única vez ao final de todo o processamento
         _userContract = nextContract;
         notifyListeners();

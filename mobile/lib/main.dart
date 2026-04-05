@@ -12,7 +12,7 @@ import 'services/push_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/fatura/fatura_screen.dart';
-import 'screens/fatura/nota_fiscal_screen.dart';
+import 'screens/nota_fiscal/nota_fiscal_screen.dart';
 import 'screens/ai/ai_chat_screen.dart';
 import 'screens/planos/planos_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
@@ -29,6 +29,9 @@ import 'screens/menu/select_contract_screen.dart';
 import 'screens/notification/notification_screen.dart';
 import 'screens/notification/notification_detail_screen.dart';
 import 'services/update_service.dart';
+import 'screens/blocked_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +97,7 @@ class MyApp extends StatelessWidget {
           onPointerDown: (_) => provider.resetInactivityTimer(),
           onPointerMove: (_) => provider.resetInactivityTimer(),
           child: MaterialApp(
+            navigatorKey: navigatorKey,
             title: 'JOCA NET',
             debugShowCheckedModeBanner: false,
             themeMode: provider.themeMode,
@@ -152,7 +156,7 @@ class MyApp extends StatelessWidget {
               ),
             ),
             // Decide a tela inicial aqui mesmo
-            home: provider.isLoggedIn ? HomeScreen() : const LoginScreen(),
+            home: provider.isProviderSuspended ? const BlockedScreen() : (provider.isLoggedIn ? HomeScreen() : const LoginScreen()),
             routes: {
               '/login': (context) => const LoginScreen(),
               '/home': (context) => HomeScreen(),
@@ -173,6 +177,7 @@ class MyApp extends StatelessWidget {
               '/privacy': (context) => const PrivacyScreen(),
               '/notifications': (context) => const NotificationScreen(),
               '/notification_detail': (context) => const NotificationDetailScreen(),
+              '/blocked': (context) => const BlockedScreen(),
             },
           ),
         );

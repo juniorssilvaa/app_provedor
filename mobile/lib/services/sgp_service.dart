@@ -5,8 +5,14 @@ import 'package:jocanet_app/config.dart';
 
 class SGPService {
   final String providerToken;
+  final String sgpAppName;
+  final String sgpToken;
 
-  SGPService({required this.providerToken});
+  SGPService({
+    required this.providerToken,
+    this.sgpAppName = '',
+    this.sgpToken = '',
+  });
 
   Future<dynamic> _proxyGet(String endpoint, Map<String, String> params) async {
     final token = providerToken;
@@ -184,7 +190,7 @@ class SGPService {
       final data = await _proxyPost('cliente/consulta/', {
         'cpf_cnpj': cpfCnpj, 
         'assinatura_eletronica': 1,
-        'app': 'asnetchat', 
+        'app': sgpAppName, 
       });
       
       debugPrint('SGPService: Resposta contratos: $data');
@@ -332,7 +338,7 @@ class SGPService {
   Future<Map<String, dynamic>> getConsultaCliente(String cpfCnpj) async {
     try {
       final data = await _proxyPost('ura/consultacliente/', {
-        'app': 'asnetchat', 
+        'app': sgpAppName, 
         'cpfcnpj': cpfCnpj,
         'assinatura_eletronica': 1,
       });
@@ -362,6 +368,20 @@ class SGPService {
     } catch (e) {
       debugPrint('Erro ao buscar notas fiscais: $e');
       return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> checkInternetStatus(String contractId) async {
+    try {
+      final data = await _proxyPost('ura/verificaacesso/', {
+        'contrato': contractId,
+        'app': sgpAppName, 
+        'token': sgpToken.isNotEmpty ? sgpToken : providerToken, 
+      });
+      return data is Map<String, dynamic> ? data : null;
+    } catch (e) {
+      debugPrint('Erro ao verificar status da internet: $e');
+      return null;
     }
   }
 }

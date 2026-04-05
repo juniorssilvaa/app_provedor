@@ -170,8 +170,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         bottom: false, // Permite que o conteúdo desça até o fundo
         child: Column(
           children: [
-            // Custom App Bar
-            _buildAppBar(isDark),
+            // Premium Header (Substitui AppBar e UserCard)
+            _buildPremiumHeader(isDark, textColor, subTextColor),
             
             Expanded(
               child: RefreshIndicator(
@@ -193,9 +193,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     children: [
-                      const SizedBox(height: 16),
-                      _buildUserCard(cardBg, textColor, subTextColor, isDark),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                       _buildInvoiceCard(cardBg, textColor, subTextColor, isDark),
                       const SizedBox(height: 16),
                       _buildWifiCard(cardBg, textColor, subTextColor, isDark),
@@ -212,97 +210,397 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(isDark),
-      floatingActionButton: _buildCentralButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          _buildBottomNav(isDark),
+          _buildCentralButton(),
+        ],
+      ),
     );
   }
 
-  Widget _buildAppBar(bool isDark) {
+  Widget _buildPremiumHeader(bool isDark, Color textColor, Color subTextColor) {
     final provider = context.watch<AppProvider>();
-    return Padding(
-      padding: const EdgeInsets.only(left: 0, right: 16, top: 8, bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final contract = provider.userContract;
+    final userName = provider.userName ?? 'Usuário';
+    final contractId = contract['id']?.toString() ?? '1';
+    final status = contract['status'] ?? 'ATIVO';
+    final planName = contract['plan_name'] ?? 'Plano';
+    final address = contract['address'] ?? 'Endereço não disponível';
+    final registrationDate = contract['registration_date'] ?? '--/--/----';
+    final contractDueDay = contract['contract_due_day'] ?? '--';
+
+    final statusUpper = status.toString().toUpperCase();
+    final isSuspended = statusUpper.contains('SUSPENSO') || statusUpper.contains('BLOQUEADO') || statusUpper.contains('CANCELADO');
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF283593), // Indigo mais claro para dar contraste à logo
+            primaryNavy,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(40),
+          bottomRight: Radius.circular(40),
+        ),
+      ),
+      child: Column(
         children: [
-          Row(
-            children: [
-              Transform.translate(
-                offset: const Offset(-20, 0),
-                child: Image.asset(
-                  'assets/logo.png',
-                  height: 148,
-                  fit: BoxFit.contain,
-                  alignment: Alignment.centerLeft,
-                  errorBuilder: (context, error, stackTrace) => Padding(
-                    padding: const EdgeInsets.only(left: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'NA',
-                              style: TextStyle(
-                                color: accentCyan,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -1,
-                              ),
-                            ),
-                            TextSpan(
-                              text: 'NET',
-                              style: TextStyle(
-                                color: isDark ? Colors.white : Colors.black,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -1,
-                              ),
-                            ),
-                          ],
+          // Row Superior: Logo e Notificações
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Logo Existente (sem bolha/fundo agora)
+                _buildOriginalLogo(isDark),
+
+                // Botão de Notificação
+                Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                        onPressed: () => Navigator.pushNamed(context, '/notifications'),
+                      ),
+                    ),
+                    if (provider.unreadNotificationsCount > 0)
+                      Positioned(
+                        right: 4,
+                        top: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+                          constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                          child: Text(
+                            '${provider.unreadNotificationsCount}',
+                            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Boas-vindas
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+            child: InkWell(
+              onTap: () {
+                // Simulação de abertura do menu de perfil/contratos
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Abrindo opções do contrato...'), duration: Duration(seconds: 1)),
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'BEM-VINDO DE VOLTA',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            userName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 24),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Inner Info Card (Glassmorphism Style)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: Colors.white.withOpacity(0.2)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Row Superior: Contrato e Status
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                       Text(
-                        'TELECOM',
+                        'Contrato #$contractId',
                         style: TextStyle(
-                          color: isDark ? Colors.white : Colors.grey[700],
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isSuspended 
+                                  ? Colors.red.withOpacity(0.3) 
+                                  : Colors.green.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: isSuspended ? Colors.red : Colors.greenAccent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  statusUpper,
+                                  style: TextStyle(
+                                    color: isSuspended ? Colors.red[100] : Colors.greenAccent,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Empresa e Plano (Nome da empresa removido como solicitado)
+                  // Serviço de Internet e Status Badge
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Serviço de internet'.toUpperCase(),
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Plano ${planName.toUpperCase()}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (provider.internetStatus != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: provider.internetStatus!.toUpperCase().contains('OFFLINE')
+                                ? Colors.red.withOpacity(0.3)
+                                : Colors.green.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: provider.internetStatus!.toUpperCase().contains('OFFLINE')
+                                      ? Colors.red
+                                      : Colors.greenAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                provider.internetStatus!.toUpperCase(),
+                                style: TextStyle(
+                                  color: provider.internetStatus!.toUpperCase().contains('OFFLINE')
+                                      ? Colors.red[100]
+                                      : Colors.greenAccent,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Vencimento e Data de Ativação
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'VENC. $contractDueDay',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          registrationDate,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
+
+                  const SizedBox(height: 12),
+
+                  // Endereço
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_rounded, color: Colors.white, size: 16),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          address,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(Icons.notifications_none, color: isDark ? Colors.white : Colors.black, size: 28),
-                onPressed: () => Navigator.pushNamed(context, '/notifications'),
-              ),
-              if (provider.unreadNotificationsCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(color: accentCyan, shape: BoxShape.circle),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      '${provider.unreadNotificationsCount}',
-                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildOriginalLogo(bool isDark) {
+    return Transform.translate(
+      offset: const Offset(-20, 0),
+      child: Image.asset(
+        'assets/logo.png',
+        height: 148,
+        fit: BoxFit.contain,
+        alignment: Alignment.centerLeft,
+        errorBuilder: (context, error, stackTrace) => Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'NA',
+                      style: TextStyle(
+                        color: accentCyan,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'NET',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                'TELECOM',
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.grey[700],
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -383,147 +681,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  Widget _buildUserCard(Color cardBg, Color textColor, Color subTextColor, bool isDark) {
-    final provider = Provider.of<AppProvider>(context);
-    final contract = provider.userContract;
-    final userName = provider.userName ?? '';
-    final contractId = contract['id']?.toString() ?? '';
-    final status = contract['status'] ?? '';
-    final planName = contract['plan_name'] ?? '';
-    final address = contract['address'] ?? '';
-    // Mostra a data de cadastro conforme solicitado
-    final registrationDate = contract['registration_date'] ?? '';
-    final contractDueDay = contract['contract_due_day'] ?? '';
-
-    // Se estiver suspenso, muda cores
-    final statusUpper = status.toString().toUpperCase();
-    final isSuspended = statusUpper.contains('SUSPENSO') || statusUpper.contains('BLOQUEADO') || statusUpper.contains('CANCELADO');
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: primaryNavy,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(Icons.person, color: Colors.white, size: 36),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey[200],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Contrato: ',
-                                  style: TextStyle(color: subTextColor, fontSize: 10, fontWeight: FontWeight.bold),
-                                ),
-                                TextSpan(
-                                  text: contractId,
-                                  style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isSuspended ? Colors.red.withValues(alpha: 0.15) : Colors.green.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                status.toString().toUpperCase(),
-                                style: TextStyle(
-                                  color: isSuspended ? Colors.red : Colors.green,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            if (isSuspended) ...[
-                              const SizedBox(width: 8),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                    Text(
-                      userName.toUpperCase(),
-                      style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.black : Colors.grey[100],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(planName, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
-                    Text('|', style: TextStyle(color: isDark ? Colors.white24 : Colors.black26)),
-                    Text('VENC. $contractDueDay', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
-                    Text('|', style: TextStyle(color: isDark ? Colors.white24 : Colors.black26)),
-                    Text(registrationDate, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
-                  ],
-                ),
-                Divider(color: isDark ? Colors.white10 : Colors.black12, height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        address,
-                        style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Icon(Icons.keyboard_arrow_down, color: textColor),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCongratsCard(Color cardBg, Color textColor, Color subTextColor) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -586,7 +743,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final provider = Provider.of<AppProvider>(context);
     final contract = provider.userContract;
     
-    // Verifica se está tudo pago (definido no LoginScreen)
     if (contract['invoice_status_code'] == 'paid') {
       return _buildCongratsCard(cardBg, textColor, subTextColor);
     }
@@ -596,21 +752,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final interestAmount = contract['last_invoice_interest'];
     final invoiceDue = contract['last_invoice_due'] ?? contract['expiry_date'] ?? 'N/A';
     
-    // Determina o status da fatura
     final isOverdue = contract['invoice_status_code'] == 'overdue';
     final statusText = isOverdue ? 'FATURA ATRASADA' : 'FATURA ABERTA';
     final statusColor = isOverdue ? const Color(0xFFFF3333) : Colors.orange[700];
     final statusIcon = isOverdue ? Icons.warning_amber_rounded : Icons.check_circle_outline;
+    
+    const primaryNavy = Color(0xFF1A237E);
+    const accentCyan = Color(0xFF00E5FF);
 
     return Container(
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Informação de Status / Juros
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -640,6 +800,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ],
           ),
           const SizedBox(height: 12),
+          // Valor
           Text(
             'R\$ ${isOverdue ? invoiceCorrected : invoiceAmount}',
             style: TextStyle(color: textColor, fontSize: 36, fontWeight: FontWeight.bold),
@@ -652,26 +813,42 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                  style: const TextStyle(color: Colors.grey, fontSize: 12, decoration: TextDecoration.lineThrough),
                ),
              ),
+          // Vencimento
           Text(
             'Vencimento $invoiceDue',
-            style: TextStyle(color: isOverdue ? const Color(0xFFFF3333) : Colors.grey, fontSize: 14, fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal),
+            style: TextStyle(
+              color: isOverdue ? const Color(0xFFFF3333) : Colors.grey, 
+              fontSize: 14, 
+              fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal
+            ),
           ),
           const SizedBox(height: 20),
+          // Botões de Ação
           Row(
             children: [
               Expanded(
-                flex: 3,
+                flex: 4,
                 child: ElevatedButton(
                   onPressed: () {
                     final pixCode = contract['pix_code'];
                     if (pixCode != null && pixCode.isNotEmpty) {
                       Clipboard.setData(ClipboardData(text: pixCode));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Código PIX copiado com sucesso!')),
+                        SnackBar(
+                          content: const Text('Código PIX copiado com sucesso!'),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: accentCyan,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
                       );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Código PIX não disponível')),
+                        SnackBar(
+                          content: const Text('Código PIX não disponível', style: TextStyle(fontWeight: FontWeight.bold)), 
+                          backgroundColor: accentCyan, 
+                          behavior: SnackBarBehavior.floating, 
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                        ),
                       );
                     }
                   },
@@ -679,45 +856,63 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     backgroundColor: primaryNavy,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: const StadiumBorder(),
+                    elevation: 0,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SvgPicture.asset(
-                            'assets/pix-svgrepo-com.svg',
-                            width: 30,
-                            height: 30,
-                            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                          ),
-                      const SizedBox(width: 8),
-                      const Text('Pagar com PIX', style: TextStyle(fontWeight: FontWeight.bold)),
+                        'assets/pix-svgrepo-com.svg',
+                        width: 22,
+                        height: 22,
+                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('Pagar com PIX', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
+              // Botão Código de Barras (Quadrado)
               _buildSmallButton(
-                CustomPaint(
-                  size: const Size(24, 20),
-                  painter: BarcodePainter(),
+                SvgPicture.asset(
+                  'assets/barcode-svgrepo-com.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                 ),
                 onTap: () {
                   final barcode = contract['barcode'];
                   if (barcode != null && barcode.isNotEmpty) {
                     Clipboard.setData(ClipboardData(text: barcode));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Código de barras copiado com sucesso!')),
+                      SnackBar(
+                        content: const Text('Código de barras copiado com sucesso!'),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: accentCyan,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Código de barras não disponível')),
+                      SnackBar(
+                        content: const Text('Código de barras não disponível', style: TextStyle(fontWeight: FontWeight.bold)), 
+                        backgroundColor: accentCyan, 
+                        behavior: SnackBarBehavior.floating, 
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                      ),
                     );
                   }
                 },
               ),
-              const SizedBox(width: 8),
-              _buildSmallButton(const Icon(Icons.credit_card, color: Colors.white)),
+              const SizedBox(width: 10),
+              // Botão Detalhes/Fatura (Quadrado)
+              _buildSmallButton(
+                const Icon(Icons.credit_card_rounded, color: Colors.white, size: 24),
+                onTap: () => Navigator.pushNamed(context, '/fatura'),
+              ),
             ],
           ),
         ],
@@ -726,20 +921,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildSmallButton(Widget content, {VoidCallback? onTap}) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            color: primaryNavy,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(child: content),
+    return SizedBox(
+      width: 54,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF1A237E),
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          elevation: 0,
         ),
+        child: Center(child: content),
       ),
     );
   }
@@ -1379,7 +1573,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           // 2. O botão em si - Ajustado para encaixar na barra
           Positioned(
-            bottom: 22, // Mais baixo para encaixar melhor na barra
+            bottom: 48, // Ajustado para alinhar com a base da barra flutuante (era 22)
             left: 0,
             right: 0,
             child: Center(

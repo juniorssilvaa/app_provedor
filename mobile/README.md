@@ -1,6 +1,6 @@
-# Nanet Telecom Mobile App
+# Jocanet Telecom Mobile App
 
-Aplicativo de autoatendimento desenvolvido em Flutter para clientes da Nanet Telecom.
+Aplicativo de autoatendimento desenvolvido em Flutter para clientes da Jocanet Telecom.
 
 ## ✨ Funcionalidades
 
@@ -21,37 +21,57 @@ As credenciais do Firebase são separadas por sabor:
 - **Jocanet**: `android/app/src/jocanet/google-services.json` (ID: `com.jocanet.app.niochat`)
 
 ### Variáveis de API
-As URLs e Tokens estão concentrados no arquivo `lib/config.dart`.
-- Para teste local (Emulador): Use `10.0.2.2`.
-- Para produção: Use as URLs da NIOCHAT.
+As URLs e Tokens estão no arquivo `lib/config.dart`.
+
+- **🔗 Produção (Oficial):** `https://apis.niochat.com.br/`
+- **💻 Desenvolvimento Local:** `http://10.0.2.2:8000/` *(usado para rodar a API de testes na própria máquina junto com o emulador Android)*
 
 ## 🚀 Como Rodar e Buildar
+
+### 1. Backend
+```bash
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
+# Para processar notificações agendadas:
+python manage.py process_notifications --loop
+```
+Acesse o painel em: `http://localhost:8000/login/`
+produção: 'https://apis.niochat.com.br/api/'
+
+### 2. Mobile (App)
+```bash
+cd mobile
+flutter pub get
+flutter run
+```
 
 ### Execução Local
 Para rodar o app no emulador ou dispositivo físico:
 ```bash
-# Para rodar a versão da Nanet
-flutter run --flavor nanet
-
 # Para rodar a versão da Jocanet
 flutter run --flavor jocanet
+
+# Para rodar a versão da Nanet
+flutter run --flavor nanet
 ```
 
 ### Android (Release)
 Para gerar os arquivos de produção:
 ```bash
-# Gerar APK (Nanet)
-flutter build apk --flavor nanet --release
+# Gerar APK (Jocanet)
+flutter build apk --flavor jocanet --release
 
-# Gerar AAB (Nanet - para Google Play)
-flutter build appbundle --flavor nanet --release
+# Gerar AAB (Jocanet - para Google Play)
+flutter build appbundle --flavor jocanet --release
 ```
 
 ### iOS
 Requer macOS e Xcode configurado.
 ```bash
-# Nanet
-flutter build ios --flavor nanet --release
+# Jocanet
+flutter build ios --flavor jocanet --release
 ```
 
 ## 🏗 Estrutura de Pastas

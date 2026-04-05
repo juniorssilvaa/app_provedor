@@ -187,15 +187,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Color _getTypeColor(String type) {
     switch (type) {
       case 'promo':
-        return Colors.purple;
-      case 'warning':
-        return Colors.orange;
-      case 'critical':
-        return const Color(0xFF1A237E);
+      case 'info':
       case 'success':
-        return Colors.green;
+        return const Color(0xFF00E5FF); // Accent Cyan
+      case 'warning':
+        return const Color(0xFFFFA726); // Warning Orange
+      case 'critical':
+        return const Color(0xFFEF5350); // Critical Red
       default:
-        return Colors.blue;
+        return const Color(0xFF00E5FF); // Accent Cyan
     }
   }
 
