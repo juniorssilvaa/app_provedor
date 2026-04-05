@@ -14,6 +14,9 @@ import 'providers/app_provider.dart';
 import 'services/push_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/login/login_screen.dart';
+import 'screens/login/blocked_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -144,6 +147,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               Locale('pt', 'BR'),
             ],
             locale: const Locale('pt', 'BR'),
+            navigatorKey: navigatorKey,
+            builder: (context, child) {
+              return provider.isProviderSuspended 
+                  ? const BlockedScreen() 
+                  : child!;
+            },
             home: provider.isLoggedIn ? HomeScreen() : const LoginScreen(),
             routes: AppRoutes.routes,
           );

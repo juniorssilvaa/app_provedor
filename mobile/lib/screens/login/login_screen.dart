@@ -79,23 +79,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-      // 1. Verificar Status do Provedor
-    try {
-      final configUrl = Uri.parse('${AppConfig.apiBaseUrl}public/config/?provider_token=${AppConfig.apiToken}');
-      final configResponse = await http.get(configUrl).timeout(const Duration(seconds: 5));
+      // 1. Verificar Status do Provedor (Global)
+      final provider = context.read<AppProvider>();
+      await provider.fetchAppConfig();
       
-      if (configResponse.statusCode == 200) {
-        final configData = json.decode(configResponse.body);
-        if (configData['is_active'] == false) {
-           setState(() => _isLoading = false);
-           _showMaintenanceDialog(configData['provider_name'] ?? AppConfig.providerName);
-           return;
-        }
+      if (provider.isProviderSuspended) {
+        debugPrint('LOGIN BLOQUEADO: Provedor Suspenso');
+        if (mounted) setState(() => _isLoading = false);
+        return; // O main.dart redirecionará para BlockedScreen
       }
-    } catch (e) {
-      debugPrint('Erro ao verificar status do provedor: $e');
-      // Continua o login em caso de erro de rede na verificação
-    }
 
     // Ocultar teclado
     FocusScope.of(context).unfocus();

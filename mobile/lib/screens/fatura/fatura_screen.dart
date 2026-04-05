@@ -215,7 +215,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
   Future<void> _openInvoiceLink(String? url) async {
     if (url == null || url.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link do boleto não disponível')));
+        _showTopBanner('Link do boleto não disponível');
       }
       return;
     }
@@ -225,14 +225,14 @@ class _FaturaScreenState extends State<FaturaScreen> {
         // Fallback para modo padrão se external falhar
         if (!await launchUrl(uri, mode: LaunchMode.platformDefault)) {
            if (mounted) {
-             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o boleto')));
+             _showTopBanner('Não foi possível abrir o boleto');
            }
         }
       }
     } catch (e) {
       debugPrint('Erro ao abrir link: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro ao tentar abrir o boleto')));
+        _showTopBanner('Erro ao tentar abrir o boleto');
       }
     }
   }
@@ -357,9 +357,9 @@ class _FaturaScreenState extends State<FaturaScreen> {
                     final pix = fatura['codigoPix'] ?? fatura['pix_copia_e_cola'] ?? fatura['pix_code'] ?? '';
                     if (pix.isNotEmpty) {
                       Clipboard.setData(ClipboardData(text: pix));
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Código PIX copiado!')));
+                      _showTopBanner('Código PIX copiado!');
                     } else {
-                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pix indisponível')));
+                       _showTopBanner('Pix indisponível');
                     }
                   },
                 ),
@@ -378,9 +378,9 @@ class _FaturaScreenState extends State<FaturaScreen> {
                      final barcode = fatura['linhaDigitavel'] ?? fatura['linha_digitavel'] ?? fatura['codigoBarras'] ?? fatura['barcode'] ?? '';
                      if (barcode.isNotEmpty) {
                        Clipboard.setData(ClipboardData(text: barcode));
-                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Linha digitável copiada!')));
+                       _showTopBanner('Linha digitável copiada!');
                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Código de barras indisponível')));
+                        _showTopBanner('Código de barras indisponível');
                      }
                   },
                 ),
@@ -396,7 +396,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                       link = link.replaceAll('`', '').trim();
                       _openInvoiceLink(link);
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link do boleto não disponível')));
+                      _showTopBanner('Link do boleto não disponível');
                     }
                   },
                 ),
@@ -483,7 +483,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                 final pix = fatura['pix_copia_e_cola'] ?? fatura['pix_code'] ?? '';
                 Clipboard.setData(ClipboardData(text: pix));
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Código PIX copiado!')));
+                _showTopBanner('Código PIX copiado!');
               },
             ),
             const SizedBox(height: 12),
@@ -495,7 +495,7 @@ class _FaturaScreenState extends State<FaturaScreen> {
                 final barcode = fatura['linha_digitavel'] ?? fatura['barcode'] ?? '';
                 Clipboard.setData(ClipboardData(text: barcode));
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Linha digitável copiada!')));
+                _showTopBanner('Linha digitável copiada!');
               },
             ),
             const SizedBox(height: 24),
@@ -538,5 +538,25 @@ class _FaturaScreenState extends State<FaturaScreen> {
         ),
       ),
     );
+  }
+  void _showTopBanner(String message) {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.removeCurrentMaterialBanner();
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        content: Text(message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF0073B7),
+        elevation: 10,
+        leading: const Icon(Icons.check_circle_outline, color: Colors.white),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        actions: [
+          const SizedBox.shrink(),
+        ],
+      ),
+    );
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) messenger.hideCurrentMaterialBanner();
+    });
   }
 }

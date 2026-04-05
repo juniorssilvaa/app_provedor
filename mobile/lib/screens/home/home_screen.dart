@@ -665,16 +665,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 flex: 3,
                 child: ElevatedButton(
                   onPressed: () {
-                    final pixCode = contract['pix_code'];
-                    if (pixCode != null && pixCode.isNotEmpty) {
+                    final pixCode = contract['codigoPix'] ?? contract['pix_copia_e_cola'] ?? contract['pix_code'] ?? '';
+                    if (pixCode.isNotEmpty) {
                       Clipboard.setData(ClipboardData(text: pixCode));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Código PIX copiado com sucesso!')),
-                      );
+                      _showTopBanner('Código PIX copiado com sucesso!');
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Código PIX não disponível')),
-                      );
+                      _showTopBanner('Código PIX não disponível');
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -704,17 +700,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   size: const Size(24, 20),
                   painter: BarcodePainter(),
                 ),
-                onTap: () {
-                  final barcode = contract['barcode'];
-                  if (barcode != null && barcode.isNotEmpty) {
+                  onTap: () {
+                  final barcode = contract['linhaDigitavel'] ?? contract['linha_digitavel'] ?? contract['codigoBarras'] ?? contract['barcode'] ?? '';
+                  if (barcode.isNotEmpty) {
                     Clipboard.setData(ClipboardData(text: barcode));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Código de barras copiado com sucesso!')),
-                    );
+                    _showTopBanner('Código de barras copiado com sucesso!');
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Código de barras não disponível')),
-                    );
+                    _showTopBanner('Código de barras não disponível');
                   }
                 },
               ),
@@ -917,13 +909,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     messenger.removeCurrentMaterialBanner();
     messenger.showMaterialBanner(
       MaterialBanner(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF333333),
+        content: Text(message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: primaryNavy,
+        elevation: 10,
+        leading: const Icon(Icons.check_circle_outline, color: Colors.white),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         actions: [
-          TextButton(
-            onPressed: () => messenger.hideCurrentMaterialBanner(),
-            child: const Text('OK', style: TextStyle(color: Colors.white)),
-          ),
+          const SizedBox.shrink(), // No buttons needed for quick feedback
         ],
       ),
     );
@@ -1390,22 +1382,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     if (contractId.isNotEmpty) {
                       _performUnlock(contractId);
                     } else {
-                       ScaffoldMessenger.of(context).showSnackBar(
-                         const SnackBar(content: Text('Erro: ID do contrato não encontrado.'))
-                       );
+                      _showTopBanner('Erro: ID do contrato não encontrado.');
                     }
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Recurso não disponível. Seu contrato está ativo.',
-                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                        ),
-                        backgroundColor: accentCyan,
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                      )
-                    );
+                    _showTopBanner('Recurso não disponível. Seu contrato está ativo.');
                   }
                 },
                 child: Container(

@@ -98,7 +98,7 @@ class _NotaFiscalScreenState extends State<NotaFiscalScreen> {
   Future<void> _openNoteLink(String? url) async {
     if (url == null || url.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link da nota não disponível')));
+        _showTopBanner('Link da nota não disponível');
       }
       return;
     }
@@ -107,14 +107,14 @@ class _NotaFiscalScreenState extends State<NotaFiscalScreen> {
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         if (!await launchUrl(uri, mode: LaunchMode.platformDefault)) {
            if (mounted) {
-             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir a nota fiscal')));
+             _showTopBanner('Não foi possível abrir a nota fiscal');
            }
         }
       }
     } catch (e) {
       debugPrint('Erro ao abrir link: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro ao tentar abrir a nota fiscal')));
+        _showTopBanner('Erro ao tentar abrir a nota fiscal');
       }
     }
   }
@@ -139,66 +139,156 @@ class _NotaFiscalScreenState extends State<NotaFiscalScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'NOTA FISCAL',
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
+                child: Icon(Icons.receipt_long_rounded, color: primaryNavy, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Nota Fiscal Nº $numero',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      empresa.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: primaryNavy.withOpacity(0.8),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                'Emissão $dataEmissao',
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              const SizedBox(width: 66), // Espaço compensatório para o ícone (50 + gap 16)
+            ],
+          ),
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DATA DE EMISSÃO',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    dataEmissao,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'VALOR TOTAL',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'R\$ $valor',
+                    style: TextStyle(
+                      color: primaryNavy,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Nº $numero',
-            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            empresa,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'R\$ $valor',
-            style: TextStyle(color: primaryNavy, fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
+          const SizedBox(height: 32),
+          ElevatedButton(
             onPressed: () => _openNoteLink(note['link']),
-            icon: const Icon(Icons.download_rounded),
-            label: const Text('VISUALIZAR NOTA FISCAL', style: TextStyle(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryNavy,
               foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              minimumSize: const Size(double.infinity, 56),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.file_download_outlined, size: 22),
+                const SizedBox(width: 10),
+                const Text(
+                  'BAIXAR DOCUMENTO FISCAL',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  void _showTopBanner(String message) {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.removeCurrentMaterialBanner();
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        content: Text(message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: primaryNavy,
+        elevation: 10,
+        leading: const Icon(Icons.info_outline, color: Colors.white),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        actions: [
+          const SizedBox.shrink(),
+        ],
+      ),
+    );
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) messenger.hideCurrentMaterialBanner();
+    });
   }
 }

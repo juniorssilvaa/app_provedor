@@ -21,7 +21,7 @@ class AppConfig {
 
   static String get apiToken => _rawApiToken.replaceAll('+', '');
   static const String supportPhone = '+553140429851';
-  static const String _envApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://apis.niochat.com.br/');
+  static const String _envApiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://apis.niochat.com.br/api/');
 
   static String get apiBaseUrl {
     String base = _runtimeApiBaseUrl ?? _envApiBaseUrl;

@@ -31,6 +31,7 @@ class AppProvider with ChangeNotifier {
   List<String> _activeShortcuts = [];
   List<String> _activeTools = [];
   bool _appConfigLoaded = false;
+  bool _isProviderSuspended = false;
 
   List<Map<String, dynamic>> _notifications = [];
   List<String> _readNotificationIds = [];
@@ -54,6 +55,7 @@ class AppProvider with ChangeNotifier {
   List<String> get activeShortcuts => _activeShortcuts;
   List<String> get activeTools => _activeTools;
   bool get appConfigLoaded => _appConfigLoaded;
+  bool get isProviderSuspended => _isProviderSuspended;
 
   AppProvider();
 
@@ -171,11 +173,16 @@ class AppProvider with ChangeNotifier {
   Future<void> fetchAppConfig() async {
     try {
       final tokenToUse = _providerToken ?? AppConfig.apiToken;
+      // O caminho correto no Django é 'api/public/config/', então passamos 'public/config/' para o apiUrl
       final url = AppConfig.apiUrl('public/config/?provider_token=$tokenToUse');
+      debugPrint('PROVIDER CHECK: GET $url');
+      
       final response = await http.get(url).timeout(const Duration(seconds: 3));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        debugPrint('PROVIDER CHECK RESULT: is_active=${data['is_active']}');
+        
         if (data['active_shortcuts'] != null) {
           _activeShortcuts = List<String>.from(data['active_shortcuts']);
         }
@@ -187,13 +194,25 @@ class AppProvider with ChangeNotifier {
             _activeTools = List<String>.from(data['active_tools']);
           }
         }
+        if (data['is_active'] != null) {
+          _isProviderSuspended = data['is_active'] == false;
+        }
+
         _appConfigLoaded = true;
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('activeShortcuts', jsonEncode(_activeShortcuts));
         await prefs.setString('activeTools', jsonEncode(_activeTools));
         notifyListeners();
+      } else if (response.statusCode == 403) {
+        debugPrint('PROVIDER CHECK: Provider IS BLOCKED (403)');
+        _isProviderSuspended = true;
+        notifyListeners();
+      } else {
+        debugPrint('PROVIDER CHECK ERROR: ${response.statusCode}');
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('PROVIDER CHECK EXCEPTION: $e');
+    }
   }
 
   Future<void> login({
@@ -328,6 +347,7 @@ class AppProvider with ChangeNotifier {
     _userInfo = {};
     _sgpService = null;
     _aiService = null;
+    _isProviderSuspended = false;
 
     notifyListeners();
   }
@@ -528,6 +548,16 @@ class AppProvider with ChangeNotifier {
               nextContract['last_invoice_interest'] = (valorCorrigido - valor).toStringAsFixed(2).replaceFirst('.', ',');
               nextContract['last_invoice_due'] = dueStr.split('-').reversed.join('/');
               nextContract['invoice_status_code'] = isOverdue ? 'overdue' : 'open';
+
+              // MAPEAR DADOS DE PAGAMENTO PARA CÓPIA NA HOME (PIX E BARCODE)
+              nextContract['codigoPix'] = priority['codigoPix'] ?? priority['pix_copia_e_cola'] ?? priority['pix_code'] ?? '';
+              nextContract['pix_copia_e_cola'] = priority['pix_copia_e_cola'] ?? priority['pix_code'] ?? '';
+              nextContract['pix_code'] = priority['pix_code'] ?? '';
+
+              nextContract['linhaDigitavel'] = priority['linhaDigitavel'] ?? priority['linha_digitavel'] ?? priority['codigoBarras'] ?? priority['barcode'] ?? '';
+              nextContract['linha_digitavel'] = priority['linha_digitavel'] ?? priority['codigoBarras'] ?? priority['barcode'] ?? '';
+              nextContract['codigoBarras'] = priority['codigoBarras'] ?? priority['barcode'] ?? '';
+              nextContract['barcode'] = priority['barcode'] ?? '';
             }
           } else {
             nextContract['invoice_status_code'] = 'paid';
