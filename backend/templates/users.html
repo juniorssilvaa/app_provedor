@@ -93,16 +93,33 @@
         </form>
     </div>
 
-    <!-- Bulk Actions -->
-    <div class="bg-gray-100 dark:bg-gray-800/50 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 border border-gray-200 dark:border-gray-700">
+    <!-- Bulk Actions (Sticky) -->
+    <div id="bulkActions" class="bg-blue-600 rounded-xl p-4 hidden flex-col sm:flex-row justify-between items-center gap-4 border border-blue-500 shadow-lg shadow-blue-500/20 sticky top-4 z-40 transition-all duration-300">
         <div class="flex items-center gap-3">
-            <input type="checkbox" id="selectAll" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700">
-            <label for="selectAll" class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase">Selecionar todos</label>
-            <span class="text-sm text-gray-500 dark:text-gray-500 ml-2">Nenhum dispositivo selecionado</span>
+            <div class="bg-white/20 p-2 rounded-lg">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+            </div>
+            <span id="selectionCount" class="text-sm font-bold text-white uppercase tracking-wider">0 Clientes selecionados</span>
         </div>
         <div class="flex gap-2">
-            <button disabled class="text-gray-400 dark:text-gray-600 text-sm font-medium px-4 py-2 cursor-not-allowed">Reenviar selecionados</button>
-            <button disabled class="text-gray-400 dark:text-gray-600 text-sm font-medium px-4 py-2 cursor-not-allowed">Limpar seleção</button>
+            <button onclick="sendBulkPush()" class="bg-white text-blue-600 hover:bg-blue-50 px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                Enviar Notificação Push
+            </button>
+            <button onclick="clearSelection()" class="text-white/80 hover:text-white text-sm font-medium px-4 py-2 transition-colors">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <!-- Select All & Summary -->
+    <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700/50 mb-4">
+        <label class="flex items-center gap-3 cursor-pointer group">
+            <input type="checkbox" id="selectAll" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-700 cursor-pointer transition-all">
+            <span class="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-blue-500 transition-colors uppercase tracking-tight">Selecionar todos da página</span>
+        </label>
+        <div class="text-[11px] text-gray-500 uppercase font-bold tracking-widest bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full">
+            {{ users|length }} registros listados
         </div>
     </div>
 
@@ -115,7 +132,7 @@
                 <div class="flex items-start justify-between">
                     <div class="flex items-start gap-4">
                         <div class="pt-1">
-                            <input type="checkbox" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700">
+                            <input type="checkbox" data-cpf="{{ user.cpf }}" class="user-checkbox w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700">
                         </div>
                         
                         <!-- Avatar -->
@@ -146,8 +163,10 @@
                     </div>
                     
                     <div class="flex items-center gap-2">
-                         <span class="text-xs text-gray-500 dark:text-gray-400">Sem tags</span>
-                         <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-blue-500">
+                         <span class="text-xs text-gray-500 dark:text-gray-400">{{ user.tags|default:"Sem tags" }}</span>
+                         <button onclick="openUserModal('{{ user.id }}')" 
+                                 class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-blue-500 transition-colors"
+                                 title="Gerenciar usuário">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                          </button>
                     </div>
@@ -203,22 +222,31 @@
 
                 <div class="p-5 border-t md:border-t-0 border-gray-800">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-[11px] font-semibold tracking-wide text-gray-400 uppercase">Último acesso</p>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold">
-                            Online
-                        </span>
+                        <div id="user-status-{{ user.id }}" class="flex items-center justify-between mb-3">
+                            <p class="text-[11px] font-semibold tracking-wide text-gray-400 uppercase">Último acesso</p>
+                            <span class="status-badge inline-flex items-center px-2 py-0.5 rounded-full {% if user.is_online %}bg-emerald-500/10 text-emerald-400{% else %}bg-gray-500/10 text-gray-500{% endif %} text-[10px] font-semibold">
+                                {% if user.is_online %}Online{% else %}Offline{% endif %}
+                            </span>
+                        </div>
                     </div>
-                    <p class="text-sm text-white font-mono mb-4">
-                        {{ user.devices.first.last_active|default:"-"|date:"d/m/Y, H:i:s" }}
+                    <p id="user-last-active-{{ user.id }}" class="text-sm text-white font-mono mb-4">
+                        {{ user.last_active_at|default:"-"|date:"d/m/Y, H:i:s" }}
                     </p>
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-[11px] font-semibold tracking-wide text-gray-400 uppercase">Último push</p>
                             <div class="flex items-center gap-2 mt-1">
+                                {% if user.devices.first.push_confirmed %}
                                 <span class="px-2 py-0.5 bg-green-500/15 text-green-400 text-[10px] font-bold rounded-full uppercase tracking-wide">
                                     Enviado
                                 </span>
-                                <span class="text-xs text-gray-400 font-mono">05/01/2026, 16:44:46</span>
+                                <span class="text-xs text-gray-400 font-mono">{{ user.devices.first.push_confirmed_at|date:"d/m/Y, H:i:s"|default:"-" }}</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 bg-yellow-500/15 text-yellow-400 text-[10px] font-bold rounded-full uppercase tracking-wide">
+                                    Pendente
+                                </span>
+                                <span class="text-xs text-gray-400 font-mono">-</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -231,6 +259,57 @@
             Nenhum usuário encontrado com os filtros selecionados.
         </div>
         {% endfor %}
+    </div>
+
+    <!-- Modal de Gerenciamento de Usuário -->
+    <div id="userModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeUserModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-700">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-white" id="modal-title">Gerenciar Cliente</h3>
+                        <button onclick="closeUserModal()" class="text-gray-400 hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    
+                    <form id="userUpdateForm" class="space-y-6">
+                        <input type="hidden" id="modalUserId">
+                        
+                        <!-- Status Toggle -->
+                        <div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl border border-gray-700">
+                            <div>
+                                <p class="text-sm font-bold text-white">Status da Conta</p>
+                                <p class="text-xs text-gray-400">Ative ou desative o acesso deste cliente ao app.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="modalUserActive" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Tags do Cliente</label>
+                            <input type="text" id="modalUserTags" placeholder="vip, suporte, atrasado" 
+                                   class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder-gray-600">
+                            <p class="text-[10px] text-gray-500">Separe as tags por vírgula.</p>
+                        </div>
+
+                        <div class="flex gap-3 mt-8">
+                            <button type="button" onclick="closeUserModal()" class="flex-1 px-4 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all">
+                                Cancelar
+                            </button>
+                            <button type="submit" id="saveUserBtn" class="flex-1 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-900/20 transition-all">
+                                Salvar Alterações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Pagination -->
@@ -252,4 +331,172 @@
     </div>
     {% endif %}
 </div>
+<script>
+    // Modal Functions
+    const userModal = document.getElementById('userModal');
+    const userUpdateForm = document.getElementById('userUpdateForm');
+    
+    window.openUserModal = async function(id) {
+        userModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Limpar form e mostrar loading
+        userUpdateForm.style.opacity = '0.5';
+        userUpdateForm.style.pointerEvents = 'none';
+
+        try {
+            const response = await fetch(`/panel/users/${id}/update/`);
+            const data = await response.json();
+            
+            document.getElementById('modalUserId').value = data.id;
+            document.getElementById('modalUserActive').checked = data.active;
+            document.getElementById('modalUserTags').value = data.tags;
+            
+            // Adicionar info de debug no modal se necessário
+            document.getElementById('modal-title').innerText = `Gerenciar: ${data.name}`;
+        } catch (error) {
+            console.error('Erro ao carregar dados do usuário:', error);
+            closeUserModal();
+        } finally {
+            userUpdateForm.style.opacity = '1';
+            userUpdateForm.style.pointerEvents = 'auto';
+        }
+    }
+
+    window.closeUserModal = function() {
+        userModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    if (userUpdateForm) {
+        userUpdateForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('modalUserId').value;
+            const active = document.getElementById('modalUserActive').checked;
+            const tags = document.getElementById('modalUserTags').value;
+            const saveBtn = document.getElementById('saveUserBtn');
+            
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+
+            try {
+                const response = await fetch(`/panel/users/${id}/update/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ active, tags })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert('Erro ao atualizar usuário: ' + result.error);
+                }
+            } catch (error) {
+                alert('Erro na requisição: ' + error);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = 'Salvar Alterações';
+            }
+        });
+    }
+
+    // Bulk Actions Logic
+    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectionCount = document.getElementById('selectionCount');
+    
+    function updateSelection() {
+        const selected = document.querySelectorAll('.user-checkbox:checked');
+        const count = selected.length;
+        
+        // Sincronizar selectAll
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = count === userCheckboxes.length && userCheckboxes.length > 0;
+            selectAllCheckbox.indeterminate = count > 0 && count < userCheckboxes.length;
+        }
+
+        if (count > 0) {
+            bulkActions.classList.remove('hidden');
+            bulkActions.classList.add('flex');
+            selectionCount.innerText = `${count} ${count === 1 ? 'Cliente selecionado' : 'Clientes selecionados'}`;
+        } else {
+            bulkActions.classList.add('hidden');
+            bulkActions.classList.remove('flex');
+        }
+    }
+    
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            userCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+            updateSelection();
+        });
+    }
+
+    userCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateSelection);
+    });
+    
+    window.clearSelection = () => {
+        userCheckboxes.forEach(cb => cb.checked = false);
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        updateSelection();
+    }
+    
+    window.sendBulkPush = () => {
+        const selected = document.querySelectorAll('.user-checkbox:checked');
+        const cpfs = Array.from(selected).map(cb => cb.getAttribute('data-cpf'));
+        window.location.href = `/notifications/?segment_type=selected&selected_cpfs=${cpfs.join(',')}`;
+    }
+
+    // Status Polling Logic
+    async function updateUsersStatus() {
+        try {
+            const response = await fetch('/panel/users/status/');
+            const result = await response.json();
+            
+            if (result.success && result.users) {
+                result.users.forEach(u => {
+                    const statusWrapper = document.getElementById(`user-status-${u.id}`);
+                    if (!statusWrapper) return;
+                    
+                    const statusBadge = statusWrapper.querySelector('.status-badge');
+                    const lastActiveElem = document.getElementById(`user-last-active-${u.id}`);
+                    
+                    if (statusBadge) {
+                        if (u.is_online) {
+                            statusBadge.className = 'status-badge inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold';
+                            statusBadge.innerText = 'Online';
+                        } else {
+                            statusBadge.className = 'status-badge inline-flex items-center px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-500 text-[10px] font-semibold';
+                            statusBadge.innerText = 'Offline';
+                        }
+                    }
+                    
+                    if (lastActiveElem && u.last_active_at !== 'Nunca') {
+                        // Atualizamos apenas se o usuário estiver online agora, para refletir o heartbeat
+                        if (u.is_online) {
+                            // Para manter o formato d/m/Y, precisaríamos da data completa na API
+                            // Mas como é um polling rápido, mostrar o horário atual de atividade já ajuda
+                            // Mantemos o valor original se não houver mudança significativa
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Erro no polling de status:', error);
+        }
+    }
+    
+    // Inicia o polling a cada 30 segundos
+    setInterval(updateUsersStatus, 30000);
+    // Executa uma vez ao carregar
+    setTimeout(updateUsersStatus, 5000);
+ </script>
 {% endblock %}

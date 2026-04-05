@@ -9,20 +9,27 @@ from django.conf import settings
 
 from core.firebase_config import initialize_firebase
 
-# Inicializa Firebase Admin SDK
+# Inicializa Firebase Admin SDK (Tenta no boot e depois lazy no primeiro envio)
 _firebase_app = initialize_firebase()
 
 def _init_firebase():
-    """Mantido apenas para compatibilidade de chamadas existentes e lazy init"""
+    """Mantido para lazy init se falhar no boot"""
     return initialize_firebase()
 
-def send_push_notification_core(provider_id, title, message, data=None, source='system', target_customer_id=None, segment_type='all', segment_tags=None, segment_search=None):
+def send_push_notification_core(provider_id, title, message, data=None, source='system', target_customer_ids=None, segment_type='all', segment_tags=None, segment_search=None):
     
     # Lazy init: garante que temos o app antes de enviar
     global _firebase_app
     if not _firebase_app:
         print("DEBUG: _firebase_app é None. Tentando inicializar novamente...")
         _firebase_app = _init_firebase()
+    
+    if not _firebase_app:
+        print("ERRO CRÍTICO: Não foi possível inicializar Firebase após tentativa de re-init.")
+        return {
+            'status': 'error',
+            'reason': 'firebase_not_initialized'
+        }
 
     """
     SERVIÇO CENTRAL DE ENVIO DE PUSH (FCM V1 via Firebase Admin)
@@ -38,11 +45,14 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
         active=True
     ).exclude(push_token__isnull=True).exclude(push_token='')
 
-    if target_customer_id:
+    if target_customer_ids:
+        # Suporta tanto um ID único (string) quanto uma lista de IDs
+        ids = [target_customer_ids] if isinstance(target_customer_ids, str) else target_customer_ids
+        
         query = query.filter(
-            Q(user__cpf=target_customer_id) | 
-            Q(user__external_id=target_customer_id) |
-            Q(user__customer_id=target_customer_id)
+            Q(user__cpf__in=ids) | 
+            Q(user__external_id__in=ids) |
+            Q(user__customer_id__in=ids)
         )
 
     if segment_type == 'active':
@@ -177,7 +187,9 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
                             pass
 
         except Exception as e:
-            # print(f"Erro CRÍTICO no envio de lote FCM: {e}")
+            print(f"ERRO CRÍTICO no envio de lote FCM (Google/Firebase): {e}")
+            import traceback
+            traceback.print_exc()
             failure_count += len(batch_tokens)
 
     # 3. Auditoria (Log Obrigatório)
@@ -202,7 +214,7 @@ def send_push_notification_core(provider_id, title, message, data=None, source='
             target_cpfs_str = None
             
             # Se não for broadcast total (segment_type != 'all' ou tiver filtros), precisamos listar os destinatários
-            is_broadcast = (segment_type == 'all' and not target_customer_id and not segment_tags and not segment_search)
+            is_broadcast = (segment_type == 'all' and not target_customer_ids and not segment_tags and not segment_search)
             
             if not is_broadcast:
                 # Recupera CPFs dos dispositivos alvo (distinct)

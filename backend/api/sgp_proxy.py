@@ -110,6 +110,10 @@ def proxy_sgp_request(request, endpoint):
             'wifi/config/': 'api/wifi/config',
             'central/notafiscal/list': 'api/central/notafiscal/list',
             'central/notafiscal/list/': 'api/central/notafiscal/list',
+            'ura/notafiscal': 'api/central/notafiscal/list',
+            'ura/notafiscal/': 'api/central/notafiscal/list',
+            'ura/verificaacesso': 'api/ura/verificaacesso',
+            'ura/verificaacesso/': 'api/ura/verificaacesso',
         }
         
         # Mapeamento reverso manual se necessário

@@ -18,6 +18,28 @@ def is_superuser(user):
     return user.is_superuser
 
 
+def _update_user_activity(provider, cpf):
+    """
+    Helper para atualizar o timestamp de atividade do usuário e seus dispositivos.
+    Chamado em endpoints estratégicos para rastrear status 'Online' em tempo real.
+    """
+    if not cpf or not provider:
+        return
+    
+    import re
+    from django.utils import timezone
+    from core.models import AppUser, Device
+    
+    cpf_limpo = re.sub(r'\D', '', str(cpf))
+    now = timezone.now()
+    
+    # Atualiza usuário
+    AppUser.objects.filter(provider=provider, cpf=cpf_limpo).update(last_active_at=now)
+    
+    # Atualiza todos os dispositivos ativos detectados para este CPF neste provedor
+    Device.objects.filter(user__provider=provider, user__cpf=cpf_limpo, active=True).update(last_active=now)
+
+
 
 @extend_schema(tags=['SuperAdmin'])
 @api_view(['GET', 'POST'])
@@ -436,6 +458,11 @@ def get_app_configuration(request):
     if not provider or not provider.is_active:
         return Response({'error': 'Acesso desativado. Entre em contato com o suporte.'}, status=403)
 
+    # Heartbeat: Atualiza atividade sempre que busca configurações
+    cpf = request.GET.get('cpf')
+    if provider and cpf:
+        _update_user_activity(provider, cpf)
+
     try:
         # Tenta obter a config, se não existir, cria uma default
         app_config, created = AppConfig.objects.get_or_create(provider=provider)
@@ -458,6 +485,7 @@ def get_app_configuration(request):
             'social_links': app_config.social_links,
             'update_warning_active': app_config.update_warning_active,
             'is_active': provider.is_active,
+            'speed_test_provider': app_config.speed_test_provider,
             # Credenciais do SGP para uso direto no app
             'sgp_url': provider.sgp_url or '',
             'sgp_token': provider.sgp_token or '',
@@ -582,6 +610,9 @@ def register_app_user(request):
             defaults=user_defaults
         )
 
+        # Heartbeat centralizado
+        _update_user_activity(provider, cpf_limpo)
+
         # Register Device
         device_platform = data.get('device_platform') or data.get('platform')
         device_model = data.get('device_model') or data.get('model')
@@ -661,6 +692,11 @@ def get_in_app_warnings(request):
 
     if not provider:
         return Response({'error': 'Token de provedor inválido ou inativo.'}, status=403)
+
+    # Heartbeat: Atualiza atividade sempre que busca avisos
+    cpf = request.GET.get('cpf')
+    if provider and cpf:
+        _update_user_activity(provider, cpf)
 
     try:
         cpf = request.GET.get('cpf')

@@ -152,8 +152,6 @@ class AppUser(models.Model):
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='app_users', null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     cpf = models.CharField(max_length=14)
     external_id = models.CharField(max_length=100, blank=True, null=True)
     customer_id = models.CharField(max_length=50, blank=True, null=True, db_index=True, help_text="ID do cliente no SGP")
@@ -176,9 +174,20 @@ class AppUser(models.Model):
     modem_last_sync_at = models.DateTimeField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    last_active_at = models.DateTimeField(blank=True, null=True, help_text="Data e hora do último acesso geral do usuário")
     tags = models.CharField(max_length=255, blank=True, null=True)
     dismissed_warnings = models.JSONField(default=list, blank=True, help_text="Lista de IDs de avisos que o usuário fechou")
     active = models.BooleanField(default=True)
+
+    @property
+    def is_online(self):
+        """Verifica se o usuário esteve ativo nos últimos 5 minutos"""
+        if not self.last_active_at:
+            return False
+        from django.utils import timezone
+        from datetime import timedelta
+        five_minutes_ago = timezone.now() - timedelta(minutes=5)
+        return self.last_active_at >= five_minutes_ago
 
     class Meta:
         unique_together = ('provider', 'cpf')
@@ -211,6 +220,18 @@ class AppConfig(models.Model):
     
     # Atalhos rápidos
     shortcut_wifi = models.BooleanField(default=True, verbose_name="Atalho Wi-Fi")
+
+    # Configuração do Medidor de Velocidade
+    SPEED_TEST_CHOICES = [
+        ('fast', 'Fast.com'),
+        ('speedtest', 'Speedtest.net'),
+    ]
+    speed_test_provider = models.CharField(
+        max_length=20, 
+        choices=SPEED_TEST_CHOICES, 
+        default='fast',
+        verbose_name="Provedor de Speed Test"
+    )
 
     def __str__(self):
         return f"Config for {self.provider.name}"
@@ -281,6 +302,16 @@ class Device(models.Model):
     last_active = models.DateTimeField(blank=True, null=True)
     push_confirmed = models.BooleanField(default=False, help_text="Marcado como True após primeiro envio de push bem-sucedido")
     push_confirmed_at = models.DateTimeField(blank=True, null=True)
+
+    @property
+    def is_online(self):
+        """Verifica se este dispositivo esteve ativo nos últimos 5 minutos"""
+        if not self.last_active:
+            return False
+        from django.utils import timezone
+        from datetime import timedelta
+        five_minutes_ago = timezone.now() - timedelta(minutes=5)
+        return self.last_active >= five_minutes_ago
 
     class Meta:
         unique_together = ('provider', 'push_token')

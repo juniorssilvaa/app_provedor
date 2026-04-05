@@ -345,8 +345,8 @@ class GenieACSService:
                 logger.error(msg)
                 return False
 
-            if response.status_code == 200:
-                logger.info(f"Tarefa criada com sucesso: {response.json()}")
+            if response.status_code in [200, 202]:
+                logger.info(f"Tarefa criada com sucesso ({response.status_code}): {response.json()}")
                 return True
             elif response.status_code == 405:
                 msg = "ERRO 405 ao alterar Wi-Fi: Porta incorreta (CWMP detectado)."

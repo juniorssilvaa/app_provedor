@@ -17,9 +17,12 @@ urlpatterns = [
 
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
-    path('users/', views.user_list, name='user_list'),
-    path('panel/users/', views.panel_user_list, name='panel_user_list'),
+    path('users/', views.user_list, name='user_list'), # Clientes App
+    path('panel/users/alias/', RedirectView.as_view(url='/users/', permanent=False)), # Redireciona antigo alias para o novo caminho
+    path('panel/users/', views.panel_user_list, name='panel_user_list'), # Usuários do Painel
+    path('panel/users/<int:pk>/update/', views.user_update_api, name='user_update_api'),
     path('panel/users/<int:pk>/delete/', views.panel_user_delete, name='panel_user_delete'),
+    path('panel/users/status/', views.user_status_api, name='user_status_api'),
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/templates/create/', views.notification_template_create, name='notification_template_create'),
     path('notifications/templates/<int:pk>/edit/', views.notification_template_edit, name='notification_template_edit'),
