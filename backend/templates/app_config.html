@@ -80,34 +80,12 @@
                     <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-4">Ferramentas <span class="text-[9px] font-normal normal-case ml-2">Acesso rápido a recursos de suporte e diagnóstico.</span></h4>
                     <div class="space-y-3">
                         <!-- Speed Test -->
-                        <div class="p-4 rounded-xl border border-green-800 bg-green-900/10 space-y-4">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold text-white uppercase">Teste de Velocidade <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="tool_speed_test" class="sr-only peer" {% if config.tool_speed_test %}checked{% endif %}>
-                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                                </label>
-                            </div>
-                            
-                            <div class="pt-3 border-t border-green-800/30">
-                                <label class="text-[10px] font-bold text-gray-400 uppercase mb-2 block">Provedor de Teste</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <label class="relative flex items-center p-2 rounded-lg border border-gray-600 bg-gray-900/50 cursor-pointer hover:border-blue-500 transition-all">
-                                        <input type="radio" name="speed_test_provider" value="fast" class="sr-only peer" {% if config.speed_test_provider == 'fast' %}checked{% endif %}>
-                                        <div class="w-full text-center">
-                                            <span class="text-[10px] font-bold text-gray-400 peer-checked:text-blue-400 uppercase">Fast.com</span>
-                                        </div>
-                                        <div class="absolute inset-0 border-2 border-transparent peer-checked:border-blue-500 rounded-lg pointer-events-none"></div>
-                                    </label>
-                                    <label class="relative flex items-center p-2 rounded-lg border border-gray-600 bg-gray-900/50 cursor-pointer hover:border-blue-500 transition-all">
-                                        <input type="radio" name="speed_test_provider" value="speedtest" class="sr-only peer" {% if config.speed_test_provider == 'speedtest' %}checked{% endif %}>
-                                        <div class="w-full text-center">
-                                            <span class="text-[10px] font-bold text-gray-400 peer-checked:text-blue-400 uppercase">Speedtest.net</span>
-                                        </div>
-                                        <div class="absolute inset-0 border-2 border-transparent peer-checked:border-blue-500 rounded-lg pointer-events-none"></div>
-                                    </label>
-                                </div>
-                            </div>
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-green-800 bg-green-900/10">
+                            <span class="text-xs font-bold text-white uppercase">Teste de Velocidade <span class="text-[9px] text-gray-400 font-normal ml-1">DISPONÍVEL NO HUB DE FERRAMENTAS</span></span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="tool_speed_test" class="sr-only peer" {% if config.tool_speed_test %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                            </label>
                         </div>
 
                         {% comment %}
