@@ -8,6 +8,36 @@
             <h2 class="text-xl font-bold text-white mb-2">Enviar notificação push</h2>
             <p class="text-sm text-gray-400 mb-6">Defina conteúdo, segmentação e agendamento.</p>
 
+            <!-- Resumo de Seleção (Quando redirecionado da lista de clientes) -->
+            {% if selected_users %}
+            <div class="mb-6 p-4 bg-blue-600/10 border border-blue-500/30 rounded-xl animate-in fade-in duration-500">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-[10px] font-bold text-blue-500 uppercase tracking-widest leading-none mb-1">Destinatários Selecionados</h3>
+                            <p class="text-xs text-white font-medium">{{ selected_users|length }} clientes aguardando mensagem</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'user_list' %}" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-[10px] text-white font-bold rounded-lg transition-all border border-gray-600 uppercase tracking-wider">
+                        Alterar Lista
+                    </a>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar p-1">
+                    {% for u in selected_users %}
+                    <div class="flex items-center gap-2 px-2.5 py-1.5 bg-gray-900/50 border border-gray-700/50 rounded-lg text-xs">
+                        <div class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                        <span class="text-gray-300 font-medium">{{ u.name|default:u.cpf }}</span>
+                        <span class="text-[10px] text-gray-500 font-mono">({{ u.cpf }})</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <form method="post" class="space-y-6">
                 {% csrf_token %}
 
@@ -115,6 +145,11 @@
                             <span class="font-bold text-sm">Por tags</span>
                             <span class="text-xs text-gray-500 mt-1">Informe tags separadas por vírgula</span>
                         </button>
+                        <button type="button" data-segment="selected" id="segment-selected-btn"
+                            class="segment-btn flex flex-col items-center justify-center p-4 rounded-lg border border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600 transition-all hidden">
+                            <span class="font-bold text-sm">Clientes Selecionados</span>
+                            <span id="selected-count-badge" class="text-xs text-blue-400 mt-1">0 clientes selecionados</span>
+                        </button>
                     </div>
                     <button type="button" id="segment-search-btn"
                         class="w-full p-4 rounded-lg border border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600 transition-all flex items-center justify-center">
@@ -124,6 +159,7 @@
                     <input type="hidden" name="segment_type" id="segment-type-input" value="all">
                     <input type="hidden" name="segment_tags" id="segment-tags-input">
                     <input type="hidden" name="segment_search" id="segment-search-input">
+                    <input type="hidden" name="selected_cpfs" id="selected-cpfs-input">
                 </div>
 
                 <!-- Save as Template -->
@@ -175,79 +211,87 @@
             </div>
         </div>
         {% endif %}
-        <!-- Preview -->
-        <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-lg flex flex-col items-center">
-            <h3 class="text-sm font-bold text-gray-400 uppercase mb-4 w-full">Pré-visualização</h3>
+        <!-- Preview Premium -->
+        <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl flex flex-col items-center">
+            <h3 class="text-xs font-bold text-gray-500 uppercase mb-6 w-full tracking-widest">Simulador de Notificação</h3>
 
-            <!-- Phone Mockup -->
-            <div
-                class="relative border-gray-900 bg-gray-900 border-[14px] rounded-[2.5rem] h-[550px] w-[280px] shadow-2xl flex-shrink-0">
-                <div
-                    class="w-[120px] h-[18px] bg-gray-900 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute z-20">
-                </div>
-                <div class="h-[32px] w-[3px] bg-gray-800 absolute -left-[17px] top-[72px] rounded-l-lg"></div>
-                <div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
-                <div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
-                <div class="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+            <!-- Real Device Frame (iPhone 15 Pro Inspired Mockup) -->
+            <div id="device-container" class="relative group h-[600px] w-[292px] scale-[0.95] origin-top transition-all duration-700">
+                
+                <!-- Physical Outer Frame (Titanium look) -->
+                <div class="absolute inset-0 bg-[#0c0c0d] rounded-[3.5rem] border-[1.5px] border-[#222] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.8),inset_0_2px_15px_rgba(255,255,255,0.08)]">
+                    
+                    <!-- Metallic highlights and reflections -->
+                    <div class="absolute inset-[1px] rounded-[3.4rem] border-[1px] border-[#333] opacity-30 pointer-events-none"></div>
+                    
+                    <!-- Buttons Left -->
+                    <div class="absolute -left-[3px] top-[95px] w-[4px] h-[32px] bg-gradient-to-r from-[#111] to-[#222] rounded-l-sm border border-[#222]"></div>
+                    <div class="absolute -left-[3px] top-[148px] w-[4px] h-[64px] bg-gradient-to-r from-[#111] to-[#222] rounded-l-sm border border-[#222]"></div>
+                    
+                    <!-- Button Right -->
+                    <div class="absolute -right-[3px] top-[168px] w-[4px] h-[92px] bg-gradient-to-l from-[#111] to-[#222] rounded-r-sm border border-[#222]"></div>
 
-                <!-- Screen -->
-                <div class="rounded-[2rem] overflow-hidden w-full h-full bg-gray-800 relative">
-                    <!-- Wallpaper -->
-                    <div class="absolute inset-0 bg-gradient-to-b from-blue-900 to-black opacity-80"></div>
+                    <!-- Screen Inner Container -->
+                    <div class="absolute inset-[9px] bg-black rounded-[2.8rem] overflow-hidden shadow-[inset_0_0_10px_rgba(0,0,0,1)] flex flex-col">
+                        
+                        <!-- Screen Background Overlay -->
+                        <div class="absolute inset-0 bg-gradient-to-tr from-[#050505] via-[#0a1a2f] to-[#1a1c1e] z-0"></div>
 
-                    <!-- Status Bar -->
-                    <div
-                        class="absolute top-3 w-full px-5 flex justify-between text-[10px] text-white font-medium z-10">
-                        <span>9:41</span>
-                        <div class="flex space-x-1">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-                            </svg>
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.73 0 1.33-.6 1.33-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
-                            </svg>
+                        <!-- Status Bar -->
+                        <div class="relative h-11 w-full px-7 flex justify-between items-center text-[11px] text-white/90 z-20 font-medium tracking-tight">
+                            <span id="screen-time" class="font-bold">9:41</span>
+                            
+                            <!-- Dynamic Island / Header Area -->
+                            <div id="dynamic-island" class="absolute left-1/2 -translate-x-1/2 top-2.5 w-[85px] h-[26px] bg-black rounded-[13px] border-[0.5px] border-white/5 transition-all duration-500 flex items-center justify-center overflow-hidden">
+                                <div class="w-2 h-2 bg-blue-500/20 rounded-full blur-[2px] opacity-10"></div>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 pt-0.5">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.01 21.49L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l11.63 14.49.01.01.01-.01z" fill-opacity=".3"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M4.73 9.61C7.15 7.86 9.74 6.93 12 7c2.26-.07 4.85.86 7.27 2.61L12.01 18.66 4.73 9.61z"/></svg>
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33cl.73 0 1.33-.6 1.33-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Notification Area -->
-                    <div class="absolute top-14 left-2 right-2 z-20">
-                        <!-- Notification Card -->
-                        <div id="preview-card"
-                            class="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-lg transform transition-all duration-300">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center">
-                                    <div
-                                        class="w-5 h-5 bg-blue-600 rounded-md flex items-center justify-center mr-2 shadow-sm">
-                                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                        </svg>
+                        <!-- Notification Layer -->
+                        <div class="relative flex-1 z-10 px-3 pt-6">
+                            <!-- Real iOS Style Notification -->
+                            <div id="preview-card" class="bg-gray-100/95 backdrop-blur-[20px] rounded-[1.8rem] p-4 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.5)] transform-gpu transition-all duration-500 scale-100 active:scale-95 border-[0.5px] border-white/40">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-5 h-5 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center shadow-[0_2px_5px_rgba(59,130,246,0.3)]">
+                                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                        </div>
                                     </div>
-                                    <span class="text-[10px] text-gray-800 font-bold uppercase tracking-wide">APP
-                                        PROVEDOR</span>
+                                    <span class="text-[9px] text-gray-500 font-bold tracking-tight">AGORA</span>
                                 </div>
-                                <span class="text-[9px] text-gray-500">AGORA</span>
+                                <div class="space-y-0.5">
+                                    <h4 id="preview-title" class="text-[13px] font-extrabold text-gray-900 leading-tight">Título da Notificação</h4>
+                                    <p id="preview-body" class="text-[12px] text-gray-700 leading-[1.3] font-medium opacity-90">Sua mensagem aparecerá aqui para visualização realista.</p>
+                                </div>
                             </div>
-                            <div class="px-0.5">
-                                <h4 id="preview-title" class="text-sm font-bold text-gray-900 mb-0.5 leading-tight">
-                                    Título da notificação</h4>
-                                <p id="preview-body" class="text-xs text-gray-600 leading-snug">O conteúdo da sua
-                                    notificação aparecerá aqui.</p>
-                            </div>
+
+                            <!-- Screen reflection/glare effect -->
+                            <div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none rounded-[2.8rem] z-30"></div>
                         </div>
+
+                        <!-- Home Bar -->
+                        <div class="absolute bottom-2.5 left-1/2 -translate-x-1/2 w-[90px] h-[4.5px] bg-white/30 rounded-full z-20"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Controls -->
-            <div class="mt-6 flex justify-center space-x-2 bg-gray-900 p-1 rounded-lg border border-gray-700">
+            <!-- Enhanced Controls -->
+            <div class="mt-8 flex justify-center space-x-1.5 bg-gray-900/80 p-1.5 rounded-xl border border-gray-700/50 backdrop-blur-sm self-stretch">
                 <button type="button" onclick="setPreviewMode('ios')" id="btn-ios"
-                    class="px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-gray-700 text-white shadow-sm">iOS</button>
+                        class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all bg-gray-700 text-white shadow-lg shadow-white/5">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.1 2.48-1.34.03-1.77-.79-3.29-.79-1.53 0-1.99.77-3.32.82-1.33.05-2.32-1.32-3.15-2.53-1.7-2.45-2.99-6.91-1.24-9.95.87-1.51 2.42-2.47 4.12-2.5 1.29-.02 2.51.87 3.3.87s2.24-1.09 3.78-.93c.64.02 2.43.25 3.59 1.95-.09.06-2.14 1.25-2.12 3.67.02 2.92 2.54 3.86 2.58 3.88-.02.06-.41 1.4-.23 2.93zM15.5 3.5c.67-.81 1.13-1.93.99-3.04-.98.05-2.17.67-2.87 1.48-.63.73-1.18 1.88-1.04 2.97.09.01.19.01.28.01.91 0 2.06-.63 2.64-1.42z"/></svg>
+                    iPhone
+                </button>
                 <button type="button" onclick="setPreviewMode('android')" id="btn-android"
-                    class="px-4 py-1.5 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all">Android</button>
+                        class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-800 transition-all">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.523 15.3414C17.2625 15.3414 17.051 15.129 17.051 14.8685C17.051 14.608 17.2625 14.3956 17.523 14.3956C17.7835 14.3956 17.9959 14.608 17.9959 14.8685C17.9959 15.129 17.7835 15.3414 17.523 15.3414ZM6.47703 15.3414C6.21651 15.3414 6.0041 15.129 6.0041 14.8685C6.0041 14.608 6.21651 14.3956 6.47703 14.3956C6.73755 14.3956 6.94996 14.608 6.94996 14.8685C6.94996 15.129 6.73755 15.3414 6.47703 15.3414ZM17.8427 11.2338L19.467 8.41169C19.5638 8.24354 19.5065 8.02898 19.3384 7.93214C19.1702 7.8353 18.9556 7.89258 18.8588 8.06073L17.2023 10.9388C15.6565 10.2311 13.899 9.84033 12 9.84033C10.101 9.84033 8.34352 10.2311 6.79774 10.9388L5.14125 8.06073C5.04441 7.89258 4.82985 7.8353 4.6616 7.93214C4.49335 8.02898 4.43606 8.24354 4.533 8.41169L6.15732 11.2338C2.92383 12.8716 0.722412 16.0352 0.722412 19.7891H23.2776C23.2776 16.0352 21.0762 12.8716 17.8427 11.2338Z"/></svg>
+                    Android
+                </button>
             </div>
         </div>
 
@@ -271,7 +315,34 @@
                 const segmentInput = document.getElementById('segment-type-input');
                 const segmentTagsInput = document.getElementById('segment-tags-input');
                 const segmentSearchInput = document.getElementById('segment-search-input');
+                const selectedCpfsInput = document.getElementById('selected-cpfs-input');
+                const selectedBtn = document.getElementById('segment-selected-btn');
+                const selectedCountBadge = document.getElementById('selected-count-badge');
                 const searchButton = document.getElementById('segment-search-btn');
+
+                function activateSegment(button, mode) {
+                    segmentInput.value = mode;
+                    resetSegmentStyles();
+                    button.classList.remove('border', 'border-gray-700', 'bg-gray-900', 'text-gray-400');
+                    button.classList.add('border-2', 'border-blue-500', 'bg-blue-500/10', 'text-white');
+                }
+
+                // Verificar se há CPFs selecionados na URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const selectedCpfsParam = urlParams.get('selected_cpfs');
+                
+                if (selectedCpfsParam) {
+                    selectedCpfsInput.value = selectedCpfsParam;
+                    const cpfsArray = selectedCpfsParam.split(',');
+                    selectedCountBadge.textContent = `${cpfsArray.length} clientes selecionados`;
+                    
+                    // Mostrar botão de selecionados e ativar
+                    selectedBtn.classList.remove('hidden');
+                    activateSegment(selectedBtn, 'selected');
+                    
+                    // Scroll suave para o topo se houver seleção para mostrar o resumo
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
 
                 // Carregar template selecionado
                 templateSelect.addEventListener('change', function () {
@@ -321,16 +392,41 @@
                 if (bodyInput) bodyInput.addEventListener('input', updatePreview);
 
                 window.setPreviewMode = function (mode) {
+                    const dynamicIsland = document.getElementById('dynamic-island');
                     if (mode === 'ios') {
-                        previewCard.className = 'bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-lg transform transition-all duration-300';
-                        btnIOS.className = 'px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-gray-700 text-white shadow-sm';
-                        btnAndroid.className = 'px-4 py-1.5 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all';
+                        previewCard.className = 'bg-gray-100/95 backdrop-blur-[20px] rounded-[1.8rem] p-4 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.5)] transform-gpu transition-all duration-500 scale-100 border-[0.5px] border-white/40';
+                        btnIOS.className = 'flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all bg-gray-700 text-white shadow-lg shadow-white/5';
+                        btnAndroid.className = 'flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-800 transition-all';
+                        if (dynamicIsland) {
+                            dynamicIsland.style.width = '85px';
+                            dynamicIsland.style.height = '26px';
+                            dynamicIsland.style.borderRadius = '13px';
+                            dynamicIsland.style.top = '10px';
+                        }
                     } else {
-                        previewCard.className = 'bg-white rounded-lg p-3 shadow-md border-l-4 border-blue-500 transform transition-all duration-300 mt-2';
-                        btnAndroid.className = 'px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-gray-700 text-white shadow-sm';
-                        btnIOS.className = 'px-4 py-1.5 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all';
+                        previewCard.className = 'bg-white rounded-xl p-4 shadow-lg border-l-[6px] border-blue-600 transform-gpu transition-all duration-500 scale-100 mt-2';
+                        btnAndroid.className = 'flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all bg-gray-700 text-white shadow-lg shadow-white/5';
+                        btnIOS.className = 'flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-800 transition-all';
+                        if (dynamicIsland) {
+                            dynamicIsland.style.width = '8px';
+                            dynamicIsland.style.height = '8px';
+                            dynamicIsland.style.borderRadius = '50%';
+                            dynamicIsland.style.top = '14px';
+                        }
                     }
                 }
+
+                // Clock update logic
+                function updateClock() {
+                    const timeElem = document.getElementById('screen-time');
+                    if (timeElem) {
+                        const now = new Date();
+                        timeElem.textContent = now.getHours().toString().padStart(2, '0') + ':' + 
+                                             now.getMinutes().toString().padStart(2, '0');
+                    }
+                }
+                setInterval(updateClock, 10000);
+                updateClock();
 
                 function resetSegmentStyles() {
                     segmentButtons.forEach(function (button) {
@@ -342,10 +438,7 @@
                 segmentButtons.forEach(function (button) {
                     button.addEventListener('click', function () {
                         const mode = button.getAttribute('data-segment') || 'all';
-                        segmentInput.value = mode;
-                        resetSegmentStyles();
-                        button.classList.remove('border', 'border-gray-700', 'bg-gray-900', 'text-gray-400');
-                        button.classList.add('border-2', 'border-blue-500', 'bg-blue-500/10', 'text-white');
+                        activateSegment(button, mode);
 
                         if (mode === 'tags') {
                             const tags = window.prompt('Informe as tags separadas por vírgula:');
